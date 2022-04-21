@@ -14,6 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # from PIL import Image
+import typer
 import os
 import subprocess
 import shutil
@@ -751,3 +752,6 @@ def convert_folder(base_source_dir, base_target_dir, tmp_dir, tika=False, ocr=Fa
             msg = 'All files converted previously.'
 
     return msg, file_count, errors, originals  # TODO: Fiks så bruker denne heller for oppsummering til slutt når flere mapper konvertert
+
+if __name__ == "__main__":
+    typer.run(convert_folder)
