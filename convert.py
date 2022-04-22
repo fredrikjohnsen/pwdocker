@@ -670,7 +670,8 @@ def convert_folder(base_source_dir: str, base_target_dir: str, tmp_dir: str,
     append_fields = ('version', 'norm_file_path', 'result', 'original_file_copy', 'id')
     table = add_fields(append_fields, table)
 
-    cut_fields = ('0', '1', 'X_TIKA_EXCEPTION_runtime', 'X_TIKA_EXCEPTION_warn')
+    # Remove Siegfried generated columns
+    cut_fields = ('namespace', 'basis', 'warning')
     table = remove_fields(cut_fields, table)
 
     header = etl.header(table)
