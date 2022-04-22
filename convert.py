@@ -25,10 +25,10 @@ import pathlib
 # import img2pdf
 import petl as etl
 import base64
+import csv
+import glob
 from os.path import relpath
 from pathlib import Path
-from common.metadata import run_tika, run_siegfried
-from common.file import append_tsv_row, append_txt_file, replace_text_in_file, delete_file_or_dir, check_for_files
 import cchardet as chardet
 # from pathlib import Path
 # from functools import reduce
@@ -38,6 +38,62 @@ import cchardet as chardet
 if os.name == "posix":
     import ocrmypdf
     from pdfy import Pdfy
+
+def run_siegfried(base_source_dir, tmp_dir, tsv_path, zipped=False):
+    if not zipped:
+        print('\nIdentifying file types...')
+
+    csv_path = os.path.join(tmp_dir, 'tmp.csv')
+    os.chdir(base_source_dir)
+    subprocess.run(
+        'sf -z -csv * > ' + csv_path,
+        stderr=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        shell=True,
+    )
+
+    with open(csv_path, 'r') as csvin, open(tsv_path, 'w') as tsvout:
+        csvin = csv.reader(csvin)
+        tsvout = csv.writer(tsvout, delimiter='\t')
+        for row in csvin:
+            tsvout.writerow(row)
+
+    if os.path.exists(csv_path):
+        os.remove(csv_path)
+
+
+def append_tsv_row(file_path, row):
+    with open(file_path, 'a') as tsv_file:
+        writer = csv.writer(
+            tsv_file,
+            delimiter='\t',
+            quoting=csv.QUOTE_NONE,
+            quotechar='',
+            lineterminator='\n',
+            escapechar='')
+        writer.writerow(row)
+
+
+def append_txt_file(file_path, msg):
+    with open(file_path, 'a') as txt_file:
+        txt_file.write(msg + '\n')
+
+
+def delete_file_or_dir(path):
+    if os.path.isfile(path):
+        os.remove(path)
+
+    if os.path.isdir(path):
+        shutil.rmtree(path)
+
+
+def check_for_files(filepath):
+    for filepath_object in glob.glob(filepath):
+        if os.path.isfile(filepath_object):
+            return True
+
+    return False
+
 
 # mime_type: (keep_original, function name, new file extension)
 mime_to_norm = {
@@ -536,7 +592,7 @@ def add_fields(fields, table):
     return table
 
 
-def convert_folder(base_source_dir, base_target_dir, tmp_dir, tika=False, ocr=False, merge=False, tsv_source_path=None, tsv_target_path=None, make_unique=True, sample=False, zip=False):
+def convert_folder(base_source_dir, base_target_dir, tmp_dir, ocr=False, merge=False, tsv_source_path=None, tsv_target_path=None, make_unique=True, sample=False, zip=False):
     # WAIT: Legg inn i gui at kan velge om skal ocr-behandles
     txt_target_path = base_target_dir + '_result.txt'
     json_tmp_dir = base_target_dir + '_tmp'
@@ -561,13 +617,9 @@ def convert_folder(base_source_dir, base_target_dir, tmp_dir, tika=False, ocr=Fa
 
     # TODO: Trengs denne sjekk om tsv her. Gjøres sjekk før kaller denne funskjonen og slik at unødvendig?
     if not os.path.isfile(tsv_source_path):
-        if tika:
-            run_tika(tsv_source_path, base_source_dir, json_tmp_dir, zip)
-        else:
-            run_siegfried(base_source_dir, tmp_dir, tsv_source_path, zip)
+        run_siegfried(base_source_dir, tmp_dir, tsv_source_path, zip)
 
     # TODO: Legg inn test på at tsv-fil ikke er tom
-    replace_text_in_file(tsv_source_path, '\0', '')
 
     table = etl.fromtsv(tsv_source_path)
     table = etl.rename(table,
