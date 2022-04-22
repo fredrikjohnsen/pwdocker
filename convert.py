@@ -691,8 +691,7 @@ def convert_folder(base_source_dir: str, base_target_dir: str, tmp_dir: str,
         count += 1
         count_str = ('(' + str(count) + '/' + str(file_count) + '): ')
         source_file_path = row['source_file_path']
-        if '/' not in source_file_path:
-            source_file_path = os.path.join(base_source_dir, source_file_path)
+        source_file_path = os.path.join(base_source_dir, source_file_path)
 
         mime_type = row['mime_type']
         # TODO: Virker ikke når Tika brukt -> finn hvorfor
