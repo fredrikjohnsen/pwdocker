@@ -501,12 +501,14 @@ def html2pdf(args):
 
 def file_convert(source_file_path, mime_type, function, target_dir, tmp_dir, norm_file_path=None, norm_ext=None, version=None, ocr=False, keep_original=False, zip=False):
     source_file_name = os.path.basename(source_file_path)
-    base_file_name = os.path.splitext(source_file_name)[0] + '.'
+    split_ext = os.path.splitext(source_file_name)
+    base_file_name = split_ext[0]
+    ext = split_ext[1]
     tmp_file_path = tmp_dir + '/' + base_file_name + 'tmp'
     if norm_file_path is None:
-        norm_file_path = target_dir + '/' + base_file_name
-        if norm_ext:
-            norm_file_path = norm_file_path + norm_ext
+        norm_file_path = target_dir + '/' + base_file_name + ext
+        if (norm_ext and '.'+norm_ext != ext) :
+            norm_file_path = norm_file_path + '.' + norm_ext
 
     # TODO: Endre så returneres file paths som starter med prosjektmappe? Alltid, eller bare når genereres arkivpakke?
     normalized = {'result': None, 'norm_file_path': norm_file_path, 'error': None, 'original_file_copy': None}
