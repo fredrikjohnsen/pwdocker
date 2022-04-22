@@ -592,7 +592,10 @@ def add_fields(fields, table):
     return table
 
 
-def convert_folder(base_source_dir, base_target_dir, tmp_dir, ocr=False, merge=False, tsv_source_path=None, tsv_target_path=None, make_unique=True, sample=False, zip=False):
+def convert_folder(base_source_dir: str, base_target_dir: str, tmp_dir: str,
+                   ocr: bool=False, tsv_source_path:str=None, tsv_target_path:
+                   str=None, make_unique: bool=False, sample: bool=False,
+                   zip: bool=False):
     # WAIT: Legg inn i gui at kan velge om skal ocr-behandles
     txt_target_path = base_target_dir + '_result.txt'
     json_tmp_dir = base_target_dir + '_tmp'
