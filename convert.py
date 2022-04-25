@@ -62,11 +62,12 @@ class File:
         with open(self.path, 'a') as txt_file:
             txt_file.write(msg + '\n')
 
-    def convert(self, target_dir, tmp_dir, norm_file_path=None, ocr=False, keep_original=False, zip=False):
+    def convert(self, target_dir, norm_file_path=None, ocr=False, keep_original=False, zip=False):
         source_file_name = os.path.basename(self.path)
         split_ext = os.path.splitext(source_file_name)
         base_file_name = split_ext[0]
         ext = split_ext[1]
+        tmp_dir = os.path.join(target_dir, 'pw_tmp')
         tmp_file_path = tmp_dir + '/' + base_file_name + 'tmp'
         function = mime_to_norm[self.mime_type][1]
 
@@ -610,12 +611,14 @@ def add_fields(fields, table):
     return table
 
 
-def convert_folder(base_source_dir: str, base_target_dir: str, tmp_dir: str,
+def convert_folder(base_source_dir: str, base_target_dir: str,
                    ocr: bool=False, tsv_source_path:str=None, tsv_target_path:
                    str=None, sample: bool=False, zip: bool=False):
     # WAIT: Legg inn i gui at kan velge om skal ocr-behandles
     txt_target_path = base_target_dir + '_result.txt'
-    json_tmp_dir = base_target_dir + '_tmp'
+    tmp_dir = os.path.join(base_target_dir, 'pw_tmp')
+    if not os.path.isdir(tmp_dir):
+        os.mkdir(tmp_dir)
     converted_now = False
     errors = False
     originals = False
@@ -758,7 +761,7 @@ def convert_folder(base_source_dir: str, base_target_dir: str, tmp_dir: str,
 
             target_dir = os.path.dirname(source_file_path.replace(base_source_dir, base_target_dir))
             origfile = File(source_file_path)
-            normalized = origfile.convert(target_dir, tmp_dir, None, ocr, keep_original, zip)
+            normalized = origfile.convert(target_dir, None, ocr, keep_original, zip)
 
             if normalized['result'] == 0:
                 errors = True
@@ -802,6 +805,9 @@ def convert_folder(base_source_dir: str, base_target_dir: str, tmp_dir: str,
 
         if sample and count > 9:
             break
+
+    if len(os.listdir(tmp_dir)) == 0:
+        os.rmdir(tmp_dir)
 
     if not sample:
         shutil.move(tsv_target_path, tsv_source_path)
