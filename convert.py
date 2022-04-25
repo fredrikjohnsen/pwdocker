@@ -36,8 +36,119 @@ import cchardet as chardet
 # from wand.image import Image, Color
 # from wand.exceptions import BlobError
 if os.name == "posix":
-    import ocrmypdf
+    # import ocrmypdf
     from pdfy import Pdfy
+
+
+class File:
+
+    def __init__(self, path, mime_type='text/plain', version=None):
+        self.path = path
+        self.mime_type = mime_type
+        self.version = version
+
+    def append_tsv_row(self, row):
+        with open(self.path, 'a') as tsv_file:
+            writer = csv.writer(
+                tsv_file,
+                delimiter='\t',
+                quoting=csv.QUOTE_NONE,
+                quotechar='',
+                lineterminator='\n',
+                escapechar='')
+            writer.writerow(row)
+
+    def append_txt(self, msg):
+        with open(self.path, 'a') as txt_file:
+            txt_file.write(msg + '\n')
+
+    def convert(self, target_dir, tmp_dir, norm_file_path=None, ocr=False, keep_original=False, zip=False):
+        source_file_name = os.path.basename(self.path)
+        split_ext = os.path.splitext(source_file_name)
+        base_file_name = split_ext[0]
+        ext = split_ext[1]
+        tmp_file_path = tmp_dir + '/' + base_file_name + 'tmp'
+        function = mime_to_norm[self.mime_type][1]
+
+        # Ensure unique file names in dir hierarchy:
+        norm_ext = mime_to_norm[self.mime_type][2]
+        if not norm_ext:
+            norm_ext = 'none'
+
+        if norm_file_path is None:
+            norm_file_path = target_dir + '/' + base_file_name + ext
+            if (norm_ext and '.'+norm_ext != ext) :
+                norm_file_path = norm_file_path + '.' + norm_ext
+
+        # TODO: Endre så returneres file paths som starter med prosjektmappe? Alltid, eller bare når genereres arkivpakke?
+        normalized = {'result': None, 'norm_file_path': norm_file_path, 'error': None, 'original_file_copy': None}
+
+        if not check_for_files(norm_file_path + '*'):
+            if self.mime_type == 'n/a':
+                normalized['result'] = 5  # Not a file
+                normalized['norm_file_path'] = None
+            elif function in converters:
+                pathlib.Path(target_dir).mkdir(parents=True, exist_ok=True)
+
+                function_args = {'source_file_path': self.path,
+                                'tmp_file_path': tmp_file_path,
+                                'norm_file_path': norm_file_path,
+                                'keep_original': keep_original,
+                                'tmp_dir': tmp_dir,
+                                'mime_type': self.mime_type,
+                                'version': self.version,
+                                'zip': zip,
+                                #  'ocr': ocr,
+                                }
+
+                ok = converters[function](function_args)
+
+                if not ok:
+                    error_files = target_dir + '/error_documents/'
+                    pathlib.Path(error_files).mkdir(parents=True, exist_ok=True)
+                    file_copy_args = {'source_file_path': self.path,
+                                    'norm_file_path': error_files + os.path.basename(self.path)
+                                    }
+                    file_copy(file_copy_args)
+                    normalized['original_file_copy'] = file_copy_args['norm_file_path']  # TODO: Fjern fil hvis konvertering lykkes når kjørt på nytt
+                    normalized['result'] = 0  # Conversion failed
+                    normalized['norm_file_path'] = None
+                elif ok == 'originals':
+                    original_files = target_dir + '/original_documents/'
+                    pathlib.Path(original_files).mkdir(parents=True, exist_ok=True)
+                    file_copy_args = {'source_file_path': self.path,
+                                    'norm_file_path': original_files + os.path.basename(self.path)
+                                    }
+                    file_copy(file_copy_args)
+                    normalized['original_file_copy'] = file_copy_args['norm_file_path']
+                    normalized['result'] = 1  # Converted successfully
+                elif keep_original:
+                    original_files = target_dir + '/original_documents/'
+                    pathlib.Path(original_files).mkdir(parents=True, exist_ok=True)
+                    file_copy_args = {'source_file_path': self.path,
+                                    'norm_file_path': original_files + os.path.basename(self.path)
+                                    }
+                    file_copy(file_copy_args)
+                    normalized['original_file_copy'] = file_copy_args['norm_file_path']
+                    normalized['result'] = 1  # Converted successfully
+                else:
+                    normalized['result'] = 1  # Converted successfully
+            else:
+                if function:
+                    normalized['result'] = 4
+                    normalized['error'] = "Missing converter function '" + function + "'"
+                    normalized['norm_file_path'] = None
+                else:
+                    normalized['result'] = 2  # Conversion not supported
+                    normalized['norm_file_path'] = None
+        else:
+            normalized['result'] = 3  # Converted earlier, or manually
+
+        if os.path.isfile(tmp_file_path):
+            os.remove(tmp_file_path)
+
+        return normalized
+
 
 def run_siegfried(base_source_dir, tmp_dir, tsv_path, zipped=False):
     if not zipped:
@@ -62,21 +173,6 @@ def run_siegfried(base_source_dir, tmp_dir, tsv_path, zipped=False):
         os.remove(csv_path)
 
 
-def append_tsv_row(file_path, row):
-    with open(file_path, 'a') as tsv_file:
-        writer = csv.writer(
-            tsv_file,
-            delimiter='\t',
-            quoting=csv.QUOTE_NONE,
-            quotechar='',
-            lineterminator='\n',
-            escapechar='')
-        writer.writerow(row)
-
-
-def append_txt_file(file_path, msg):
-    with open(file_path, 'a') as txt_file:
-        txt_file.write(msg + '\n')
 
 
 def delete_file_or_dir(path):
@@ -499,86 +595,6 @@ def html2pdf(args):
     return ok
 
 
-def file_convert(source_file_path, mime_type, function, target_dir, tmp_dir, norm_file_path=None, norm_ext=None, version=None, ocr=False, keep_original=False, zip=False):
-    source_file_name = os.path.basename(source_file_path)
-    split_ext = os.path.splitext(source_file_name)
-    base_file_name = split_ext[0]
-    ext = split_ext[1]
-    tmp_file_path = tmp_dir + '/' + base_file_name + 'tmp'
-    if norm_file_path is None:
-        norm_file_path = target_dir + '/' + base_file_name + ext
-        if (norm_ext and '.'+norm_ext != ext) :
-            norm_file_path = norm_file_path + '.' + norm_ext
-
-    # TODO: Endre så returneres file paths som starter med prosjektmappe? Alltid, eller bare når genereres arkivpakke?
-    normalized = {'result': None, 'norm_file_path': norm_file_path, 'error': None, 'original_file_copy': None}
-
-    if not check_for_files(norm_file_path + '*'):
-        if mime_type == 'n/a':
-            normalized['result'] = 5  # Not a file
-            normalized['norm_file_path'] = None
-        elif function in converters:
-            pathlib.Path(target_dir).mkdir(parents=True, exist_ok=True)
-
-            function_args = {'source_file_path': source_file_path,
-                             'tmp_file_path': tmp_file_path,
-                             'norm_file_path': norm_file_path,
-                             'keep_original': keep_original,
-                             'tmp_dir': tmp_dir,
-                             'mime_type': mime_type,
-                             'version': version,
-                             'zip': zip,
-                             #  'ocr': ocr,
-                             }
-
-            ok = converters[function](function_args)
-
-            if not ok:
-                error_files = target_dir + '/error_documents/'
-                pathlib.Path(error_files).mkdir(parents=True, exist_ok=True)
-                file_copy_args = {'source_file_path': source_file_path,
-                                  'norm_file_path': error_files + os.path.basename(source_file_path)
-                                  }
-                file_copy(file_copy_args)
-                normalized['original_file_copy'] = file_copy_args['norm_file_path']  # TODO: Fjern fil hvis konvertering lykkes når kjørt på nytt
-                normalized['result'] = 0  # Conversion failed
-                normalized['norm_file_path'] = None
-            elif ok == 'originals':
-                original_files = target_dir + '/original_documents/'
-                pathlib.Path(original_files).mkdir(parents=True, exist_ok=True)
-                file_copy_args = {'source_file_path': source_file_path,
-                                  'norm_file_path': original_files + os.path.basename(source_file_path)
-                                  }
-                file_copy(file_copy_args)
-                normalized['original_file_copy'] = file_copy_args['norm_file_path']
-                normalized['result'] = 1  # Converted successfully
-            elif keep_original:
-                original_files = target_dir + '/original_documents/'
-                pathlib.Path(original_files).mkdir(parents=True, exist_ok=True)
-                file_copy_args = {'source_file_path': source_file_path,
-                                  'norm_file_path': original_files + os.path.basename(source_file_path)
-                                  }
-                file_copy(file_copy_args)
-                normalized['original_file_copy'] = file_copy_args['norm_file_path']
-                normalized['result'] = 1  # Converted successfully
-            else:
-                normalized['result'] = 1  # Converted successfully
-        else:
-            if function:
-                normalized['result'] = 4
-                normalized['error'] = "Missing converter function '" + function + "'"
-                normalized['norm_file_path'] = None
-            else:
-                normalized['result'] = 2  # Conversion not supported
-                normalized['norm_file_path'] = None
-    else:
-        normalized['result'] = 3  # Converted earlier, or manually
-
-    if os.path.isfile(tmp_file_path):
-        os.remove(tmp_file_path)
-
-    return normalized
-
 
 def remove_fields(fields, table):
     for field in fields:
@@ -596,8 +612,7 @@ def add_fields(fields, table):
 
 def convert_folder(base_source_dir: str, base_target_dir: str, tmp_dir: str,
                    ocr: bool=False, tsv_source_path:str=None, tsv_target_path:
-                   str=None, make_unique: bool=False, sample: bool=False,
-                   zip: bool=False):
+                   str=None, sample: bool=False, zip: bool=False):
     # WAIT: Legg inn i gui at kan velge om skal ocr-behandles
     txt_target_path = base_target_dir + '_result.txt'
     json_tmp_dir = base_target_dir + '_tmp'
@@ -610,6 +625,8 @@ def convert_folder(base_source_dir: str, base_target_dir: str, tmp_dir: str,
     else:
         txt_target_path = os.path.splitext(tsv_source_path)[1][1:] + '_result.txt'
 
+    result_file = File(txt_target_path)
+
     if tsv_target_path is None:
         tsv_target_path = base_target_dir + '_processed.tsv'
 
@@ -621,7 +638,8 @@ def convert_folder(base_source_dir: str, base_target_dir: str, tmp_dir: str,
     # TODO: Viser mime direkte om er pdf/a eller må en sjekke mot ekstra felt i de to under? Forsjekk om Tika og siegfried?
 
     # TODO: Trengs denne sjekk om tsv her. Gjøres sjekk før kaller denne funskjonen og slik at unødvendig?
-    if not os.path.isfile(tsv_source_path):
+    # if not os.path.isfile(tsv_source_path):
+    if True:
         run_siegfried(base_source_dir, tmp_dir, tsv_source_path, zip)
 
     # TODO: Legg inn test på at tsv-fil ikke er tom
@@ -677,7 +695,9 @@ def convert_folder(base_source_dir: str, base_target_dir: str, tmp_dir: str,
     table = remove_fields(cut_fields, table)
 
     header = etl.header(table)
-    append_tsv_row(tsv_target_path, header)
+
+    tsv_file = File(tsv_target_path)
+    tsv_file.append_tsv_row(header)
 
     # Treat csv (detected from extension only) as plain text:
     table = etl.convert(table, 'mime_type', lambda v, row: 'text/plain' if row.id == 'x-fmt/18' else v, pass_row=True)
@@ -724,7 +744,7 @@ def convert_folder(base_source_dir: str, base_target_dir: str, tmp_dir: str,
             errors = True
             converted_now = True
             result = 'Conversion not supported'
-            append_txt_file(txt_target_path, result + ': ' + source_file_path + ' (' + mime_type + ')')
+            result_file.append_txt(result + ': ' + source_file_path + ' (' + mime_type + ')')
             row['norm_file_path'] = ''
             row['original_file_copy'] = ''
         else:
@@ -736,29 +756,19 @@ def convert_folder(base_source_dir: str, base_target_dir: str, tmp_dir: str,
             if zip:
                 keep_original = False
 
-            function = mime_to_norm[mime_type][1]
-
-            # Ensure unique file names in dir hierarchy:
-            norm_ext = mime_to_norm[mime_type][2]
-            if not norm_ext:
-                norm_ext = 'none'
-
-            if make_unique:
-                norm_ext = (base64.b32encode(bytes(str(count), encoding='ascii'))).decode('utf8').replace('=', '').lower() + '.' + norm_ext
             target_dir = os.path.dirname(source_file_path.replace(base_source_dir, base_target_dir))
-            normalized = file_convert(source_file_path, mime_type, function, target_dir, tmp_dir, None, norm_ext, version, ocr, keep_original, zip=zip)
+            origfile = File(source_file_path)
+            normalized = origfile.convert(target_dir, tmp_dir, None, ocr, keep_original, zip)
 
             if normalized['result'] == 0:
                 errors = True
                 result = 'Conversion failed'
-                append_txt_file(txt_target_path, result + ': ' + source_file_path + ' (' + mime_type + ')')
             elif normalized['result'] == 1:
                 result = 'Converted successfully'
                 converted_now = True
             elif normalized['result'] == 2:
                 errors = True
                 result = 'Conversion not supported'
-                append_txt_file(txt_target_path, result + ': ' + source_file_path + ' (' + mime_type + ')')
             elif normalized['result'] == 3:
                 if old_result not in ('Converted successfully', 'Manually converted'):
                     result = 'Manually converted'
@@ -769,9 +779,11 @@ def convert_folder(base_source_dir: str, base_target_dir: str, tmp_dir: str,
                 converted_now = True
                 errors = True
                 result = normalized['error']
-                append_txt_file(txt_target_path, result + ': ' + source_file_path + ' (' + mime_type + ')')
             elif normalized['result'] == 5:
                 result = 'Not a document'
+
+            if errors:
+                result_file.append_txt(result + ': ' + source_file_path + ' (' + mime_type + ')')
 
             if normalized['norm_file_path']:
                 row['norm_file_path'] = relpath(normalized['norm_file_path'], base_target_dir)
@@ -786,7 +798,7 @@ def convert_folder(base_source_dir: str, base_target_dir: str, tmp_dir: str,
 
         # TODO: Fikset med å legge inn escapechar='\\' i append_tsv_row -> vil det skal problemer senere?
         # row_values = [r.replace('\n', ' ') for r in row_values if r is not None]
-        append_tsv_row(tsv_target_path, row_values)
+        tsv_file.append_tsv_row(row_values)
 
         if sample and count > 9:
             break
