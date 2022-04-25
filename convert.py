@@ -62,7 +62,7 @@ class File:
         with open(self.path, 'a') as txt_file:
             txt_file.write(msg + '\n')
 
-    def convert(self, target_dir, norm_file_path=None, ocr=False, keep_original=False, zip=False):
+    def convert(self, target_dir, norm_file_path=None, keep_original=False, zip=False):
         source_file_name = os.path.basename(self.path)
         split_ext = os.path.splitext(source_file_name)
         base_file_name = split_ext[0]
@@ -99,7 +99,6 @@ class File:
                                 'mime_type': self.mime_type,
                                 'version': self.version,
                                 'zip': zip,
-                                #  'ocr': ocr,
                                 }
 
                 ok = converters[function](function_args)
@@ -574,6 +573,7 @@ def pdf2pdfa(args):
             return ok
 
     ocrmypdf.configure_logging(-1)
+    # Set tesseract_timeout=0 to only do PDF/A-conversion, and not ocr
     result = ocrmypdf.ocr(args['tmp_file_path'], args['norm_file_path'], tesseract_timeout=0, progress_bar=False, skip_text=True)
     if str(result) == 'ExitCode.ok':
         ok = True
@@ -612,8 +612,8 @@ def add_fields(fields, table):
 
 
 def convert_folder(base_source_dir: str, base_target_dir: str,
-                   ocr: bool=False, tsv_source_path:str=None, tsv_target_path:
-                   str=None, sample: bool=False, zip: bool=False):
+                   tsv_source_path: str=None, tsv_target_path: str=None,
+                   sample: bool=False, zip: bool=False):
     # WAIT: Legg inn i gui at kan velge om skal ocr-behandles
     txt_target_path = base_target_dir + '_result.txt'
     tmp_dir = os.path.join(base_target_dir, 'pw_tmp')
@@ -761,7 +761,7 @@ def convert_folder(base_source_dir: str, base_target_dir: str,
 
             target_dir = os.path.dirname(source_file_path.replace(base_source_dir, base_target_dir))
             origfile = File(source_file_path)
-            normalized = origfile.convert(target_dir, None, ocr, keep_original, zip)
+            normalized = origfile.convert(target_dir, None, keep_original, zip)
 
             if normalized['result'] == 0:
                 errors = True
