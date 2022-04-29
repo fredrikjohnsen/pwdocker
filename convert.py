@@ -325,7 +325,7 @@ def zip_to_norm(args):
 
     extract_nested_zip(args['source_file_path'], norm_zip_path)
 
-    msg, file_count, errors, originals = convert_folder(norm_zip_path, norm_dir_path, args['tmp_dir'], zip=True)
+    msg, file_count, errors, originals = convert_folder(norm_zip_path, norm_dir_path, args['tmp_dir'], zipped=True)
 
     if 'succcessfully' in msg:
         func = copy
@@ -593,7 +593,7 @@ def add_fields(fields, table):
 
 def convert_folder(base_source_dir: str, base_target_dir: str,
                    tsv_source_path: str=None, tsv_target_path: str=None,
-                   sample: bool=False, zip: bool=False):
+                   sample: bool=False, zipped: bool=False):
     # WAIT: Legg inn i gui at kan velge om skal ocr-behandles
     txt_target_path = base_target_dir + '_result.txt'
     tmp_dir = os.path.join(base_target_dir, 'pw_tmp')
@@ -623,7 +623,7 @@ def convert_folder(base_source_dir: str, base_target_dir: str,
     # TODO: Trengs denne sjekk om tsv her. Gjøres sjekk før kaller denne funskjonen og slik at unødvendig?
     # if not os.path.isfile(tsv_source_path):
     if True:
-        run_siegfried(base_source_dir, tmp_dir, tsv_source_path, zip)
+        run_siegfried(base_source_dir, tmp_dir, tsv_source_path, zipped)
 
     # TODO: Legg inn test på at tsv-fil ikke er tom
 
@@ -665,7 +665,7 @@ def convert_folder(base_source_dir: str, base_target_dir: str,
         print('File count: ' + str(file_count))
         print("Files listed in '" + tsv_source_path + "' doesn't match files on disk. Exiting.")
         return 'Error', file_count
-    elif not zip:
+    elif not zipped:
         print('Converting files..')
 
     # WAIT: Legg inn sjekk på filstørrelse før og etter konvertering
@@ -717,7 +717,7 @@ def convert_folder(base_source_dir: str, base_target_dir: str,
             if extension == 'xml':
                 mime_type = 'application/xml'
 
-        if not zip:
+        if not zipped:
             print_path = os.path.relpath(source_file_path, Path(base_source_dir).parents[1])
             print(count_str + '.../' + print_path + ' (' + mime_type + ')')
 
@@ -733,7 +733,7 @@ def convert_folder(base_source_dir: str, base_target_dir: str,
         else:
             target_dir = os.path.dirname(source_file_path.replace(base_source_dir, base_target_dir))
             origfile = File(source_file_path)
-            normalized = origfile.convert(target_dir, None, zip)
+            normalized = origfile.convert(target_dir, None)
 
             if normalized['result'] == 0:
                 errors = True
