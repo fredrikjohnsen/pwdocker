@@ -62,17 +62,17 @@ class File:
         with open(self.path, 'a') as txt_file:
             txt_file.write(msg + '\n')
 
-    def convert(self, target_dir, norm_file_path=None, keep_original=False, zip=False):
+    def convert(self, target_dir, norm_file_path=None, zip=False):
         source_file_name = os.path.basename(self.path)
         split_ext = os.path.splitext(source_file_name)
         base_file_name = split_ext[0]
         ext = split_ext[1]
         tmp_dir = os.path.join(target_dir, 'pw_tmp')
         tmp_file_path = tmp_dir + '/' + base_file_name + 'tmp'
-        function = mime_to_norm[self.mime_type][1]
+        function = mime_to_norm[self.mime_type][0]
 
         # Ensure unique file names in dir hierarchy:
-        norm_ext = mime_to_norm[self.mime_type][2]
+        norm_ext = mime_to_norm[self.mime_type][1]
         if not norm_ext:
             norm_ext = 'none'
 
@@ -94,7 +94,6 @@ class File:
                 function_args = {'source_file_path': self.path,
                                 'tmp_file_path': tmp_file_path,
                                 'norm_file_path': norm_file_path,
-                                'keep_original': keep_original,
                                 'tmp_dir': tmp_dir,
                                 'mime_type': self.mime_type,
                                 'version': self.version,
@@ -113,24 +112,6 @@ class File:
                     normalized['original_file_copy'] = file_copy_args['norm_file_path']  # TODO: Fjern fil hvis konvertering lykkes når kjørt på nytt
                     normalized['result'] = 0  # Conversion failed
                     normalized['norm_file_path'] = None
-                elif ok == 'originals':
-                    original_files = target_dir + '/original_documents/'
-                    pathlib.Path(original_files).mkdir(parents=True, exist_ok=True)
-                    file_copy_args = {'source_file_path': self.path,
-                                    'norm_file_path': original_files + os.path.basename(self.path)
-                                    }
-                    file_copy(file_copy_args)
-                    normalized['original_file_copy'] = file_copy_args['norm_file_path']
-                    normalized['result'] = 1  # Converted successfully
-                elif keep_original:
-                    original_files = target_dir + '/original_documents/'
-                    pathlib.Path(original_files).mkdir(parents=True, exist_ok=True)
-                    file_copy_args = {'source_file_path': self.path,
-                                    'norm_file_path': original_files + os.path.basename(self.path)
-                                    }
-                    file_copy(file_copy_args)
-                    normalized['original_file_copy'] = file_copy_args['norm_file_path']
-                    normalized['result'] = 1  # Converted successfully
                 else:
                     normalized['result'] = 1  # Converted successfully
             else:
@@ -191,37 +172,37 @@ def check_for_files(filepath):
     return False
 
 
-# mime_type: (keep_original, function name, new file extension)
+# mime_type: (function name, new file extension)
 mime_to_norm = {
-    'application/msword': (False, 'docbuilder2x', 'pdf'),
-    'application/pdf': (False, 'pdf2pdfa', 'pdf'),
-    # 'application/rtf': (False, 'abi2x', 'pdf'),
-    'application/rtf': (True, 'docbuilder2x', 'pdf'),  # TODO: Finn beste test på om har blitt konvertert til pdf
-    'application/vnd.ms-excel': (True, 'docbuilder2x', 'pdf'),
+    'application/msword': ('docbuilder2x', 'pdf'),
+    'application/pdf': ('pdf2pdfa', 'pdf'),
+    # 'application/rtf': ('abi2x', 'pdf'),
+    'application/rtf': ('docbuilder2x', 'pdf'),  # TODO: Finn beste test på om har blitt konvertert til pdf
+    'application/vnd.ms-excel': ('docbuilder2x', 'pdf'),
     # 'application/vnd.ms-project': ('pdf'), # TODO: Har ikke ferdig kode for denne ennå
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': (True, 'docbuilder2x', 'pdf'),
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': (True, 'docbuilder2x', 'pdf'),
-    'application/vnd.openxmlformats-officedocument.presentationml.presentation': (True, 'docbuilder2x', 'pdf'),
-    'application/vnd.wordperfect': (False, 'docbuilder2x', 'pdf'),  # TODO: Mulig denne må endres til libreoffice
-    # 'application/xhtml+xml; charset=UTF-8': (False, 'wkhtmltopdf', 'pdf'),
-    'application/xhtml+xml': (False, 'wkhtmltopdf', 'pdf'),
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ('docbuilder2x', 'pdf'),
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ('docbuilder2x', 'pdf'),
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation': ('docbuilder2x', 'pdf'),
+    'application/vnd.wordperfect': ('docbuilder2x', 'pdf'),  # TODO: Mulig denne må endres til libreoffice
+    # 'application/xhtml+xml; charset=UTF-8': ('wkhtmltopdf', 'pdf'),
+    'application/xhtml+xml': ('wkhtmltopdf', 'pdf'),
     # 'application/xml': (False, 'file_copy', 'xml'),
-    'application/xml': (False, 'x2utf8', 'xml'),
-    'application/x-elf': (False, None, None),  # executable on lin
-    'application/x-msdownload': (False, None, None),  # executable on win
-    'application/x-ms-installer': (False, None, None),  # Installer on win
-    'application/x-tika-msoffice': (False, None, None),
-    'n/a': (False, None, None),
-    'application/zip': (False, 'zip_to_norm', 'zip'),
-    'image/gif': (False, 'image2norm', 'pdf'),
-    # 'image/jpeg': (False, 'image2norm', 'pdf'),
-    'image/jpeg': (False, 'file_copy', 'jpg'),
-    'image/png': (False, 'file_copy', 'png'),
-    'image/tiff': (False, 'image2norm', 'pdf'),
-    'text/html': (False, 'html2pdf', 'pdf'),  # TODO: Legg til undervarianter her (var opprinnelig 'startswith)
-    'text/plain': (False, 'x2utf8', 'txt'),
-    'multipart/related': (True, 'mhtml2pdf', 'pdf'),
-    'message/rfc822': (True, 'eml2pdf', 'pdf'),
+    'application/xml': ('x2utf8', 'xml'),
+    'application/x-elf': (None, None),  # executable on lin
+    'application/x-msdownload': (None, None),  # executable on win
+    'application/x-ms-installer': (None, None),  # Installer on win
+    'application/x-tika-msoffice': (None, None),
+    'n/a': (None, None),
+    'application/zip': ('zip_to_norm', 'zip'),
+    'image/gif': ('image2norm', 'pdf'),
+    # 'image/jpeg': ('image2norm', 'pdf'),
+    'image/jpeg': ('file_copy', 'jpg'),
+    'image/png': ('file_copy', 'png'),
+    'image/tiff': ('image2norm', 'pdf'),
+    'text/html': ('html2pdf', 'pdf'),  # TODO: Legg til undervarianter her (var opprinnelig 'startswith)
+    'text/plain': ('x2utf8', 'txt'),
+    'multipart/related': ('mhtml2pdf', 'pdf'),
+    'message/rfc822': ('eml2pdf', 'pdf'),
 }
 
 
@@ -523,7 +504,7 @@ def abi2x(args):
     return ok
 
 
-# def libre2x(source_file_path, tmp_file_path, norm_file_path, keep_original, tmp_dir, mime_type):
+# def libre2x(source_file_path, tmp_file_path, norm_file_path, tmp_dir, mime_type):
     # TODO: Endre så bruker collabora online (er installert på laptop). Se notater om curl kommando i joplin
     # command = ["libreoffice", "--convert-to", "pdf", "--outdir", str(filein.parent), str(filein)]
     # run_shell_command(command)
@@ -751,17 +732,9 @@ def convert_folder(base_source_dir: str, base_target_dir: str,
             row['norm_file_path'] = ''
             row['original_file_copy'] = ''
         else:
-            keep_original = mime_to_norm[mime_type][0]
-
-            if keep_original:
-                originals = True
-
-            if zip:
-                keep_original = False
-
             target_dir = os.path.dirname(source_file_path.replace(base_source_dir, base_target_dir))
             origfile = File(source_file_path)
-            normalized = origfile.convert(target_dir, None, keep_original, zip)
+            normalized = origfile.convert(target_dir, None, zip)
 
             if normalized['result'] == 0:
                 errors = True
