@@ -62,7 +62,7 @@ class File:
         with open(self.path, 'a') as txt_file:
             txt_file.write(msg + '\n')
 
-    def convert(self, target_dir, norm_file_path=None, zip=False):
+    def convert(self, target_dir, norm_file_path=None):
         source_file_name = os.path.basename(self.path)
         split_ext = os.path.splitext(source_file_name)
         base_file_name = split_ext[0]
@@ -97,7 +97,6 @@ class File:
                                 'tmp_dir': tmp_dir,
                                 'mime_type': self.mime_type,
                                 'version': self.version,
-                                'zip': zip,
                                 }
 
                 ok = converters[function](function_args)
