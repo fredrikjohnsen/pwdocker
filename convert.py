@@ -605,8 +605,7 @@ def convert_folder(source_dir: str, target_dir: str,
     # TODO: Viser mime direkte om er pdf/a eller må en sjekke mot ekstra felt i de to under? Forsjekk om Tika og siegfried?
 
     # TODO: Trengs denne sjekk om tsv her. Gjøres sjekk før kaller denne funskjonen og slik at unødvendig?
-    # if not os.path.isfile(tsv_source_path):
-    if True:
+    if not os.path.isfile(tsv_source_path):
         run_siegfried(source_dir, tmp_dir, tsv_source_path, zipped)
 
     # TODO: Legg inn test på at tsv-fil ikke er tom
@@ -697,33 +696,27 @@ def convert_folder(source_dir: str, target_dir: str,
             count_str = ('(' + str(count) + '/' + str(file_count) + '): ')
             print(count_str + '.../' + print_path + ' (' + mime_type + ')')
 
-        target_file_dir = os.path.dirname(source_file_path.replace(source_dir, target_dir))
-        origfile = File(source_file_path, mime_type, row['version'])
-        normalized = origfile.convert(target_file_dir, None)
+        if row['result'] not in ('Converted successfully', 'Manually converted'):
+            target_file_dir = os.path.dirname(source_file_path.replace(source_dir, target_dir))
+            origfile = File(source_file_path, mime_type, row['version'])
+            normalized = origfile.convert(target_file_dir, None)
 
-        result = normalized['msg']
+            result = normalized['msg']
 
-        if result == 'Manually converted':
-            if row['result'] not in ('Converted successfully', 'Manually converted'):
+            if result in ('Conversion failed', 'Conversion not supported'):
+                errors = True
+                result_file.append_txt(result + ': ' + source_file_path + ' (' + mime_type + ')')
+
+            if result in ('Converted successfully', 'Manually converted'):
                 converted_now = True
-            else:
-                result = row['result']
 
-        if result in ('Conversion failed', 'Conversion not supported'):
-            errors = True
-            result_file.append_txt(result + ': ' + source_file_path + ' (' + mime_type + ')')
+            if normalized['norm_file_path']:
+                row['norm_file_path'] = relpath(normalized['norm_file_path'], target_dir)
 
-        if result == 'Converted successfully':
-            converted_now = True
+            row['result'] = result
 
-        if normalized['norm_file_path']:
-            row['norm_file_path'] = relpath(normalized['norm_file_path'], target_dir)
-
-        row['result'] = result
         row_values = list(row.values())
 
-        # TODO: Fikset med å legge inn escapechar='\\' i append_tsv_row -> vil det skal problemer senere?
-        # row_values = [r.replace('\n', ' ') for r in row_values if r is not None]
         tsv_file.append_tsv_row(row_values)
 
     if len(os.listdir(tmp_dir)) == 0:
