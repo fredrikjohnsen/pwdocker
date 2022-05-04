@@ -436,12 +436,12 @@ class Converter:
         return ok
 
 
-def run_siegfried(base_source_dir, tmp_dir, tsv_path, zipped=False):
+def run_siegfried(source_dir, tmp_dir, tsv_path, zipped=False):
     if not zipped:
         print('\nIdentifying file types...')
 
     csv_path = os.path.join(tmp_dir, 'tmp.csv')
-    os.chdir(base_source_dir)
+    os.chdir(source_dir)
     subprocess.run(
         'sf -z -csv * > ' + csv_path,
         stderr=subprocess.DEVNULL,
@@ -589,39 +589,32 @@ def add_fields(fields, table):
     return table
 
 
-def convert_folder(base_source_dir: str, base_target_dir: str,
-                   tsv_source_path: str=None, tsv_target_path: str=None,
-                   sample: bool=False, zipped: bool=False):
+def convert_folder(source_dir: str, target_dir: str,
+                   zipped: bool=False):
     # WAIT: Legg inn i gui at kan velge om skal ocr-behandles
-    txt_target_path = base_target_dir + '_result.txt'
-    tmp_dir = os.path.join(base_target_dir, 'pw_tmp')
+    txt_target_path = target_dir + '_result.txt'
+    tsv_source_path = target_dir + '.tsv'
+    tsv_target_path = target_dir + '_processed.tsv'
+    tmp_dir = os.path.join(target_dir, 'pw_tmp')
     if not os.path.isdir(tmp_dir):
         os.mkdir(tmp_dir)
     converted_now = False
     errors = False
     originals = False
 
-    if tsv_source_path is None:
-        tsv_source_path = base_target_dir + '.tsv'
-    else:
-        txt_target_path = os.path.splitext(tsv_source_path)[1][1:] + '_result.txt'
-
     result_file = File(txt_target_path)
-
-    if tsv_target_path is None:
-        tsv_target_path = base_target_dir + '_processed.tsv'
 
     if os.path.exists(tsv_target_path):
         os.remove(tsv_target_path)
 
-    Path(base_target_dir).mkdir(parents=True, exist_ok=True)
+    Path(target_dir).mkdir(parents=True, exist_ok=True)
 
     # TODO: Viser mime direkte om er pdf/a eller må en sjekke mot ekstra felt i de to under? Forsjekk om Tika og siegfried?
 
     # TODO: Trengs denne sjekk om tsv her. Gjøres sjekk før kaller denne funskjonen og slik at unødvendig?
     # if not os.path.isfile(tsv_source_path):
     if True:
-        run_siegfried(base_source_dir, tmp_dir, tsv_source_path, zipped)
+        run_siegfried(source_dir, tmp_dir, tsv_source_path, zipped)
 
     # TODO: Legg inn test på at tsv-fil ikke er tom
 
@@ -642,7 +635,7 @@ def convert_folder(base_source_dir: str, base_target_dir: str,
         thumbs_paths = etl.values(thumbs_table, 'source_file_path')
         for path in thumbs_paths:
             if '/' not in path:
-                path = os.path.join(base_source_dir, path)
+                path = os.path.join(source_dir, path)
             if os.path.isfile(path):
                 os.remove(path)
 
@@ -653,7 +646,7 @@ def convert_folder(base_source_dir: str, base_target_dir: str,
     # WAIT: Ikke fullgod sjekk på embedded dokument i linje over da # faktisk kan forekomme i filnavn
     row_count = etl.nrows(table)
 
-    file_count = sum([len(files) for r, d, files in os.walk(base_source_dir)])
+    file_count = sum([len(files) for r, d, files in os.walk(source_dir)])
 
     if row_count == 0:
         print('No files to convert. Exiting.')
@@ -695,7 +688,7 @@ def convert_folder(base_source_dir: str, base_target_dir: str,
         count += 1
         count_str = ('(' + str(count) + '/' + str(file_count) + '): ')
         source_file_path = row['source_file_path']
-        source_file_path = os.path.join(base_source_dir, source_file_path)
+        source_file_path = os.path.join(source_dir, source_file_path)
 
         mime_type = row['mime_type']
         # TODO: Virker ikke når Tika brukt -> finn hvorfor
@@ -716,7 +709,7 @@ def convert_folder(base_source_dir: str, base_target_dir: str,
                 mime_type = 'application/xml'
 
         if not zipped:
-            print_path = os.path.relpath(source_file_path, Path(base_source_dir).parents[1])
+            print_path = os.path.relpath(source_file_path, Path(source_dir).parents[1])
             print(count_str + '.../' + print_path + ' (' + mime_type + ')')
 
         if mime_type not in mime_to_norm.keys():
@@ -729,9 +722,9 @@ def convert_folder(base_source_dir: str, base_target_dir: str,
             row['norm_file_path'] = ''
             row['original_file_copy'] = ''
         else:
-            target_dir = os.path.dirname(source_file_path.replace(base_source_dir, base_target_dir))
+            target_file_dir = os.path.dirname(source_file_path.replace(source_dir, target_dir))
             origfile = File(source_file_path)
-            normalized = origfile.convert(target_dir, None)
+            normalized = origfile.convert(target_file_dir, None)
 
             if normalized['result'] == 0:
                 errors = True
@@ -759,11 +752,11 @@ def convert_folder(base_source_dir: str, base_target_dir: str,
                 result_file.append_txt(result + ': ' + source_file_path + ' (' + mime_type + ')')
 
             if normalized['norm_file_path']:
-                row['norm_file_path'] = relpath(normalized['norm_file_path'], base_target_dir)
+                row['norm_file_path'] = relpath(normalized['norm_file_path'], target_dir)
 
             file_copy_path = normalized['original_file_copy']
             if file_copy_path:
-                file_copy_path = relpath(file_copy_path, base_target_dir)
+                file_copy_path = relpath(file_copy_path, target_dir)
             row['original_file_copy'] = file_copy_path
 
         row['result'] = result
@@ -773,28 +766,19 @@ def convert_folder(base_source_dir: str, base_target_dir: str,
         # row_values = [r.replace('\n', ' ') for r in row_values if r is not None]
         tsv_file.append_tsv_row(row_values)
 
-        if sample and count > 9:
-            break
-
     if len(os.listdir(tmp_dir)) == 0:
         os.rmdir(tmp_dir)
 
-    if not sample:
-        shutil.move(tsv_target_path, tsv_source_path)
+    shutil.move(tsv_target_path, tsv_source_path)
     # TODO: Legg inn valg om at hvis merge = true kopieres alle filer til mappe på øverste nivå og så slettes tomme undermapper
 
     msg = None
-    if sample:
-        msg = 'Sample files converted.'
+    if converted_now:
+        msg = 'All files converted succcessfully.'
         if errors:
-            msg = "Not all sample files were converted. See '" + txt_target_path + "' for details."
+            msg = "Not all files were converted. See '" + txt_target_path + "' for details."
     else:
-        if converted_now:
-            msg = 'All files converted succcessfully.'
-            if errors:
-                msg = "Not all files were converted. See '" + txt_target_path + "' for details."
-        else:
-            msg = 'All files converted previously.'
+        msg = 'All files converted previously.'
 
     return msg, file_count, errors, originals  # TODO: Fiks så bruker denne heller for oppsummering til slutt når flere mapper konvertert
 
