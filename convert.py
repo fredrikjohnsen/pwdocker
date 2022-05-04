@@ -84,7 +84,7 @@ class File:
                 norm_file_path = norm_file_path + '.' + norm_ext
 
         # TODO: Endre så returneres file paths som starter med prosjektmappe? Alltid, eller bare når genereres arkivpakke?
-        normalized = {'result': None, 'norm_file_path': norm_file_path, 'error': None, 'original_file_copy': None}
+        normalized = {'result': None, 'norm_file_path': norm_file_path, 'error': None}
 
         if not check_for_files(norm_file_path + '*'):
             if self.mime_type == 'n/a':
@@ -105,10 +105,6 @@ class File:
                 ok = converter.run(function_args)
 
                 if not ok:
-                    error_files = target_dir + '/error_documents/'
-                    pathlib.Path(error_files).mkdir(parents=True, exist_ok=True)
-                    shutil.copyfile(self.path, error_files + os.path.basename(self.path))
-                    normalized['original_file_copy'] = error_files + os.path.basename(self.path)  # TODO: Fjern fil hvis konvertering lykkes når kjørt på nytt
                     normalized['msg'] = 'Conversion failed'
                     normalized['norm_file_path'] = None
                 else:
@@ -658,7 +654,7 @@ def convert_folder(source_dir: str, target_dir: str,
 
     # WAIT: Legg inn sjekk på filstørrelse før og etter konvertering
 
-    append_fields = ('version', 'norm_file_path', 'result', 'original_file_copy', 'id')
+    append_fields = ('version', 'norm_file_path', 'result', 'id')
     table = add_fields(append_fields, table)
 
     # Remove Siegfried generated columns
@@ -722,11 +718,6 @@ def convert_folder(source_dir: str, target_dir: str,
 
         if normalized['norm_file_path']:
             row['norm_file_path'] = relpath(normalized['norm_file_path'], target_dir)
-
-        file_copy_path = normalized['original_file_copy']
-        if file_copy_path:
-            file_copy_path = relpath(file_copy_path, target_dir)
-        row['original_file_copy'] = file_copy_path
 
         row['result'] = result
         row_values = list(row.values())
