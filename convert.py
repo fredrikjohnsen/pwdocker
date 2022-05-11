@@ -28,7 +28,7 @@ import petl as etl
 import typer
 import cchardet as chardet
 if os.name == "posix":
-    # import ocrmypdf
+    import ocrmypdf
     from pdfy import Pdfy
 
 
@@ -92,7 +92,6 @@ class Converter:
 
     def __init__(self, target_dir):
         self.target_dir = target_dir
-        self.tmp_dir = os.path.join(target_dir, 'pw_tmp')
 
     def run(self, src_file: File):
         """Run a file conversion"""
@@ -281,7 +280,7 @@ class Converter:
     def docbuilder2x(self, src_file: File, tmp_file: File):
         """Convert office files to pdf"""
         norm_file_path = ""
-        docbuilder_file = os.path.join(self.tmp_dir, 'x2x.docbuilder')
+        docbuilder_file = os.path.join(self.target_dir, 'x2x.docbuilder')
 
         docbuilder = None
         # WAIT: Tremger ikke if/else under hvis ikke skal ha spesifikk kode pr format
@@ -310,6 +309,9 @@ class Converter:
         if os.path.exists(tmp_file.path):
             norm_file_path = self.pdf2pdfa(tmp_file)
 
+        if os.path.isfile(docbuilder_file):
+            os.remove(docbuilder_file)
+
         return norm_file_path
 
 
@@ -329,7 +331,8 @@ class Converter:
     def abi2x(self, src_file: File, tmp_file: File):
         """Convert rtf to pdf using Abiword"""
         norm_file_path = ""
-        command = ['abiword', '--to=pdf', '--import-extension=rtf', '-o', tmp_file.path, src_file.path]
+        command = ['abiword', '--to=pdf', '--import-extension=rtf', '-o',
+                   tmp_file.path, src_file.path]
         run_shell_command(command)
 
         # TODO: Må ha bedre sjekk av generert pdf. Har laget tomme pdf-filer noen ganger
@@ -357,7 +360,8 @@ class Converter:
 
         ocrmypdf.configure_logging(-1)
         # Set tesseract_timeout=0 to only do PDF/A-conversion, and not ocr
-        result = ocrmypdf.ocr(src_file.path, norm_file_path, tesseract_timeout=0, progress_bar=False, skip_text=True)
+        result = ocrmypdf.ocr(src_file.path, norm_file_path,
+                              tesseract_timeout=0, progress_bar=False, skip_text=True)
         if str(result) != 'ExitCode.ok':
             norm_file_path = ""
 
@@ -512,8 +516,6 @@ def add_fields(table, *args):
 def convert_folder(source_dir: str, target_dir: str, zipped: bool=False):
     """Convert all files in folder"""
     tsv_source_path = target_dir + '.tsv'
-    tmp_dir = os.path.join(target_dir, 'pw_tmp')
-    Path(tmp_dir).mkdir(parents=True, exist_ok=True)
     converted_now = False
     errors = False
 
@@ -542,8 +544,6 @@ def convert_folder(source_dir: str, target_dir: str, zipped: bool=False):
                        strict=False)
 
     table = etl.select(table, lambda rec: rec.source_file_path != '')
-    table = etl.select(table, lambda rec: '#' not in rec.source_file_path)
-    # WAIT: Ikke fullgod sjekk på embedded dokument i linje over da # faktisk kan forekomme i filnavn
     table.row_count = etl.nrows(table)
 
     file_count = sum([len(files) for r, d, files in os.walk(source_dir)])
@@ -551,12 +551,12 @@ def convert_folder(source_dir: str, target_dir: str, zipped: bool=False):
     if table.row_count == 0:
         print('No files to convert. Exiting.')
         return 'Error', file_count
-    elif file_count != table.row_count:
+    if file_count != table.row_count:
         print('Row count: ' + str(table.row_count))
         print('File count: ' + str(file_count))
         print("Files listed in '" + tsv_source_path + "' doesn't match files on disk. Exiting.")
         return 'Error', file_count
-    elif not zipped:
+    if not zipped:
         print('Converting files..')
 
     table = add_fields(table, 'version', 'norm_file_path', 'result', 'id')
@@ -567,13 +567,18 @@ def convert_folder(source_dir: str, target_dir: str, zipped: bool=False):
     tsv_file.append_tsv_row(etl.header(table))
 
     # Treat csv (detected from extension only) as plain text:
-    table = etl.convert(table, 'mime_type', lambda v, row: 'text/plain' if row.id == 'x-fmt/18' else v, pass_row=True)
+    table = etl.convert(table, 'mime_type',
+                        lambda v, row: 'text/plain' if row.id == 'x-fmt/18' else v,
+                        pass_row=True)
 
     # Update for missing mime types where id is known:
-    table = etl.convert(table, 'mime_type', lambda v, row: 'application/xml' if row.id == 'fmt/979' else v, pass_row=True)
+    table = etl.convert(table, 'mime_type',
+                        lambda v, row: 'application/xml' if row.id == 'fmt/979' else v,
+                        pass_row=True)
 
     table.row_count = 0
     for row in etl.dicts(table):
+        # Remove Thumbs.db files
         if os.path.basename(row['source_file_path']) == 'Thumbs.db':
             os.remove(row['source_file_path'])
             file_count -= 1
@@ -584,6 +589,7 @@ def convert_folder(source_dir: str, target_dir: str, zipped: bool=False):
         row['mime_type'] = row['mime_type'].split(';')[0]
 
         if not row['mime_type']:
+            # Siegfried sets mime type only to xml files with xml declaration
             if os.path.splitext(row['source_file_path'])[1].lower() == '.xml':
                 row['mime_type'] = 'application/xml'
 
@@ -592,14 +598,15 @@ def convert_folder(source_dir: str, target_dir: str, zipped: bool=False):
                   '.../' + row['source_file_path'] + ' (' + row['mime_type'] + ')')
 
         if row['result'] not in ('Converted successfully', 'Manually converted'):
-            origfile = File(row['source_file_path'], row['mime_type'], row['version'])
-            normalized = origfile.convert(target_dir, None)
+            source_file = File(row['source_file_path'], row['mime_type'], row['version'])
+            normalized = source_file.convert(target_dir)
 
             row['result'] = normalized['msg']
 
             if row['result'] in ('Conversion failed', 'Conversion not supported'):
                 errors = True
-                result_file.append_txt(row['result'] + ': ' + row['source_file_path'] + ' (' + row['mime_type'] + ')')
+                result_file.append_txt(row['result'] + ': ' + row['source_file_path'] +
+                                       ' (' + row['mime_type'] + ')')
 
             if row['result'] in ('Converted successfully', 'Manually converted'):
                 converted_now = True
@@ -609,11 +616,7 @@ def convert_folder(source_dir: str, target_dir: str, zipped: bool=False):
 
         tsv_file.append_tsv_row(list(row.values()))
 
-    if len(os.listdir(tmp_dir)) == 0:
-        os.rmdir(tmp_dir)
-
-    # shutil.move(tsv_file.path, tsv_source_path)
-    # TODO: Legg inn valg om at hvis merge = true kopieres alle filer til mappe på øverste nivå og så slettes tomme undermapper
+    shutil.move(tsv_file.path, tsv_source_path)
 
     msg = None
     if converted_now:
@@ -625,7 +628,7 @@ def convert_folder(source_dir: str, target_dir: str, zipped: bool=False):
 
     print("\n" + msg)
 
-    return msg, file_count, errors # TODO: Fiks så bruker denne heller for oppsummering til slutt når flere mapper konvertert
+    return msg, file_count, errors
 
 if __name__ == "__main__":
     typer.run(convert_folder)
