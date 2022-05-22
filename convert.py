@@ -345,7 +345,7 @@ class Converter:
     def pdf2pdfa(self, src_file: File):
         """Convert pdf to pdf/a"""
 
-        if src_file.path.startswith(self.target_path):
+        if src_file.path.startswith(self.target_dir):
             norm_file_path = src_file.relative_root + '.pdf'
         else:
             norm_file_path = self.target_dir + '/' + src_file.relative_root + src_file.ext
@@ -353,7 +353,7 @@ class Converter:
         # WAIT: Legg inn ekstra sjekk her om hva som skal gjøres hvis ocr = True
         if src_file.version in ('1a', '1b', '2a', '2b'):
             shutil.copyfile(src_file.path, norm_file_path)
-            if os.path.exists(norm_file_path):
+            if not os.path.exists(norm_file_path):
                 norm_file_path = ""
 
             return norm_file_path
