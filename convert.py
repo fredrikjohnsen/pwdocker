@@ -360,8 +360,13 @@ class Converter:
 
         ocrmypdf.configure_logging(-1)
         # Set tesseract_timeout=0 to only do PDF/A-conversion, and not ocr
-        result = ocrmypdf.ocr(src_file.path, norm_file_path,
-                              tesseract_timeout=0, progress_bar=False, skip_text=True)
+        try:
+            result = ocrmypdf.ocr(src_file.path, norm_file_path,
+                                tesseract_timeout=0, progress_bar=False, skip_text=True)
+        except:
+            print('kunne ikke konvertere ' + src_file.path)
+            result = 'error'
+            norm_file_path = ""
         if str(result) != 'ExitCode.ok':
             norm_file_path = ""
 
