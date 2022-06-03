@@ -350,11 +350,15 @@ class Converter:
         else:
             norm_file_path = self.target_dir + '/' + src_file.relative_root + src_file.ext
 
+        norm_file = File(norm_file_path)
+
         # WAIT: Legg inn ekstra sjekk her om hva som skal gjøres hvis ocr = True
         if src_file.version in ('1a', '1b', '2a', '2b'):
             shutil.copyfile(src_file.path, norm_file_path)
             if not os.path.exists(norm_file_path):
                 norm_file_path = ""
+            else:
+                self.pdf2txt(norm_file)
 
             return norm_file_path
 
@@ -363,6 +367,7 @@ class Converter:
         try:
             result = ocrmypdf.ocr(src_file.path, norm_file_path,
                                 tesseract_timeout=180, progress_bar=False, skip_text=True)
+            self.pdf2txt(norm_file)
         except:
             print('kunne ikke konvertere ' + src_file.path)
             result = 'error'
@@ -372,13 +377,29 @@ class Converter:
 
         return norm_file_path
 
+    def pdf2txt(self, norm_file):
+
+        output_file = norm_file.relative_root + '.txt'
+
+        command = ['gs', '-sDEVICE=txtwrite', '-q', '-dNOPAUSE', '-dBATCH',
+                   '-sOutputFile=' + output_file, norm_file.path]
+        try:
+            run_shell_command(command)
+        except:
+            return False
+
+        return True
+
 
     def html2pdf(self, src_file: File, tmp_file: File):
         """Convert html to pdf"""
         norm_file_path = ""
         try:
-            p = Pdfy()
-            p.html_to_pdf(src_file.path, tmp_file.path)
+            # p = Pdfy()
+            # p.html_to_pdf(src_file.path, tmp_file.path)
+            tmp_file.path = tmp_file.path + '.pdf'
+            command = ['pandoc', src_file.path, '-o', tmp_file.path]
+            run_shell_command(command)
         except Exception as e:
             print(e)
 
