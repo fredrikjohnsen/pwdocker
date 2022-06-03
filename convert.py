@@ -362,7 +362,7 @@ class Converter:
         # Set tesseract_timeout=0 to only do PDF/A-conversion, and not ocr
         try:
             result = ocrmypdf.ocr(src_file.path, norm_file_path,
-                                tesseract_timeout=0, progress_bar=False, skip_text=True)
+                                tesseract_timeout=180, progress_bar=False, skip_text=True)
         except:
             print('kunne ikke konvertere ' + src_file.path)
             result = 'error'
