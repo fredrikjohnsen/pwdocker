@@ -76,8 +76,23 @@ def convert_folder(source_dir: str,
     if not os.path.isfile(tsv_source_path):
         run_siegfried(source_dir, target_dir, tsv_source_path, zipped)
 
-    row_count = write_sf_file_to_storage(tsv_source_path, source_dir, file_storage)
-    table = file_storage.get_unconverted_rows(source_dir)
+    table = etl.fromtsv(tsv_source_path)
+    table = etl.rename(table,
+                       {
+                           'filename': 'source_file_path',
+                           'tika_batch_fs_relative_path': 'source_file_path',
+                           'filesize': 'file_size',
+                           'mime': 'mime_type',
+                           'Content_Type': 'mime_type',
+                           'Version': 'version'
+                       },
+                       strict=False)
+
+    table = etl.select(table, lambda rec: rec.source_file_path != '')
+    # Remove listing of files in zip
+    table = etl.select(table, lambda rec: '#' not in rec.source_file_path)
+    # TODO: Ikke fullgod sjekk på embedded dokument i linje over da # faktisk kan forekomme i filnavn
+    table.row_count = etl.nrows(table)
 
     file_count = sum([len(files) for r, d, files in os.walk(source_dir)])
 
