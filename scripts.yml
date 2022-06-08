@@ -1,0 +1,56 @@
+# This document describes scripts that can be used for conversion.
+# Those ending in .py are scripts distributed with PWConvert.
+text2utf8.py:
+  command: text2utf8.py <source> <target>
+  comment: |
+    Converts text files to utf8 with linux file endings.
+office2pdf.py:
+  command: office2pdf.py <source> <target>
+  comment: |
+    Converts office files to pdf
+abiword:
+  command: abiword --to=pdf --import-extension=rtf <source> -o <target>
+  comment: |
+    Convert rtf to pdf using Abiword
+wkhtmltopdf:
+  command: wkhtmltopdf -O Landscape <source> <target>
+  comment: |
+    Convert html to pdf using QT Webkit rendering engine.
+mhtml2pdf.py:
+  command: mhtml2pdf.py <source> <target>
+  comment: |
+    Convert archived web content to pdf.
+eml_to_pdf:
+  command: eml_to_pdf <source> <target>
+  comment: |
+    Convert email to pdf
+convert:
+  command: convert <source> <target>
+  comment: |
+    Converts between different image formats
+    using ImageMagick. File extension of output
+    file is decided by extension.
+pdf2pdfa.py:
+  command: pdf2pdfa.py <source> <target>
+  comment: |
+    Konverterer pdf til pdf/a med ocrmypdf.
+    OCR-leser samtidig dokumentet, og produserer en
+    tekstfil med samme navn som konvertert fil, som
+    lagres sammen med pdf-filen. Denne kan brukes i
+    fulltekstsøk.
+pdf2text:
+  command: pdf2text.py <source>
+  comment: |
+    Bruker Ghostscript til å trekke ut tekst fra pdf og lagre som tekstfil
+html2pdf.py:
+  command: html2pdf.py <source> <target>
+  comment: |
+    Converts html to pdf, using Chrome printing functionality.
+unoconv2x.py:
+  command: unoconv2x.py <source> <target> <target_ext> <mime_type>
+  comment: Er denne aktuell lenger? # todo
+pandoc:
+  command: pandoc <source> -s -o <target>
+  comment: |
+    Converts between many document formats.
+    File extension on in- and out-file decides output file format.

@@ -1,0 +1,17 @@
+Acrobat PDF/A - Portable Document Format:
+  command: cp <source> <target> && pdf2text.py <target>
+Acrobat PDF 1.7 - Portable Document Format:
+  command: pdf2pdfa.py <source> <target> && pdf2text.py <target>
+Extensible Markup Language:
+  command: text2utf8.py <source> <target>
+  source-ext:
+    sdo:
+      command: convert_sdo.php <source> <target>
+      target-ext: pdf
+Hypertext Markup Language:
+  command:  html-to-pdf.py <source> <target> || pandoc <source> -s -o <target>  && pdf2text.py <target>
+  target-ext: pdf
+Markdown:
+  command: text2utf8.py <source> <target>
+Plain Text File:
+  command: text2utf8.py <source> <target>

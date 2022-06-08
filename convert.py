@@ -26,44 +26,34 @@ from os.path import relpath
 from pathlib import Path
 import petl as etl
 import typer
-import cchardet as chardet
-if os.name == "posix":
-    import ocrmypdf
-    from pdfy import Pdfy
+from ruamel.yaml import YAML
 
+
+# Load converters
+yaml = YAML()
+with open("converters.yml", "r") as yamlfile:
+    converters = yaml.load(yamlfile)
+
+pwconv_path = pathlib.Path(__file__).parent.resolve()
 
 class File:
-    """Contains methods for converting and adding text to files"""
+    """Contains methods for converting files"""
 
-    def __init__(self, path, mime_type='text/plain', version=None):
-        self.path = path
-        self.mime_type = mime_type
-        self.version = version
-        split_ext = os.path.splitext(path)
+    def __init__(self, row):
+        self.path = row['source_file_path']
+        self.mime_type = row['mime_type']
+        self.format = row['format']
+        self.version = row['version']
+        self.file_size = row['file_size']
+        self.id = row['id']
+        split_ext = os.path.splitext(self.path)
         # relative path without extension
         self.relative_root = split_ext[0]
-        self.ext = split_ext[1]
+        self.ext = split_ext[1][1:]
 
-    def append_tsv_row(self, row):
-        """Append row to tsv file"""
-        with open(self.path, 'a') as tsv_file:
-            writer = csv.writer(
-                tsv_file,
-                delimiter='\t',
-                quoting=csv.QUOTE_NONE,
-                quotechar='',
-                lineterminator='\n',
-                escapechar='')
-            writer.writerow(row)
-
-    def append_txt(self, msg):
-        """Append text to file"""
-        with open(self.path, 'a') as txt_file:
-            txt_file.write(msg + '\n')
-
-    def convert(self, target_dir):
+    def convert(self, source_dir: str, target_dir: str):
         """Convert file to archive format"""
-        normalized = {'result': None, 'norm_file_path': None, 'error': None}
+        normalized = {'result': None, 'norm_file_path': None, 'error': None, 'msg': None}
 
         # TODO: Finn ut beste måten å håndtere manuelt konverterte filer
         # if not check_for_files(norm_file_path + '*'):
@@ -71,13 +61,37 @@ class File:
             if self.mime_type == 'n/a':
                 normalized['msg'] = 'Not a document'
                 normalized['norm_file_path'] = None
+            elif self.mime_type == 'application/zip':
+                result = self.zip_to_norm(source_dir, target_dir)
             else:
+                source_file_path = os.path.join(source_dir, self.path)
+                norm_file_path = os.path.join(target_dir, self.path)
 
-                converter = Converter(target_dir)
-                norm_file_path, msg = converter.run(self)
+                if self.format not in converters:
+                    shutil.copyfile(source_file_path, norm_file_path)
+                    normalized['msg'] = 'Conversion failed'
+                    normalized['norm_file_path'] = None
+                    return normalized
 
-                if not norm_file_path:
-                    normalized['msg'] = msg or 'Conversion failed'
+                conv = converters[self.format]
+
+                target_ext = self.ext if not 'target-ext' in conv else conv['target-ext']
+
+                if ('source-ext' in conv and self.ext in conv['source-ext']):
+                    cmd = conv['source-ext'][self.ext]['command']
+                    if 'target-ext' in conv['source-ext'][self.ext]:
+                        target_ext = conv['source-ext'][self.ext]['target-ext']
+                else:
+                    cmd = conv['command']
+                if (self.ext != target_ext):
+                    norm_file_path = os.path.join(target_dir, self.path + '.' + target_ext)
+                cmd = cmd.replace('<source>', '"' + source_file_path + '"')
+                cmd = cmd.replace('<target>', '"' + norm_file_path + '"')
+                bin_path = os.path.join(pwconv_path, 'bin')
+                run_shell_command(cmd, cwd=bin_path, shell=True)
+
+                if not os.path.exists(norm_file_path):
+                    normalized['msg'] = 'Conversion failed'
                     normalized['norm_file_path'] = None
                 else:
                     normalized['msg'] = 'Converted successfully'
@@ -87,130 +101,7 @@ class File:
 
         return normalized
 
-class Converter:
-    """Contains methods for converting from/to different filetypes"""
-
-    def __init__(self, target_dir):
-        self.target_dir = target_dir
-
-    def run(self, src_file: File):
-        """Run a file conversion"""
-        result = False
-        msg = None
-        tmp_file_path = self.target_dir + '/' + src_file.relative_root + src_file.ext + '.tmp'
-        tmp_file = File(tmp_file_path, 'application/pdf')
-        pathlib.Path(os.path.dirname(tmp_file_path)).mkdir(parents=True, exist_ok=True)
-
-        if src_file.mime_type in ('text/plain', 'application/xml'):
-            result = self.x2utf8(src_file)
-        elif src_file.mime_type == 'message/rfc822':
-            result = self.eml2pdf(src_file, tmp_file)
-        elif src_file.mime_type == 'multipart/related':
-            result = self.mhtml2pdf(src_file, tmp_file)
-        elif src_file.mime_type == 'application/zip':
-            result = self.zip_to_norm(src_file)
-        elif src_file.mime_type in ('image/gif', 'image/tiff'):
-            result = self.image2norm(src_file, tmp_file)
-        elif src_file.mime_type in (
-            'application/msword', 'application/rtf', 'application/vnd.ms-excel',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-            'application/vnd.wordperfect'
-        ):
-            result = self.docbuilder2x(src_file, tmp_file)
-        elif src_file.mime_type == 'application/xhtml+xml':
-            result = self.wkhtml2pdf(src_file, tmp_file)
-        elif src_file.mime_type == 'application/pdf':
-            result = self.pdf2pdfa(src_file)
-        elif src_file.mime_type == 'text/html':
-            result = self.html2pdf(src_file, tmp_file)
-        else:
-            norm_file_path = self.target_dir + '/' + src_file.relative_root + src_file.ext
-            shutil.copyfile(src_file.path, norm_file_path)
-            msg = "Conversion not supported"
-
-        if os.path.isfile(tmp_file.path):
-            os.remove(tmp_file.path)
-
-        return result, msg
-
-    def x2utf8(self, src_file: File):
-        """Convert text files to utf8 with Linux file endings"""
-
-        # TODO: Test å bruke denne heller enn/i tillegg til replace under:
-        #       https://ftfy.readthedocs.io/en/latest/
-
-        norm_file_path = self.target_dir + '/' + src_file.relative_root + src_file.ext
-
-        repls = (
-            ('‘', 'æ'),
-            ('›', 'ø'),
-            ('†', 'å'),
-            ('&#248;', 'ø'),
-            ('&#229;', 'å'),
-            ('&#230;', 'æ'),
-            ('&#197;', 'Å'),
-            ('&#216;', 'Ø'),
-            ('&#198;', 'Æ'),
-            ('=C2=A0', ' '),
-            ('=C3=A6', 'æ'),
-            ('=C3=B8', 'ø'),
-            ('=C3=A5', 'å'),
-        )
-
-        with open(norm_file_path, "wb") as file:
-            with open(src_file.path, 'rb') as file_r:
-                content = file_r.read()
-                if content is None:
-                    return ""
-
-                char_enc = chardet.detect(content)['encoding']
-
-                try:
-                    data = content.decode(char_enc)
-                except Exception:
-                    return ""
-
-                for k, v in repls:
-                    data = re.sub(k, v, data, flags=re.MULTILINE)
-            file.write(data.encode('utf8'))
-
-            if os.path.exists(norm_file_path):
-                return norm_file_path
-
-        return ""
-
-
-    def eml2pdf(self, src_file: File, tmp_file):
-        """Convert email to pdf"""
-        norm_file_path = ""
-        command = ['eml_to_pdf', src_file.path, tmp_file.path]
-        run_shell_command(command)
-
-        if os.path.exists(tmp_file.path):
-            norm_file_path = self.pdf2pdfa(tmp_file)
-
-        return norm_file_path
-
-
-    def mhtml2pdf(self, src_file: File, tmp_file: File):
-        """Convert archived web content to pdf"""
-        norm_file_path = ""
-        java_path = os.environ['pwcode_java_path']  # Get Java home path
-        converter_jar = os.path.expanduser("~") + '/bin/emailconverter/emailconverter.jar'
-
-        command = [java_path, '-jar', converter_jar, '-e', src_file.path, '-o', tmp_file.path]
-        result = run_shell_command(command)
-        # print(result)
-
-        if os.path.exists(tmp_file.path):
-            norm_file_path = self.pdf2pdfa(tmp_file)
-
-        return norm_file_path
-
-
-    def zip_to_norm(self, src_file: File):
+    def zip_to_norm(self, source_dir, target_dir):
         """Exctract all files, convert them, and zip them again"""
 
         # TODO: Blir sjekk på om normalisert fil finnes nå riktig
@@ -237,11 +128,13 @@ class Converter:
             for path in paths:
                 delete_file_or_dir(path)
 
-        norm_zip_path = src_file.relative_root + '_zip'
+        source_file_path = os.path.join(source_dir, self.path)
+        norm_base_path = os.path.join(target_dir, self.relative_root)
+        norm_zip_path = norm_base_path + '_zip'
         norm_dir_path = norm_zip_path + '_norm'
         paths = [norm_dir_path + '.tsv', norm_dir_path, norm_zip_path]
 
-        extract_nested_zip(src_file.path, norm_zip_path)
+        extract_nested_zip(self.path, norm_zip_path)
 
         msg, file_count, errors = convert_folder(norm_zip_path, norm_dir_path, zipped=True)
 
@@ -252,7 +145,7 @@ class Converter:
                 func = zip_dir
 
             try:
-                func(norm_dir_path, src_file.relative_root)
+                func(norm_dir_path, norm_base_path)
             except Exception as e:
                 print(e)
                 return False
@@ -263,179 +156,6 @@ class Converter:
 
         rm_tmp(paths)
         return False
-
-
-    def image2norm(self, src_file: File, tmp_file: File):
-        """Convert images to pdf"""
-        norm_file_path = ""
-        command = ['convert', src_file.path, tmp_file.path]
-        run_shell_command(command)
-
-        if os.path.exists(tmp_file.path):
-            norm_file_path = self.pdf2pdfa(tmp_file)
-
-        return norm_file_path
-
-
-    def docbuilder2x(self, src_file: File, tmp_file: File):
-        """Convert office files to pdf"""
-        norm_file_path = ""
-        docbuilder_file = os.path.join(self.target_dir, 'x2x.docbuilder')
-
-        docbuilder = None
-        # WAIT: Tremger ikke if/else under hvis ikke skal ha spesifikk kode pr format
-        if src_file.mime_type in (
-                'application/vnd.ms-excel',
-                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        ):
-            docbuilder = [
-                'builder.OpenFile("' + src_file.path + '", "")',
-                'builder.SaveFile("pdf", "' + tmp_file.path + '")',
-                'builder.CloseFile();',
-            ]
-        else:
-            docbuilder = [
-                'builder.OpenFile("' + src_file.path + '", "")',
-                'builder.SaveFile("pdf", "' + tmp_file.path + '")',
-                'builder.CloseFile();',
-            ]
-
-        with open(docbuilder_file, "w+") as file:
-            file.write("\n".join(docbuilder))
-
-        command = ['documentbuilder', docbuilder_file]
-        run_shell_command(command)
-
-        if os.path.exists(tmp_file.path):
-            norm_file_path = self.pdf2pdfa(tmp_file)
-
-        if os.path.isfile(docbuilder_file):
-            os.remove(docbuilder_file)
-
-        return norm_file_path
-
-
-    def wkhtml2pdf(self, src_file: File, tmp_file: File):
-        """Convert html to pdf using QT Webkit rendering engine"""
-        # WAIT: Trengs sjekk om utf-8 og evt. konvertering først her?
-        norm_file_path = False
-        command = ['wkhtmltopdf', '-O', 'Landscape', src_file.path, tmp_file.path]
-        run_shell_command(command)
-
-        if os.path.exists(tmp_file.path):
-            norm_file_path = self.pdf2pdfa(tmp_file)
-
-        return norm_file_path
-
-
-    def abi2x(self, src_file: File, tmp_file: File):
-        """Convert rtf to pdf using Abiword"""
-        norm_file_path = ""
-        command = ['abiword', '--to=pdf', '--import-extension=rtf', '-o',
-                   tmp_file.path, src_file.path]
-        run_shell_command(command)
-
-        # TODO: Må ha bedre sjekk av generert pdf. Har laget tomme pdf-filer noen ganger
-        if os.path.exists(tmp_file.path):
-            norm_file_path = self.pdf2pdfa(tmp_file)
-
-        return norm_file_path
-
-
-    def pdf2pdfa(self, src_file: File):
-        """Convert pdf to pdf/a"""
-
-        if src_file.path.startswith(self.target_dir):
-            norm_file_path = src_file.relative_root + '.pdf'
-        else:
-            norm_file_path = self.target_dir + '/' + src_file.relative_root + src_file.ext
-
-        norm_file = File(norm_file_path)
-
-        # WAIT: Legg inn ekstra sjekk her om hva som skal gjøres hvis ocr = True
-        if src_file.version in ('1a', '1b', '2a', '2b'):
-            shutil.copyfile(src_file.path, norm_file_path)
-            if not os.path.exists(norm_file_path):
-                norm_file_path = ""
-            else:
-                self.pdf2txt(norm_file)
-
-            return norm_file_path
-
-        ocrmypdf.configure_logging(-1)
-        # Set tesseract_timeout=0 to only do PDF/A-conversion, and not ocr
-        try:
-            result = ocrmypdf.ocr(src_file.path, norm_file_path,
-                                tesseract_timeout=180, progress_bar=False, skip_text=True)
-            self.pdf2txt(norm_file)
-        except:
-            print('kunne ikke konvertere ' + src_file.path)
-            result = 'error'
-            norm_file_path = ""
-        if str(result) != 'ExitCode.ok':
-            norm_file_path = ""
-
-        return norm_file_path
-
-    def pdf2txt(self, norm_file):
-
-        output_file = norm_file.relative_root + '.txt'
-
-        command = ['gs', '-sDEVICE=txtwrite', '-q', '-dNOPAUSE', '-dBATCH',
-                   '-sOutputFile=' + output_file, norm_file.path]
-        try:
-            run_shell_command(command)
-        except:
-            return False
-
-        return True
-
-
-    def html2pdf(self, src_file: File, tmp_file: File):
-        """Convert html to pdf"""
-        norm_file_path = ""
-        try:
-            # p = Pdfy()
-            # p.html_to_pdf(src_file.path, tmp_file.path)
-            tmp_file.path = tmp_file.path + '.pdf'
-            command = ['pandoc', src_file.path, '-o', tmp_file.path]
-            run_shell_command(command)
-        except Exception as e:
-            print(e)
-
-        if os.path.exists(tmp_file.path):
-            norm_file_path = self.pdf2pdfa(tmp_file)
-
-        return norm_file_path
-
-
-    def unoconv2x(self, file_path, norm_path, format, file_type):
-        """Convert office files to pdf"""
-        success = False
-        command = ['unoconv', '-f', format]
-
-        if file_type in (
-                'application/vnd.ms-excel',
-                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        ):
-            if format == 'pdf':
-                command.extend([
-                    '-d', 'spreadsheet', '-P', 'PaperOrientation=landscape',
-                    '-eSelectPdfVersion=1'
-                ])
-            elif format == 'html':
-                command.extend(
-                    ['-d', 'spreadsheet', '-P', 'PaperOrientation=landscape'])
-        elif file_type in ('application/msword', 'application/rtf'):
-            command.extend(['-d', 'document', '-eSelectPdfVersion=1'])
-
-        command.extend(['-o', '"' + norm_path + '"', '"' + file_path + '"'])
-        run_shell_command(command)
-
-        if os.path.exists(norm_path):
-            success = True
-
-        return success
 
 
 def run_siegfried(source_dir, target_dir, tsv_path, zipped=False):
@@ -492,7 +212,7 @@ def extract_nested_zip(zipped_file, to_folder):
                 extract_nested_zip(fileSpec, root)
 
 
-def run_shell_command(command, cwd=None, timeout=30):
+def run_shell_command(command, cwd=None, timeout=30, shell=False):
     """Run shell command"""
     os.environ['PYTHONUNBUFFERED'] = "1"
     stdout = []
@@ -504,6 +224,7 @@ def run_shell_command(command, cwd=None, timeout=30):
     proc = subprocess.Popen(
         command,
         cwd=cwd,
+        shell=shell,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         universal_newlines=True,
@@ -538,6 +259,15 @@ def add_fields(table, *args):
             table = etl.addfield(table, field, None)
     return table
 
+def append_tsv_row(tsv_file, row):
+    writer = csv.writer(
+        tsv_file,
+        delimiter='\t',
+        quoting=csv.QUOTE_NONE,
+        quotechar='',
+        lineterminator='\n',
+        escapechar='')
+    writer.writerow(row)
 
 def convert_folder(source_dir: str, target_dir: str, zipped: bool=False):
     """Convert all files in folder"""
@@ -545,15 +275,11 @@ def convert_folder(source_dir: str, target_dir: str, zipped: bool=False):
     converted_now = False
     errors = False
 
-    result_file = File(target_dir + '_result.txt')
-    tsv_file = File(target_dir + '_processed.tsv')
-    # Empty files
-    open(result_file.path, 'w').close()
-    open(tsv_file.path, 'w').close()
+    result_file = open(target_dir + '_processed.tsv', 'w')
+    tsv_file = open(target_dir + '_processed.tsv', 'w')
 
     Path(target_dir).mkdir(parents=True, exist_ok=True)
 
-    os.chdir(source_dir)
     if not os.path.isfile(tsv_source_path):
         run_siegfried(source_dir, target_dir, tsv_source_path, zipped)
 
@@ -570,6 +296,9 @@ def convert_folder(source_dir: str, target_dir: str, zipped: bool=False):
                        strict=False)
 
     table = etl.select(table, lambda rec: rec.source_file_path != '')
+    # Remove listing of files in zip
+    table = etl.select(table, lambda rec: '#' not in rec.source_file_path)
+    # TODO: Ikke fullgod sjekk på embedded dokument i linje over da # faktisk kan forekomme i filnavn
     table.row_count = etl.nrows(table)
 
     file_count = sum([len(files) for r, d, files in os.walk(source_dir)])
@@ -590,7 +319,7 @@ def convert_folder(source_dir: str, target_dir: str, zipped: bool=False):
     # Remove Siegfried generated columns
     table = remove_fields(table, 'namespace', 'basis', 'warning')
 
-    tsv_file.append_tsv_row(etl.header(table))
+    append_tsv_row(tsv_file, etl.header(table))
 
     # Treat csv (detected from extension only) as plain text:
     table = etl.convert(table, 'mime_type',
@@ -624,15 +353,15 @@ def convert_folder(source_dir: str, target_dir: str, zipped: bool=False):
                   '.../' + row['source_file_path'] + ' (' + row['mime_type'] + ')')
 
         if row['result'] not in ('Converted successfully', 'Manually converted'):
-            source_file = File(row['source_file_path'], row['mime_type'], row['version'])
-            normalized = source_file.convert(target_dir)
+            source_file = File(row)
+            normalized = source_file.convert(source_dir, target_dir)
 
             row['result'] = normalized['msg']
 
             if row['result'] in ('Conversion failed', 'Conversion not supported'):
                 errors = True
-                result_file.append_txt(row['result'] + ': ' + row['source_file_path'] +
-                                       ' (' + row['mime_type'] + ')')
+                result_file.write(row['result'] + ': ' + row['source_file_path'] +
+                                       ' (' + row['mime_type'] + ')\n')
 
             if row['result'] in ('Converted successfully', 'Manually converted'):
                 converted_now = True
@@ -640,15 +369,17 @@ def convert_folder(source_dir: str, target_dir: str, zipped: bool=False):
             if normalized['norm_file_path']:
                 row['norm_file_path'] = relpath(normalized['norm_file_path'], target_dir)
 
-        tsv_file.append_tsv_row(list(row.values()))
+        append_tsv_row(tsv_file, list(row.values()))
 
-    shutil.move(tsv_file.path, tsv_source_path)
+    shutil.move(tsv_file.name, tsv_source_path)
+    result_file.close()
+    tsv_file.close()
 
     msg = None
     if converted_now:
         msg = 'All files converted succcessfully.'
         if errors:
-            msg = "Not all files were converted. See '" + result_file.path + "' for details."
+            msg = "Not all files were converted. See '" + result_file.name + "' for details."
     else:
         msg = 'All files converted previously.'
 
