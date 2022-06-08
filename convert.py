@@ -570,6 +570,9 @@ def convert_folder(source_dir: str, target_dir: str, zipped: bool=False):
                        strict=False)
 
     table = etl.select(table, lambda rec: rec.source_file_path != '')
+    # Remove listing of files in zip
+    table = etl.select(table, lambda rec: '#' not in rec.source_file_path)
+    # TODO: Ikke fullgod sjekk på embedded dokument i linje over da # faktisk kan forekomme i filnavn
     table.row_count = etl.nrows(table)
 
     file_count = sum([len(files) for r, d, files in os.walk(source_dir)])
