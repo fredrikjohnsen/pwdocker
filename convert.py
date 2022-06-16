@@ -12,22 +12,22 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
- 
-import os
-import subprocess
-import shutil
-import signal
-import zipfile
-import re
-import pathlib
+
 import csv
 import glob
+import os
+import pathlib
+import re
+import shutil
+import signal
+import subprocess
+import zipfile
 from os.path import relpath
 from pathlib import Path
+
 import petl as etl
 import typer
 from ruamel.yaml import YAML
-
 
 # Load converters
 yaml = YAML()
@@ -35,6 +35,7 @@ with open("converters.yml", "r") as yamlfile:
     converters = yaml.load(yamlfile)
 
 pwconv_path = pathlib.Path(__file__).parent.resolve()
+
 
 class File:
     """Contains methods for converting files"""
@@ -50,58 +51,70 @@ class File:
         # relative path without extension
         self.relative_root = split_ext[0]
         self.ext = split_ext[1][1:]
+        self.normalized = {'result': None, 'norm_file_path': None, 'error': None, 'msg': None}
 
     def convert(self, source_dir: str, target_dir: str):
         """Convert file to archive format"""
-        normalized = {'result': None, 'norm_file_path': None, 'error': None, 'msg': None}
 
         # TODO: Finn ut beste måten å håndtere manuelt konverterte filer
         # if not check_for_files(norm_file_path + '*'):
         if True:
             if self.mime_type == 'n/a':
-                normalized['msg'] = 'Not a document'
-                normalized['norm_file_path'] = None
+                self.normalized['msg'] = 'Not a document'
+                self.normalized['norm_file_path'] = None
             elif self.mime_type == 'application/zip':
-                result = self.zip_to_norm(source_dir, target_dir)
+                self._zip_to_norm(source_dir, target_dir)
             else:
                 source_file_path = os.path.join(source_dir, self.path)
                 norm_file_path = os.path.join(target_dir, self.path)
 
                 if self.format not in converters:
                     shutil.copyfile(source_file_path, norm_file_path)
-                    normalized['msg'] = 'Conversion failed'
-                    normalized['norm_file_path'] = None
-                    return normalized
+                    self.normalized['msg'] = 'Conversion failed'
+                    self.normalized['norm_file_path'] = None
+                    return self.normalized
 
                 conv = converters[self.format]
 
-                target_ext = self.ext if not 'target-ext' in conv else conv['target-ext']
+                target_ext = self.ext if 'target-ext' not in conv else conv['target-ext']
+                self._run_convertion_command(conv, source_file_path, norm_file_path, target_dir, target_ext)
 
-                if ('source-ext' in conv and self.ext in conv['source-ext']):
-                    cmd = conv['source-ext'][self.ext]['command']
-                    if 'target-ext' in conv['source-ext'][self.ext]:
-                        target_ext = conv['source-ext'][self.ext]['target-ext']
-                else:
-                    cmd = conv['command']
-                if (self.ext != target_ext):
-                    norm_file_path = os.path.join(target_dir, self.path + '.' + target_ext)
-                cmd = cmd.replace('<source>', '"' + source_file_path + '"')
-                cmd = cmd.replace('<target>', '"' + norm_file_path + '"')
-                bin_path = os.path.join(pwconv_path, 'bin')
-                run_shell_command(cmd, cwd=bin_path, shell=True)
-
-                if not os.path.exists(norm_file_path):
-                    normalized['msg'] = 'Conversion failed'
-                    normalized['norm_file_path'] = None
-                else:
-                    normalized['msg'] = 'Converted successfully'
-                    normalized['norm_file_path'] = norm_file_path
         else:
-            normalized['msg'] = 'Manually converted'
+            self.normalized['msg'] = 'Manually converted'
 
-        return normalized
+        return self.normalized
 
-    def zip_to_norm(self, source_dir, target_dir):
+    def _run_convertion_command(self, conv, source_file_path, norm_file_path, target_dir, target_ext):
+        """
+        runs the convertion command
+        @param conv:
+        @param source_file_path:
+        @param norm_file_path:
+        @param target_dir:
+        @param target_ext:
+        """
+        if 'source-ext' in conv and self.ext in conv['source-ext']:
+            cmd = conv['source-ext'][self.ext]['command']
+
+            if 'target-ext' in conv['source-ext'][self.ext]:
+                target_ext = conv['source-ext'][self.ext]['target-ext']
+        else:
+            cmd = conv['command']
+        if self.ext != target_ext:
+            norm_file_path = os.path.join(target_dir, self.path + '.' + target_ext)
+        cmd = cmd.replace('<source>', '"' + source_file_path + '"')
+        cmd = cmd.replace('<target>', '"' + norm_file_path + '"')
+        bin_path = os.path.join(pwconv_path, 'bin')
+        run_shell_command(cmd, cwd=bin_path, shell=True)
+
+        if not os.path.exists(norm_file_path):
+            self.normalized['msg'] = 'Conversion failed'
+            self.normalized['norm_file_path'] = None
+        else:
+            self.normalized['msg'] = 'Converted successfully'
+            self.normalized['norm_file_path'] = norm_file_path
+
+    def _zip_to_norm(self, source_dir, target_dir):
         """Exctract all files, convert them, and zip them again"""
 
         # TODO: Blir sjekk på om normalisert fil finnes nå riktig
@@ -109,26 +122,25 @@ class File:
         # --> Blir skrevet til tsv som 'converted successfully'
         # --> sjekk hvordan det kan stemme når extension på normalsert varierer
 
-        def copy(norm_dir_path, norm_base_path):
-            files = os.listdir(norm_dir_path)
+        def copy(norm_dir_path_param, norm_base_path_param):
+            files = os.listdir(norm_dir_path_param)
             file = files[0]
             ext = Path(file).suffix
-            src = os.path.join(norm_dir_path, file)
+            src = os.path.join(norm_dir_path_param, file)
             dest = os.path.join(
-                Path(norm_base_path).parent,
-                os.path.basename(norm_base_path) + '.zip' + ext
+                Path(norm_base_path_param).parent,
+                os.path.basename(norm_base_path_param) + '.zip' + ext
             )
             if os.path.isfile(src):
                 shutil.copy(src, dest)
 
-        def zip_dir(norm_dir_path, norm_base_path):
-            shutil.make_archive(norm_base_path, 'zip', norm_dir_path)
+        def zip_dir(norm_dir_path_param, norm_base_path_param):
+            shutil.make_archive(norm_base_path_param, 'zip', norm_dir_path_param)
 
-        def rm_tmp(paths):
-            for path in paths:
+        def rm_tmp(rm_paths):
+            for path in rm_paths:
                 delete_file_or_dir(path)
 
-        source_file_path = os.path.join(source_dir, self.path)
         norm_base_path = os.path.join(target_dir, self.relative_root)
         norm_zip_path = norm_base_path + '_zip'
         norm_dir_path = norm_zip_path + '_norm'
@@ -166,10 +178,11 @@ def run_siegfried(source_dir, target_dir, tsv_path, zipped=False):
     csv_path = os.path.join(target_dir, 'siegfried.csv')
     os.chdir(source_dir)
     subprocess.run(
-        'sf -z -csv * > ' + csv_path,
+            'sf -z -csv * > ' + csv_path,
         stderr=subprocess.DEVNULL,
         stdout=subprocess.DEVNULL,
-        shell=True,
+        shell=True
+
     )
 
     with open(csv_path, 'r') as csvin, open(tsv_path, 'w') as tsvout:
@@ -208,8 +221,8 @@ def extract_nested_zip(zipped_file, to_folder):
     for root, dirs, files in os.walk(to_folder):
         for filename in files:
             if re.search(r'\.zip$', filename):
-                fileSpec = os.path.join(root, filename)
-                extract_nested_zip(fileSpec, root)
+                filespec = os.path.join(root, filename)
+                extract_nested_zip(filespec, root)
 
 
 def run_shell_command(command, cwd=None, timeout=30, shell=False):
@@ -259,6 +272,7 @@ def add_fields(table, *args):
             table = etl.addfield(table, field, None)
     return table
 
+
 def append_tsv_row(tsv_file, row):
     writer = csv.writer(
         tsv_file,
@@ -269,7 +283,8 @@ def append_tsv_row(tsv_file, row):
         escapechar='')
     writer.writerow(row)
 
-def convert_folder(source_dir: str, target_dir: str, zipped: bool=False):
+
+def convert_folder(source_dir: str, target_dir: str, zipped: bool = False):
     """Convert all files in folder"""
     tsv_source_path = target_dir + '.tsv'
     converted_now = False
@@ -281,6 +296,7 @@ def convert_folder(source_dir: str, target_dir: str, zipped: bool=False):
     Path(target_dir).mkdir(parents=True, exist_ok=True)
 
     if not os.path.isfile(tsv_source_path):
+        print("im here")
         run_siegfried(source_dir, target_dir, tsv_source_path, zipped)
 
     table = etl.fromtsv(tsv_source_path)
@@ -323,12 +339,12 @@ def convert_folder(source_dir: str, target_dir: str, zipped: bool=False):
 
     # Treat csv (detected from extension only) as plain text:
     table = etl.convert(table, 'mime_type',
-                        lambda v, row: 'text/plain' if row.id == 'x-fmt/18' else v,
+                        lambda v, _row: 'text/plain' if _row.id == 'x-fmt/18' else v,
                         pass_row=True)
 
     # Update for missing mime types where id is known:
     table = etl.convert(table, 'mime_type',
-                        lambda v, row: 'application/xml' if row.id == 'fmt/979' else v,
+                        lambda v, _row: 'application/xml' if _row.id == 'fmt/979' else v,
                         pass_row=True)
 
     table.row_count = 0
@@ -361,7 +377,7 @@ def convert_folder(source_dir: str, target_dir: str, zipped: bool=False):
             if row['result'] in ('Conversion failed', 'Conversion not supported'):
                 errors = True
                 result_file.write(row['result'] + ': ' + row['source_file_path'] +
-                                       ' (' + row['mime_type'] + ')\n')
+                                  ' (' + row['mime_type'] + ')\n')
 
             if row['result'] in ('Converted successfully', 'Manually converted'):
                 converted_now = True
@@ -375,7 +391,6 @@ def convert_folder(source_dir: str, target_dir: str, zipped: bool=False):
     result_file.close()
     tsv_file.close()
 
-    msg = None
     if converted_now:
         msg = 'All files converted succcessfully.'
         if errors:
@@ -386,6 +401,7 @@ def convert_folder(source_dir: str, target_dir: str, zipped: bool=False):
     print("\n" + msg)
 
     return msg, file_count, errors
+
 
 if __name__ == "__main__":
     typer.run(convert_folder)
