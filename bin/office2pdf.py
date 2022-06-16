@@ -3,6 +3,9 @@
 import os
 import typer
 
+from convert import run_shell_command
+
+
 def office2pdf(source_file: str, target_file: str):
     """Convert office files to pdf"""
     target_dir = os.path.dirname(target_file)
