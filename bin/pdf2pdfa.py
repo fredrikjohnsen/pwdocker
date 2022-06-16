@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
 import sys
-import typer
+
 import ocrmypdf
 from ocrmypdf import Verbosity, ExitCodeException
+import typer
 
 
 def pdf2pdfa(input_file: str, output_file: str, timeout: int = 180):
@@ -29,5 +30,5 @@ def pdf2pdfa(input_file: str, output_file: str, timeout: int = 180):
         sys.exit(1)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     typer.run(pdf2pdfa)
