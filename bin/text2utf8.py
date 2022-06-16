@@ -5,8 +5,18 @@ import re
 import typer
 import cchardet as chardet
 
-def text2utf8(input_file: str, output_file):
-    """Convert text files to utf8 with Linux file endings"""
+
+def text2utf8(input_file: str, output_file: str):
+    """
+    Convert text files to utf8 with Linux file endings
+
+    Args:
+        input_file: path for the file to be converted
+        output_file: path for the converted file
+
+    Returns:
+        The path to the converted file, otherwise an empty string.
+    """
 
     # TODO: Test å bruke denne heller enn/i tillegg til replace under:
     #       https://ftfy.readthedocs.io/en/latest/
@@ -27,31 +37,33 @@ def text2utf8(input_file: str, output_file):
         ('=C3=A5', 'å'),
     )
 
-    with open(output_file, "wb") as file:
+    with open(output_file, 'wb') as file:
         with open(input_file, 'rb') as file_r:
             content = file_r.read()
             if content is None:
-                return ""
+                return ''
 
-            WINDOWS_LINE_ENDING = b'\r\n'
-            UNIX_LINE_ENDING = b'\n'
-            content = content.replace(WINDOWS_LINE_ENDING, UNIX_LINE_ENDING)
+            windows_line_ending = b'\r\n'
+            unix_line_ending = b'\n'
+            content = content.replace(windows_line_ending, unix_line_ending)
 
             char_enc = chardet.detect(content)['encoding']
 
             try:
                 data = content.decode(char_enc)
-            except Exception:
-                return ""
+            except UnicodeDecodeError:
+                return ''
 
             for k, v in repls:
                 data = re.sub(k, v, data, flags=re.MULTILINE)
-        file.write(data.encode('utf8'))
 
-        if os.path.exists(output_file):
-            return output_file
+        try:
+            file.write(data.encode('utf8'))
+        except UnicodeEncodeError:
+            return ''
 
-    return ""
+        return output_file if os.path.exists(output_file) else ''
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     typer.run(text2utf8)

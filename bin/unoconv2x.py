@@ -1,11 +1,23 @@
 #!/usr/bin/env python3
-
+import os
 import sys
 import typer
 
+from convert import run_shell_command
+
+
 def unoconv2x(source_path: str, target_path: str, target_ext: str, mime_type: str):
-    """Convert office files to pdf"""
-    success = False
+    """
+    Convert office files to pdf or html
+
+    Args:
+        source_path: path for the file to be converted
+        target_path: path for the converted file
+        target_ext: extension for the file-format to convert to
+        mime_type: the mime-type of the source file
+    Returns:
+        Nothing if successful otherwise exits with exit code 1
+    """
     command = ['unoconv', '-f', target_ext]
 
     if mime_type in (
