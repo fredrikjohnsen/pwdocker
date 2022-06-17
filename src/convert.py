@@ -171,7 +171,16 @@ class File:
 
 
 def run_siegfried(source_dir, target_dir, tsv_path, zipped=False):
-    """Generate tsv file with info about file types"""
+
+    """
+    Generate tsv file with info about file types by running
+
+    Args:
+        source_dir: the directory containing the files to be checked
+        target_dir: The target directory where the csv file will be saved
+        tsv_path: The target path for tsv file
+
+    """
     if not zipped:
         print('\nIdentifying file types...')
 
