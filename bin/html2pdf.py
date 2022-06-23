@@ -2,18 +2,26 @@
 
 import sys
 import typer
-from pdfy import Pdfy
+import pdfkit
 
 
-# TODO: Denne fungerer ikke - problemer med chromedriver og pdfy
 def html2pdf(src_file_path: str, target_file_path: str):
-    """Convert html to pdf"""
+    """
+    Convert html content to pdf
+
+    Args:
+        src_file_path: path for the file to be converted
+        target_file_path: path for the converted file
+
+    Returns:
+        True on success
+    """
     try:
-        p = Pdfy()
-        p.html_to_pdf(src_file_path, target_file_path)
-    except Exception as e:
+        result = pdfkit.from_file(src_file_path, target_file_path)
+        return True if result is True else False
+    except IOError as e:
         print(e)
-        sys.exit(1)
+        return False
 
 
 if __name__ == '__main__':
