@@ -20,8 +20,8 @@ mhtml2pdf.py:
   command: mhtml2pdf.py <source> <target>
   comment: |
     Convert archived web content to pdf.
-eml_to_pdf:
-  command: eml_to_pdf <source> <target>
+eml2pdf.py:
+  command: eml2pdf.py <source> <target>
   comment: |
     Convert email to pdf
 convert:
