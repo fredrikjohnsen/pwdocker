@@ -6,6 +6,7 @@ import sys
 import typer
 
 from bin import pdf2pdfa
+from bin.utils import remove_file
 from convert import run_shell_command
 
 
@@ -31,7 +32,7 @@ def eml2pdf(src_file_path: str, target_file_path: str):
     if not is_conversion_success(status_code, target_file_path):
         remove_tmp_and_exit(status_code, tmp_file)
 
-    remove_temp_file(tmp_file)
+    remove_file(tmp_file)
     return sys.exit(0)
 
 
@@ -40,14 +41,9 @@ def is_conversion_success(status_code: int, file_path: str):
 
 
 def remove_tmp_and_exit(status_code: int, file_path: str):
-    remove_temp_file(file_path)
+    remove_file(file_path)
     if status_code != 0:
         sys.exit(1)
-
-
-def remove_temp_file(file_path: str):
-    if os.path.isfile(file_path):
-        os.remove(file_path)
 
 
 if __name__ == "__main__":

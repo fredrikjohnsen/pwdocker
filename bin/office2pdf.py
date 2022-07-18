@@ -3,6 +3,7 @@
 import os
 import typer
 
+from bin.utils import remove_file
 from convert import run_shell_command
 
 
@@ -32,8 +33,7 @@ def office2pdf(source_file: str, target_file: str):
     command = ['documentbuilder', docbuilder_file]
     run_shell_command(command)
 
-    if os.path.isfile(docbuilder_file):
-        os.remove(docbuilder_file)
+    remove_file(docbuilder_file)
 
 
 if __name__ == '__main__':
