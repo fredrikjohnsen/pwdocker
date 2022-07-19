@@ -19,17 +19,19 @@ import os
 import pathlib
 import re
 import shutil
-import signal
 import subprocess
 import zipfile
 from os.path import relpath
 from pathlib import Path
+from typing import Optional, Any, List
 
 import petl as etl
 import typer
 from ruamel.yaml import YAML
 
 # Load converters
+from util import run_shell_command
+
 yaml = YAML()
 with open("converters.yml", "r") as yamlfile:
     converters = yaml.load(yamlfile)
@@ -51,7 +53,8 @@ class File:
         # relative path without extension
         self.relative_root = split_ext[0]
         self.ext = split_ext[1][1:]
-        self.normalized = {'result': None, 'norm_file_path': None, 'error': None, 'msg': None}
+        self.normalized = {'result': Optional[str], 'norm_file_path': Optional[str], 'error': Optional[str],
+                           'msg': Optional[str]}
 
     def convert(self, source_dir: str, target_dir: str):
         """Convert file to archive format"""
@@ -66,55 +69,65 @@ class File:
                 self._zip_to_norm(source_dir, target_dir)
             else:
                 source_file_path = os.path.join(source_dir, self.path)
-                norm_file_path = os.path.join(target_dir, self.path)
+                target_file_path = os.path.join(target_dir, self.path)
 
                 if self.format not in converters:
-                    shutil.copyfile(source_file_path, norm_file_path)
-                    self.normalized['msg'] = 'Conversion failed'
+                    shutil.copyfile(source_file_path, target_file_path)
+                    self.normalized['msg'] = 'Conversion not supported'
                     self.normalized['norm_file_path'] = None
                     return self.normalized
 
-                conv = converters[self.format]
-
-                target_ext = self.ext if 'target-ext' not in conv else conv['target-ext']
-                self._run_convertion_command(conv, source_file_path, norm_file_path, target_dir, target_ext)
+                converter = converters[self.format]
+                self._run_conversion_command(converter, source_file_path, target_file_path, target_dir)
 
         else:
             self.normalized['msg'] = 'Manually converted'
 
         return self.normalized
 
-    def _run_convertion_command(self, conv, source_file_path, norm_file_path, target_dir, target_ext):
+    def _run_conversion_command(self, converter: Any, source_file_path: str, target_file_path: str, target_dir: str):
         """
-        runs the convertion command
-        @param conv:
-        @param source_file_path:
-        @param norm_file_path:
-        @param target_dir:
-        @param target_ext:
-        """
-        if 'source-ext' in conv and self.ext in conv['source-ext']:
-            cmd = conv['source-ext'][self.ext]['command']
+          Convert function
 
-            if 'target-ext' in conv['source-ext'][self.ext]:
-                target_ext = conv['source-ext'][self.ext]['target-ext']
-        else:
-            cmd = conv['command']
-        if self.ext != target_ext:
-            norm_file_path = os.path.join(target_dir, self.path + '.' + target_ext)
+          Args:
+              converter: which converter to use
+              source_file_path: source file path for the file to be converted
+              target_file_path: target file path for where the converted file should be saved
+              target_dir: path directory where the converted result should be saved
+          """
+        cmd, target_ext = self._get_target_ext_and_cmd(converter)
+
+        if target_ext and self.ext != target_ext:
+            target_file_path = os.path.join(target_dir, self.path + '.' + target_ext)
+
         cmd = cmd.replace('<source>', '"' + source_file_path + '"')
-        cmd = cmd.replace('<target>', '"' + norm_file_path + '"')
-        bin_path = os.path.join(pwconv_path, 'bin')
-        run_shell_command(cmd, cwd=bin_path, shell=True)
+        cmd = cmd.replace('<target>', '"' + target_file_path + '"')
 
-        if not os.path.exists(norm_file_path):
+        bin_path = os.path.join(pwconv_path, 'bin')
+        result = run_shell_command(cmd, cwd=bin_path, shell=True)
+
+        if not os.path.exists(target_file_path):
             self.normalized['msg'] = 'Conversion failed'
             self.normalized['norm_file_path'] = None
         else:
             self.normalized['msg'] = 'Converted successfully'
-            self.normalized['norm_file_path'] = norm_file_path
+            self.normalized['norm_file_path'] = target_file_path
 
-    def _zip_to_norm(self, source_dir, target_dir):
+        return result
+
+    def _get_target_ext_and_cmd(self, converter: Any):
+        cmd = converter['command']
+        target_ext = self.ext if 'target-ext' not in converter else converter['target-ext']
+        if 'source-ext' in converter and self.ext in converter['source-ext']:
+            # special case for subtypes for an example see: sdo in converters.yml
+            cmd = converter['source-ext'][self.ext]['command']
+
+            if 'target-ext' in converter['source-ext'][self.ext]:
+                target_ext = converter['source-ext'][self.ext]['target-ext']
+
+        return cmd, target_ext
+
+    def _zip_to_norm(self, source_dir: str, target_dir: str):
         """Exctract all files, convert them, and zip them again"""
 
         # TODO: Blir sjekk på om normalisert fil finnes nå riktig
@@ -122,7 +135,7 @@ class File:
         # --> Blir skrevet til tsv som 'converted successfully'
         # --> sjekk hvordan det kan stemme når extension på normalsert varierer
 
-        def copy(norm_dir_path_param, norm_base_path_param):
+        def copy(norm_dir_path_param: str, norm_base_path_param: str):
             files = os.listdir(norm_dir_path_param)
             file = files[0]
             ext = Path(file).suffix
@@ -134,10 +147,10 @@ class File:
             if os.path.isfile(src):
                 shutil.copy(src, dest)
 
-        def zip_dir(norm_dir_path_param, norm_base_path_param):
+        def zip_dir(norm_dir_path_param: str, norm_base_path_param: str):
             shutil.make_archive(norm_base_path_param, 'zip', norm_dir_path_param)
 
-        def rm_tmp(rm_paths):
+        def rm_tmp(rm_paths: List[str]):
             for path in rm_paths:
                 delete_file_or_dir(path)
 
@@ -170,8 +183,7 @@ class File:
         return False
 
 
-def run_siegfried(source_dir, target_dir, tsv_path, zipped=False):
-
+def run_siegfried(source_dir: str, target_dir: str, tsv_path: str, zipped=False):
     """
     Generate tsv file with info about file types by running
 
@@ -179,7 +191,7 @@ def run_siegfried(source_dir, target_dir, tsv_path, zipped=False):
         source_dir: the directory containing the files to be checked
         target_dir: The target directory where the csv file will be saved
         tsv_path: The target path for tsv file
-
+        zipped: nothing...
     """
     if not zipped:
         print('\nIdentifying file types...')
@@ -187,7 +199,7 @@ def run_siegfried(source_dir, target_dir, tsv_path, zipped=False):
     csv_path = os.path.join(target_dir, 'siegfried.csv')
     os.chdir(source_dir)
     subprocess.run(
-            'sf -z -csv * > ' + csv_path,
+        'sf -z -csv * > ' + csv_path,
         stderr=subprocess.DEVNULL,
         stdout=subprocess.DEVNULL,
         shell=True
@@ -204,7 +216,7 @@ def run_siegfried(source_dir, target_dir, tsv_path, zipped=False):
         os.remove(csv_path)
 
 
-def delete_file_or_dir(path):
+def delete_file_or_dir(path: str):
     """Delete file or directory tree"""
     if os.path.isfile(path):
         os.remove(path)
@@ -213,7 +225,7 @@ def delete_file_or_dir(path):
         shutil.rmtree(path)
 
 
-def check_for_files(filepath):
+def check_for_files(filepath: str):
     """Check if files exists"""
     for filepath_object in glob.glob(filepath):
         if os.path.isfile(filepath_object):
@@ -222,7 +234,7 @@ def check_for_files(filepath):
     return False
 
 
-def extract_nested_zip(zipped_file, to_folder):
+def extract_nested_zip(zipped_file: str, to_folder: str):
     """Extract nested zipped files to specified folder"""
     with zipfile.ZipFile(zipped_file, 'r') as zfile:
         zfile.extractall(path=to_folder)
@@ -232,38 +244,6 @@ def extract_nested_zip(zipped_file, to_folder):
             if re.search(r'\.zip$', filename):
                 filespec = os.path.join(root, filename)
                 extract_nested_zip(filespec, root)
-
-
-def run_shell_command(command, cwd=None, timeout=30, shell=False):
-    """Run shell command"""
-    os.environ['PYTHONUNBUFFERED'] = "1"
-    stdout = []
-    stderr = []
-    mix = []  # TODO: Fjern denne mm
-
-    # sys.stdout.flush()
-
-    proc = subprocess.Popen(
-        command,
-        cwd=cwd,
-        shell=shell,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        universal_newlines=True,
-    )
-
-    try:
-        proc.wait(timeout=timeout)
-    except subprocess.TimeoutExpired:
-        os.kill(proc.pid, signal.SIGINT)
-
-    for line in proc.stdout:
-        stdout.append(line.rstrip())
-
-    for line in proc.stderr:
-        stderr.append(line.rstrip())
-
-    return proc.returncode, stdout, stderr, mix
 
 
 def remove_fields(table, *args):
@@ -305,7 +285,6 @@ def convert_folder(source_dir: str, target_dir: str, zipped: bool = False):
     Path(target_dir).mkdir(parents=True, exist_ok=True)
 
     if not os.path.isfile(tsv_source_path):
-        print("im here")
         run_siegfried(source_dir, target_dir, tsv_source_path, zipped)
 
     table = etl.fromtsv(tsv_source_path)
@@ -387,6 +366,7 @@ def convert_folder(source_dir: str, target_dir: str, zipped: bool = False):
                 errors = True
                 result_file.write(row['result'] + ': ' + row['source_file_path'] +
                                   ' (' + row['mime_type'] + ')\n')
+                print(row['mime_type'] + " " + row['result'])
 
             if row['result'] in ('Converted successfully', 'Manually converted'):
                 converted_now = True

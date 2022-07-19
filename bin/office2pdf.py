@@ -3,8 +3,8 @@
 import os
 import typer
 
-from bin.utils import remove_file
-from convert import run_shell_command
+from util import remove_file
+from util import run_shell_command
 
 
 def office2pdf(source_file: str, target_file: str):
