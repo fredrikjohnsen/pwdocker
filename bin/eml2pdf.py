@@ -5,7 +5,7 @@ import sys
 
 import typer
 
-from common import run_command_and_convert_to_pdfa
+from bin.common import run_command_and_convert_to_pdfa
 
 
 def eml2pdf(src_file_path: str, target_file_path: str):

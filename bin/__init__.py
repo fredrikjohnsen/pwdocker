@@ -1,3 +1,4 @@
+from .common import *
 from .html2pdf import html2pdf
 from .mhtml2pdf import mhtml2pdf
 from .office2pdf import office2pdf

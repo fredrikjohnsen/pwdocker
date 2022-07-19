@@ -4,6 +4,9 @@ import os
 
 from typing import List
 
+from bin.pdf2pdfa import pdf2pdfa
+from util import run_shell_command
+
 
 def remove_file(file_path: str):
     if os.path.isfile(file_path):

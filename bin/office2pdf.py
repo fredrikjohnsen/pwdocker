@@ -3,7 +3,7 @@
 import os
 import typer
 
-from common import remove_file
+from bin import remove_file
 from util import run_shell_command
 
 
