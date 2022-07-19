@@ -102,6 +102,8 @@ class File:
 
         cmd = cmd.replace('<source>', '"' + source_file_path + '"')
         cmd = cmd.replace('<target>', '"' + target_file_path + '"')
+        cmd = cmd.replace('<mime-type>', '"' + self.mime_type + '"')
+        cmd = cmd.replace('<target-ext>', '"' + target_ext + '"')
 
         bin_path = os.path.join(pwconv_path, 'bin')
         result = run_shell_command(cmd, cwd=bin_path, shell=True)

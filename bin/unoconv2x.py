@@ -6,7 +6,7 @@ import typer
 from util import run_shell_command
 
 
-def unoconv2x(source_path: str, target_path: str, target_ext: str, mime_type: str):
+def unoconv2x(source_path: str, target_path: str, mime_type: str, target_ext: str):
     """
     Convert spreadsheet, MS Word or rtf files to pdf or html.
     Spreadsheet files can be converted to html or pdf specified with the @param target_ext
@@ -24,8 +24,8 @@ def unoconv2x(source_path: str, target_path: str, target_ext: str, mime_type: st
     Args:
         source_path: path for the file to be converted
         target_path: path for the converted file
-        target_ext: extension for the file-format to convert to
         mime_type: the mime-type of the source file
+        target_ext: extension for the file-format to convert to
     Returns:
         Nothing if successful otherwise exits with exit code 1
     """

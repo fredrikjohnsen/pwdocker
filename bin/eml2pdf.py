@@ -2,8 +2,8 @@
 
 import os
 import sys
-
 import typer
+import uuid
 
 from bin.common import run_command_and_convert_to_pdfa
 
@@ -19,7 +19,7 @@ def eml2pdf(src_file_path: str, target_file_path: str):
     Returns:
         Exit code 0 if successful, otherwise 1.
     """
-    tmp_file = f"{os.path.dirname(os.path.realpath(src_file_path))}/tmp.pdf"
+    tmp_file = f"{os.path.dirname(os.path.realpath(src_file_path))}/{uuid.uuid4()}.pdf"
     command = ['eml_to_pdf', src_file_path, tmp_file]
     return sys.exit(run_command_and_convert_to_pdfa(command, tmp_file, target_file_path))
 

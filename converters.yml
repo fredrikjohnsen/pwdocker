@@ -25,7 +25,7 @@ Exchangeable Image File Format (Compressed):
   command: image2pdf.py <source> <target>
   target-ext: pdf
 Microsoft Excel 97 Workbook (xls):
-  command: office2pdf.py <source> <target>
+  command: unoconv2x.py <source> <target> <mime-type> <target-ext>
   target-ext: pdf
 Rich Text Format:
   command: office2pdf.py <source> <target>
