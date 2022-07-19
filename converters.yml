@@ -15,3 +15,8 @@ Markdown:
   command: text2utf8.py <source> <target>
 Plain Text File:
   command: text2utf8.py <source> <target>
+MIME Email:
+  command: eml2pdf.py <source> <target>
+Exchangeable Image File Format (Compressed):
+  command: image2pdf.py <source> <target>
+
