@@ -17,6 +17,8 @@ Plain Text File:
   command: text2utf8.py <source> <target>
 MIME Email:
   command: eml2pdf.py <source> <target>
+  target-ext: pdf
 Exchangeable Image File Format (Compressed):
   command: image2pdf.py <source> <target>
+  target-ext: pdf
 
