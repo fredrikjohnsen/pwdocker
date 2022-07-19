@@ -11,6 +11,9 @@ Extensible Markup Language:
 Hypertext Markup Language:
   command: html-to-pdf.py <source> <target> || pandoc <source> -s -o <target>  && pdf2text.py <target>
   target-ext: pdf
+Extensible Hypertext Markup Language:
+  command: xhtml2pdf.py <source> <target>
+  target-ext: pdf
 Markdown:
   command: text2utf8.py <source> <target>
 Plain Text File:
@@ -21,4 +24,15 @@ MIME Email:
 Exchangeable Image File Format (Compressed):
   command: image2pdf.py <source> <target>
   target-ext: pdf
-
+Microsoft Excel 97 Workbook (xls):
+  command: office2pdf.py <source> <target>
+  target-ext: pdf
+Rich Text Format:
+  command: office2pdf.py <source> <target>
+  target-ext: pdf
+Rich Text OpenDocument Presentation:
+  command: office2pdf.py <source> <target>
+  target-ext: pdf
+OpenDocument Presentation:
+  command: office2pdf.py <source> <target>
+  target-ext: pdf
