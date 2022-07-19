@@ -55,3 +55,7 @@ pandoc:
   comment: |
     Converts between many document formats.
     File extension on in- and out-file decides output file format.
+image2pdf:
+  command: image2pdf.py <source> <target>
+  comment: |
+    Converts image formats to pdf/a

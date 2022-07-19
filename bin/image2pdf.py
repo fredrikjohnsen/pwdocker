@@ -10,17 +10,17 @@ from bin.utils import run_command_and_convert_to_pdfa
 
 def eml2pdf(src_file_path: str, target_file_path: str):
     """
-    Convert email content to pdf/a
+    Convert images to pdf/a
 
     Args:
-        src_file_path: path for the image to be converted
+        src_file_path: path for the file to be converted
         target_file_path: path for the converted file
 
     Returns:
         Exit code 0 if successful, otherwise 1.
     """
     tmp_file = f"{os.path.dirname(os.path.realpath(src_file_path))}/tmp.pdf"
-    command = ['eml_to_pdf', src_file_path, tmp_file]
+    command = ['convert', src_file_path, tmp_file]
     return sys.exit(run_command_and_convert_to_pdfa(command, tmp_file, target_file_path))
 
 
