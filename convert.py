@@ -19,7 +19,6 @@ import os
 import pathlib
 import re
 import shutil
-import subprocess
 import zipfile
 from os.path import relpath
 from pathlib import Path
@@ -30,7 +29,7 @@ import typer
 from ruamel.yaml import YAML
 
 # Load converters
-from util import run_shell_command
+from util import run_shell_command, run_siegfried
 
 yaml = YAML()
 with open("converters.yml", "r") as yamlfile:
@@ -183,39 +182,6 @@ class File:
 
         rm_tmp(paths)
         return False
-
-
-def run_siegfried(source_dir: str, target_dir: str, tsv_path: str, zipped=False):
-    """
-    Generate tsv file with info about file types by running
-
-    Args:
-        source_dir: the directory containing the files to be checked
-        target_dir: The target directory where the csv file will be saved
-        tsv_path: The target path for tsv file
-        zipped: nothing...
-    """
-    if not zipped:
-        print('\nIdentifying file types...')
-
-    csv_path = os.path.join(target_dir, 'siegfried.csv')
-    os.chdir(source_dir)
-    subprocess.run(
-        'sf -z -csv * > ' + csv_path,
-        stderr=subprocess.DEVNULL,
-        stdout=subprocess.DEVNULL,
-        shell=True
-
-    )
-
-    with open(csv_path, 'r') as csvin, open(tsv_path, 'w') as tsvout:
-        csvin = csv.reader(csvin)
-        tsvout = csv.writer(tsvout, delimiter='\t')
-        for row in csvin:
-            tsvout.writerow(row)
-
-    if os.path.exists(csv_path):
-        os.remove(csv_path)
 
 
 def delete_file_or_dir(path: str):
