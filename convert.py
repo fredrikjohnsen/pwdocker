@@ -84,9 +84,9 @@ def convert_folder(source_dir: str,
         print('No files to convert. Exiting.')
         return 'Error', file_count
     if file_count != row_count:
-        print('Row count: ' + str(row_count))
-        print('File count: ' + str(file_count))
-        print("Files listed in '" + tsv_source_path + "' doesn't match files on disk. Exiting.")
+        print(f'Row count: {str(row_count)}')
+        print(f'File count: {str(file_count)}')
+        print(f"Files listed in '{tsv_source_path}' doesn't match files on disk. Exiting.")
         return 'Error', file_count
     if not zipped:
         print('Converting files..')
@@ -166,34 +166,34 @@ def convert_files(converted_now: bool,
             continue
 
         table.row_count += 1
-
-        row['mime_type'] = row['mime_type'].split(';')[0]
-        if not row['mime_type']:
-            # Siegfried sets mime type only to xml files with xml declaration
-            if os.path.splitext(row['source_file_path'])[1].lower() == '.xml':
-                row['mime_type'] = 'application/xml'
-
-        if not zipped:
-            print('(' + str(table.row_count) + '/' + str(file_count) + '): ' +
-                  '.../' + row['source_file_path'] + ' (' + row['mime_type'] + ')')
-
-        source_file = File(row, converters, pwconv_path, file_storage, convert_folder)
-        normalized = source_file.convert(source_dir, target_dir)
-
-        row['result'] = normalized['msg']
-
-        if row['result'] in (Result.FAILED, Result.NOT_SUPPORTED):
-            errors = True
-            print(row['mime_type'] + " " + row['result'])
-
-        if row['result'] in (Result.SUCCESSFUL, Result.MANUAL):
-            converted_now = True
-
-        if normalized['norm_file_path']:
-            row['norm_file_path'] = relpath(normalized['norm_file_path'], target_dir)
-
-        file_storage.update_row(row['source_file_path'], list(row.values()))
+        converted_now, errors = convert_file(converted_now, errors, file_count, file_storage, row, source_dir, table,
+                                             target_dir, zipped)
     return converted_now, errors, file_count
+
+
+def convert_file(converted_now, errors, file_count, file_storage, row, source_dir, table, target_dir, zipped):
+    row['mime_type'] = row['mime_type'].split(';')[0]
+    if not row['mime_type']:
+        # Siegfried sets mime type only to xml files with xml declaration
+        if os.path.splitext(row['source_file_path'])[1].lower() == '.xml':
+            row['mime_type'] = 'application/xml'
+    if not zipped:
+        print(f"({str(table.row_count)}/{str(file_count)}): .../{row['source_file_path']} ({row['mime_type']})'")
+
+    source_file = File(row, converters, pwconv_path, file_storage, convert_folder)
+    normalized = source_file.convert(source_dir, target_dir)
+    row['result'] = normalized['msg']
+
+    if row['result'] in (Result.FAILED, Result.NOT_SUPPORTED):
+        errors = True
+        print(f"{row['mime_type']} {row['result']}")
+    if row['result'] in (Result.SUCCESSFUL, Result.MANUAL):
+        converted_now = True
+    if normalized['norm_file_path']:
+        row['norm_file_path'] = relpath(normalized['norm_file_path'], target_dir)
+
+    file_storage.update_row(row['source_file_path'], list(row.values()))
+    return converted_now, errors
 
 
 if __name__ == "__main__":
