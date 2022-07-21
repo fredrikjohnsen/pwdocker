@@ -7,6 +7,7 @@ import petl
 from petl import appenddb, fromdb
 
 from storage import ConvertStorage
+from util import Result
 
 
 class StorageSqliteImpl(ConvertStorage):
@@ -82,8 +83,6 @@ class StorageSqliteImpl(ConvertStorage):
     def get_unconverted_rows(self):
         return fromdb(
             self._conn,
-            '''
-                SELECT * FROM File 
-                WHERE result IS NULL OR result NOT IN('Converted successfully', 'Manually converted')
-            '''
+            'SELECT * FROM File WHERE result IS NULL OR result NOT IN(?, ?)',
+            [Result.SUCCESSFUL, Result.MANUAL]
         )

@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Optional, Any, List, Callable, Union, Tuple, Dict
 
 from storage import ConvertStorage
-from util import run_shell_command, delete_file_or_dir, extract_nested_zip
+from util import run_shell_command, delete_file_or_dir, extract_nested_zip, Result
 
 
 class File:
@@ -42,7 +42,7 @@ class File:
         # if not check_for_files(norm_file_path + '*'):
         if True:
             if self.mime_type == 'n/a':
-                self.normalized['msg'] = 'Not a document'
+                self.normalized['msg'] = Result.NOT_A_DOCUMENT
                 self.normalized['norm_file_path'] = None
             elif self.mime_type == 'application/zip':
                 self._zip_to_norm(source_dir, target_dir)
@@ -52,7 +52,7 @@ class File:
 
                 if self.format not in self.converters:
                     shutil.copyfile(source_file_path, target_file_path)
-                    self.normalized['msg'] = 'Conversion not supported'
+                    self.normalized['msg'] = Result.NOT_SUPPORTED
                     self.normalized['norm_file_path'] = None
                     return self.normalized
 
@@ -60,7 +60,7 @@ class File:
                 self._run_conversion_command(converter, source_file_path, target_file_path, target_dir)
 
         else:
-            self.normalized['msg'] = 'Manually converted'
+            self.normalized['msg'] = Result.MANUAL
 
         return self.normalized
 
@@ -88,10 +88,10 @@ class File:
         result = run_shell_command(cmd, cwd=bin_path, shell=True)
 
         if not os.path.exists(target_file_path):
-            self.normalized['msg'] = 'Conversion failed'
+            self.normalized['msg'] = Result.FAILED
             self.normalized['norm_file_path'] = None
         else:
-            self.normalized['msg'] = 'Converted successfully'
+            self.normalized['msg'] = Result.SUCCESSFUL
             self.normalized['norm_file_path'] = target_file_path
 
         return result

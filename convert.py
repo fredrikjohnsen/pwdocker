@@ -25,7 +25,7 @@ from ruamel.yaml import YAML
 
 # Load converters
 from storage import ConvertStorage, StorageSqliteImpl
-from util import run_siegfried, remove_file, File
+from util import run_siegfried, remove_file, File, Result
 
 yaml = YAML()
 with open("converters.yml", "r") as yamlfile:
@@ -182,11 +182,11 @@ def convert_files(converted_now: bool,
 
         row['result'] = normalized['msg']
 
-        if row['result'] in ('Conversion failed', 'Conversion not supported'):
+        if row['result'] in (Result.FAILED, Result.NOT_SUPPORTED):
             errors = True
             print(row['mime_type'] + " " + row['result'])
 
-        if row['result'] in ('Converted successfully', 'Manually converted'):
+        if row['result'] in (Result.SUCCESSFUL, Result.MANUAL):
             converted_now = True
 
         if normalized['norm_file_path']:
