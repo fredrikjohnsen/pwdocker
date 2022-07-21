@@ -1,4 +1,3 @@
-import glob
 import os
 import sqlite3
 from sqlite3 import Connection

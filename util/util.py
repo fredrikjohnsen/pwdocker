@@ -1,8 +1,10 @@
-#!/usr/bin/env python3
 import csv
+import re
+import shutil
 import signal
 import subprocess
 import os
+import zipfile
 
 
 def run_shell_command(command, cwd=None, timeout=30, shell=False):
@@ -81,3 +83,24 @@ def run_siegfried(source_dir: str, target_dir: str, tsv_path: str, zipped=False)
 def remove_file(src_path: str):
     if os.path.exists(src_path):
         os.remove(src_path)
+
+
+def delete_file_or_dir(path: str):
+    """Delete file or directory tree"""
+    if os.path.isfile(path):
+        os.remove(path)
+
+    if os.path.isdir(path):
+        shutil.rmtree(path)
+
+
+def extract_nested_zip(zipped_file: str, to_folder: str):
+    """Extract nested zipped files to specified folder"""
+    with zipfile.ZipFile(zipped_file, 'r') as zfile:
+        zfile.extractall(path=to_folder)
+
+    for root, dirs, files in os.walk(to_folder):
+        for filename in files:
+            if re.search(r'\.zip$', filename):
+                filespec = os.path.join(root, filename)
+                extract_nested_zip(filespec, root)

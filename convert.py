@@ -15,12 +15,9 @@
 
 import os
 import pathlib
-import re
-import shutil
-import zipfile
 from os.path import relpath
 from pathlib import Path
-from typing import Optional, Any, List
+from typing import Any
 
 import petl as etl
 import typer
@@ -28,7 +25,7 @@ from ruamel.yaml import YAML
 
 # Load converters
 from storage import ConvertStorage, StorageSqliteImpl
-from util import run_shell_command, run_siegfried, remove_file
+from util import run_siegfried, remove_file, File
 
 yaml = YAML()
 with open("converters.yml", "r") as yamlfile:
@@ -38,173 +35,6 @@ with open("application.yml", "r") as properties:
     db_dir, db_name = properties['database']['path'], properties['database']['name']
 
 pwconv_path = pathlib.Path(__file__).parent.resolve()
-
-
-class File:
-    """Contains methods for converting files"""
-
-    def __init__(self, row):
-        self.path = row['source_file_path']
-        self.mime_type = row['mime_type']
-        self.format = row['format']
-        self.version = row['version']
-        self.file_size = row['file_size']
-        self.id = row['id']
-        split_ext = os.path.splitext(self.path)
-        # relative path without extension
-        self.relative_root = split_ext[0]
-        self.ext = split_ext[1][1:]
-        self.normalized = {'result': Optional[str], 'norm_file_path': Optional[str], 'error': Optional[str],
-                           'msg': Optional[str]}
-
-    def convert(self, source_dir: str, target_dir: str):
-        """Convert file to archive format"""
-
-        # TODO: Finn ut beste måten å håndtere manuelt konverterte filer
-        # if not check_for_files(norm_file_path + '*'):
-        if True:
-            if self.mime_type == 'n/a':
-                self.normalized['msg'] = 'Not a document'
-                self.normalized['norm_file_path'] = None
-            elif self.mime_type == 'application/zip':
-                self._zip_to_norm(source_dir, target_dir)
-            else:
-                source_file_path = os.path.join(source_dir, self.path)
-                target_file_path = os.path.join(target_dir, self.path)
-
-                if self.format not in converters:
-                    shutil.copyfile(source_file_path, target_file_path)
-                    self.normalized['msg'] = 'Conversion not supported'
-                    self.normalized['norm_file_path'] = None
-                    return self.normalized
-
-                converter = converters[self.format]
-                self._run_conversion_command(converter, source_file_path, target_file_path, target_dir)
-
-        else:
-            self.normalized['msg'] = 'Manually converted'
-
-        return self.normalized
-
-    def _run_conversion_command(self, converter: Any, source_file_path: str, target_file_path: str, target_dir: str):
-        """
-          Convert function
-
-          Args:
-              converter: which converter to use
-              source_file_path: source file path for the file to be converted
-              target_file_path: target file path for where the converted file should be saved
-              target_dir: path directory where the converted result should be saved
-          """
-        cmd, target_ext = self._get_target_ext_and_cmd(converter)
-
-        if target_ext and self.ext != target_ext:
-            target_file_path = os.path.join(target_dir, self.path + '.' + target_ext)
-
-        cmd = cmd.replace('<source>', '"' + source_file_path + '"')
-        cmd = cmd.replace('<target>', '"' + target_file_path + '"')
-        cmd = cmd.replace('<mime-type>', '"' + self.mime_type + '"')
-        cmd = cmd.replace('<target-ext>', '"' + target_ext + '"')
-
-        bin_path = os.path.join(pwconv_path, 'bin')
-        result = run_shell_command(cmd, cwd=bin_path, shell=True)
-
-        if not os.path.exists(target_file_path):
-            self.normalized['msg'] = 'Conversion failed'
-            self.normalized['norm_file_path'] = None
-        else:
-            self.normalized['msg'] = 'Converted successfully'
-            self.normalized['norm_file_path'] = target_file_path
-
-        return result
-
-    def _get_target_ext_and_cmd(self, converter: Any):
-        cmd = converter['command']
-        target_ext = self.ext if 'target-ext' not in converter else converter['target-ext']
-        if 'source-ext' in converter and self.ext in converter['source-ext']:
-            # special case for subtypes for an example see: sdo in converters.yml
-            cmd = converter['source-ext'][self.ext]['command']
-
-            if 'target-ext' in converter['source-ext'][self.ext]:
-                target_ext = converter['source-ext'][self.ext]['target-ext']
-
-        return cmd, target_ext
-
-    def _zip_to_norm(self, source_dir: str, target_dir: str):
-        """Exctract all files, convert them, and zip them again"""
-
-        # TODO: Blir sjekk på om normalisert fil finnes nå riktig
-        #       for konvertering av zip-fil når ext kan variere?
-        # --> Blir skrevet til tsv som 'converted successfully'
-        # --> sjekk hvordan det kan stemme når extension på normalsert varierer
-
-        def copy(norm_dir_path_param: str, norm_base_path_param: str):
-            files = os.listdir(norm_dir_path_param)
-            file = files[0]
-            ext = Path(file).suffix
-            src = os.path.join(norm_dir_path_param, file)
-            dest = os.path.join(
-                Path(norm_base_path_param).parent,
-                os.path.basename(norm_base_path_param) + '.zip' + ext
-            )
-            if os.path.isfile(src):
-                shutil.copy(src, dest)
-
-        def zip_dir(norm_dir_path_param: str, norm_base_path_param: str):
-            shutil.make_archive(norm_base_path_param, 'zip', norm_dir_path_param)
-
-        def rm_tmp(rm_paths: List[str]):
-            for path in rm_paths:
-                delete_file_or_dir(path)
-
-        norm_base_path = os.path.join(target_dir, self.relative_root)
-        norm_zip_path = norm_base_path + '_zip'
-        norm_dir_path = norm_zip_path + '_norm'
-        paths = [norm_dir_path + '.tsv', norm_dir_path, norm_zip_path]
-
-        extract_nested_zip(self.path, norm_zip_path)
-
-        msg, file_count, errors = _convert_folder(norm_zip_path, norm_dir_path, zipped=True)
-
-        if 'succcessfully' in msg:
-            func = copy
-
-            if file_count > 1:
-                func = zip_dir
-
-            try:
-                func(norm_dir_path, norm_base_path)
-            except Exception as e:
-                print(e)
-                return False
-
-            rm_tmp(paths)
-
-            return True
-
-        rm_tmp(paths)
-        return False
-
-
-def delete_file_or_dir(path: str):
-    """Delete file or directory tree"""
-    if os.path.isfile(path):
-        os.remove(path)
-
-    if os.path.isdir(path):
-        shutil.rmtree(path)
-
-
-def extract_nested_zip(zipped_file: str, to_folder: str):
-    """Extract nested zipped files to specified folder"""
-    with zipfile.ZipFile(zipped_file, 'r') as zfile:
-        zfile.extractall(path=to_folder)
-
-    for root, dirs, files in os.walk(to_folder):
-        for filename in files:
-            if re.search(r'\.zip$', filename):
-                filespec = os.path.join(root, filename)
-                extract_nested_zip(filespec, root)
 
 
 def remove_fields(table, *args):
@@ -223,46 +53,49 @@ def add_fields(table, *args):
     return table
 
 
-def convert_folder():
+def convert_folder_entrypoint():
     source_dir, target_dir = properties['directories']['source'], properties['directories']['target']
     continue_conversion = properties['database']['continue-conversion']
 
-    _convert_folder(source_dir, target_dir, continue_conversion)
+    with StorageSqliteImpl(db_dir, db_name, continue_conversion) as file_storage:
+        convert_folder(source_dir, target_dir, file_storage, continue_conversion)
 
 
-def _convert_folder(source_dir: str, target_dir: str, continue_conversion: bool = True, zipped: bool = False):
+def convert_folder(source_dir: str,
+                   target_dir: str,
+                   file_storage: ConvertStorage,
+                   zipped: bool = False):
     """Convert all files in folder"""
     tsv_source_path = target_dir + '.tsv'
     converted_now = False
     errors = False
 
-    with StorageSqliteImpl(db_dir, db_name, continue_conversion) as file_storage:
-        Path(target_dir).mkdir(parents=True, exist_ok=True)
+    Path(target_dir).mkdir(parents=True, exist_ok=True)
 
-        if not os.path.isfile(tsv_source_path):
-            run_siegfried(source_dir, target_dir, tsv_source_path, zipped)
+    if not os.path.isfile(tsv_source_path):
+        run_siegfried(source_dir, target_dir, tsv_source_path, zipped)
 
-        row_count = write_sf_file_to_storage(tsv_source_path, file_storage)
-        table = file_storage.get_unconverted_rows()
+    row_count = write_sf_file_to_storage(tsv_source_path, file_storage)
+    table = file_storage.get_unconverted_rows()
 
-        file_count = sum([len(files) for r, d, files in os.walk(source_dir)])
+    file_count = sum([len(files) for r, d, files in os.walk(source_dir)])
 
-        if row_count == 0:
-            print('No files to convert. Exiting.')
-            return 'Error', file_count
-        if file_count != row_count:
-            print('Row count: ' + str(row_count))
-            print('File count: ' + str(file_count))
-            print("Files listed in '" + tsv_source_path + "' doesn't match files on disk. Exiting.")
-            return 'Error', file_count
-        if not zipped:
-            print('Converting files..')
+    if row_count == 0:
+        print('No files to convert. Exiting.')
+        return 'Error', file_count
+    if file_count != row_count:
+        print('Row count: ' + str(row_count))
+        print('File count: ' + str(file_count))
+        print("Files listed in '" + tsv_source_path + "' doesn't match files on disk. Exiting.")
+        return 'Error', file_count
+    if not zipped:
+        print('Converting files..')
 
-        # run conversion
-        converted_now, errors, file_count = convert_files(
-            converted_now, errors, file_count,
-            source_dir, table, target_dir, file_storage, zipped
-        )
+    # run conversion
+    converted_now, errors, file_count = convert_files(
+        converted_now, errors, file_count,
+        source_dir, table, target_dir, file_storage, zipped
+    )
 
     msg = get_conversion_result(converted_now, errors)
 
@@ -344,7 +177,7 @@ def convert_files(converted_now: bool,
             print('(' + str(table.row_count) + '/' + str(file_count) + '): ' +
                   '.../' + row['source_file_path'] + ' (' + row['mime_type'] + ')')
 
-        source_file = File(row)
+        source_file = File(row, converters, pwconv_path, file_storage, convert_folder)
         normalized = source_file.convert(source_dir, target_dir)
 
         row['result'] = normalized['msg']
@@ -364,4 +197,4 @@ def convert_files(converted_now: bool,
 
 
 if __name__ == "__main__":
-    typer.run(convert_folder)
+    typer.run(convert_folder_entrypoint)
