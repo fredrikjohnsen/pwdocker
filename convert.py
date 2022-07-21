@@ -13,8 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import csv
-import glob
 import os
 import pathlib
 import re
@@ -29,11 +27,15 @@ import typer
 from ruamel.yaml import YAML
 
 # Load converters
-from util import run_shell_command, run_siegfried
+from storage import ConvertStorage, StorageSqliteImpl
+from util import run_shell_command, run_siegfried, remove_file
 
 yaml = YAML()
 with open("converters.yml", "r") as yamlfile:
     converters = yaml.load(yamlfile)
+with open("application.yml", "r") as properties:
+    properties = yaml.load(properties)
+    db_dir, db_name = properties['database']['path'], properties['database']['name']
 
 pwconv_path = pathlib.Path(__file__).parent.resolve()
 
@@ -162,7 +164,7 @@ class File:
 
         extract_nested_zip(self.path, norm_zip_path)
 
-        msg, file_count, errors = convert_folder(norm_zip_path, norm_dir_path, zipped=True)
+        msg, file_count, errors = _convert_folder(norm_zip_path, norm_dir_path, zipped=True)
 
         if 'succcessfully' in msg:
             func = copy
@@ -193,15 +195,6 @@ def delete_file_or_dir(path: str):
         shutil.rmtree(path)
 
 
-def check_for_files(filepath: str):
-    """Check if files exists"""
-    for filepath_object in glob.glob(filepath):
-        if os.path.isfile(filepath_object):
-            return True
-
-    return False
-
-
 def extract_nested_zip(zipped_file: str, to_folder: str):
     """Extract nested zipped files to specified folder"""
     with zipfile.ZipFile(zipped_file, 'r') as zfile:
@@ -230,31 +223,64 @@ def add_fields(table, *args):
     return table
 
 
-def append_tsv_row(tsv_file, row):
-    writer = csv.writer(
-        tsv_file,
-        delimiter='\t',
-        quoting=csv.QUOTE_NONE,
-        quotechar='',
-        lineterminator='\n',
-        escapechar='')
-    writer.writerow(row)
+def convert_folder():
+    source_dir, target_dir = properties['directories']['source'], properties['directories']['target']
+    continue_conversion = properties['database']['continue-conversion']
+
+    _convert_folder(source_dir, target_dir, continue_conversion)
 
 
-def convert_folder(source_dir: str, target_dir: str, zipped: bool = False):
+def _convert_folder(source_dir: str, target_dir: str, continue_conversion: bool = True, zipped: bool = False):
     """Convert all files in folder"""
     tsv_source_path = target_dir + '.tsv'
     converted_now = False
     errors = False
 
-    result_file = open(target_dir + '_processed.tsv', 'w')
-    tsv_file = open(target_dir + '_processed.tsv', 'w')
+    with StorageSqliteImpl(db_dir, db_name, continue_conversion) as file_storage:
+        Path(target_dir).mkdir(parents=True, exist_ok=True)
 
-    Path(target_dir).mkdir(parents=True, exist_ok=True)
+        if not os.path.isfile(tsv_source_path):
+            run_siegfried(source_dir, target_dir, tsv_source_path, zipped)
 
-    if not os.path.isfile(tsv_source_path):
-        run_siegfried(source_dir, target_dir, tsv_source_path, zipped)
+        row_count = write_sf_file_to_storage(tsv_source_path, file_storage)
+        table = file_storage.get_unconverted_rows()
 
+        file_count = sum([len(files) for r, d, files in os.walk(source_dir)])
+
+        if row_count == 0:
+            print('No files to convert. Exiting.')
+            return 'Error', file_count
+        if file_count != row_count:
+            print('Row count: ' + str(row_count))
+            print('File count: ' + str(file_count))
+            print("Files listed in '" + tsv_source_path + "' doesn't match files on disk. Exiting.")
+            return 'Error', file_count
+        if not zipped:
+            print('Converting files..')
+
+        # run conversion
+        converted_now, errors, file_count = convert_files(
+            converted_now, errors, file_count,
+            source_dir, table, target_dir, file_storage, zipped
+        )
+
+    msg = get_conversion_result(converted_now, errors)
+
+    return msg, file_count, errors
+
+
+def get_conversion_result(converted_now, errors):
+    if converted_now:
+        msg = 'All files converted successfully.'
+        if errors:
+            msg = "Not all files were converted. See the db table for details."
+    else:
+        msg = 'All files converted previously.'
+    print("\n" + msg)
+    return msg
+
+
+def write_sf_file_to_storage(tsv_source_path, file_storage: ConvertStorage):
     table = etl.fromtsv(tsv_source_path)
     table = etl.rename(table,
                        {
@@ -266,32 +292,13 @@ def convert_folder(source_dir: str, target_dir: str, zipped: bool = False):
                            'Version': 'version'
                        },
                        strict=False)
-
     table = etl.select(table, lambda rec: rec.source_file_path != '')
     # Remove listing of files in zip
     table = etl.select(table, lambda rec: '#' not in rec.source_file_path)
-    # TODO: Ikke fullgod sjekk på embedded dokument i linje over da # faktisk kan forekomme i filnavn
-    table.row_count = etl.nrows(table)
-
-    file_count = sum([len(files) for r, d, files in os.walk(source_dir)])
-
-    if table.row_count == 0:
-        print('No files to convert. Exiting.')
-        return 'Error', file_count
-    if file_count != table.row_count:
-        print('Row count: ' + str(table.row_count))
-        print('File count: ' + str(file_count))
-        print("Files listed in '" + tsv_source_path + "' doesn't match files on disk. Exiting.")
-        return 'Error', file_count
-    if not zipped:
-        print('Converting files..')
-
     table = add_fields(table, 'version', 'norm_file_path', 'result', 'id')
-
     # Remove Siegfried generated columns
     table = remove_fields(table, 'namespace', 'basis', 'warning')
-
-    append_tsv_row(tsv_file, etl.header(table))
+    # TODO: Ikke fullgod sjekk på embedded dokument i linje over da # faktisk kan forekomme i filnavn
 
     # Treat csv (detected from extension only) as plain text:
     table = etl.convert(table, 'mime_type',
@@ -303,18 +310,31 @@ def convert_folder(source_dir: str, target_dir: str, zipped: bool = False):
                         lambda v, _row: 'application/xml' if _row.id == 'fmt/979' else v,
                         pass_row=True)
 
+    file_storage.append_rows(table)
+    row_count = etl.nrows(table)
+    remove_file(tsv_source_path)
+    return row_count
+
+
+def convert_files(converted_now: bool,
+                  errors: bool,
+                  file_count: int,
+                  source_dir: str,
+                  table: Any,
+                  target_dir: str,
+                  file_storage: ConvertStorage,
+                  zipped: bool):
     table.row_count = 0
     for row in etl.dicts(table):
         # Remove Thumbs.db files
         if os.path.basename(row['source_file_path']) == 'Thumbs.db':
-            os.remove(row['source_file_path'])
+            remove_file(row['source_file_path'])
             file_count -= 1
             continue
 
         table.row_count += 1
 
         row['mime_type'] = row['mime_type'].split(';')[0]
-
         if not row['mime_type']:
             # Siegfried sets mime type only to xml files with xml declaration
             if os.path.splitext(row['source_file_path'])[1].lower() == '.xml':
@@ -324,40 +344,23 @@ def convert_folder(source_dir: str, target_dir: str, zipped: bool = False):
             print('(' + str(table.row_count) + '/' + str(file_count) + '): ' +
                   '.../' + row['source_file_path'] + ' (' + row['mime_type'] + ')')
 
-        if row['result'] not in ('Converted successfully', 'Manually converted'):
-            source_file = File(row)
-            normalized = source_file.convert(source_dir, target_dir)
+        source_file = File(row)
+        normalized = source_file.convert(source_dir, target_dir)
 
-            row['result'] = normalized['msg']
+        row['result'] = normalized['msg']
 
-            if row['result'] in ('Conversion failed', 'Conversion not supported'):
-                errors = True
-                result_file.write(row['result'] + ': ' + row['source_file_path'] +
-                                  ' (' + row['mime_type'] + ')\n')
-                print(row['mime_type'] + " " + row['result'])
+        if row['result'] in ('Conversion failed', 'Conversion not supported'):
+            errors = True
+            print(row['mime_type'] + " " + row['result'])
 
-            if row['result'] in ('Converted successfully', 'Manually converted'):
-                converted_now = True
+        if row['result'] in ('Converted successfully', 'Manually converted'):
+            converted_now = True
 
-            if normalized['norm_file_path']:
-                row['norm_file_path'] = relpath(normalized['norm_file_path'], target_dir)
+        if normalized['norm_file_path']:
+            row['norm_file_path'] = relpath(normalized['norm_file_path'], target_dir)
 
-        append_tsv_row(tsv_file, list(row.values()))
-
-    shutil.move(tsv_file.name, tsv_source_path)
-    result_file.close()
-    tsv_file.close()
-
-    if converted_now:
-        msg = 'All files converted succcessfully.'
-        if errors:
-            msg = "Not all files were converted. See '" + result_file.name + "' for details."
-    else:
-        msg = 'All files converted previously.'
-
-    print("\n" + msg)
-
-    return msg, file_count, errors
+        file_storage.update_row(row['source_file_path'], list(row.values()))
+    return converted_now, errors, file_count
 
 
 if __name__ == "__main__":

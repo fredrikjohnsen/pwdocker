@@ -75,5 +75,9 @@ def run_siegfried(source_dir: str, target_dir: str, tsv_path: str, zipped=False)
         for row in csvin:
             tsvout.writerow(row)
 
-    if os.path.exists(csv_path):
-        os.remove(csv_path)
+    remove_file(csv_path)
+
+
+def remove_file(src_path: str):
+    if os.path.exists(src_path):
+        os.remove(src_path)
