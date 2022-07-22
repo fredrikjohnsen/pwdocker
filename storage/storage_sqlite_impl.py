@@ -22,13 +22,14 @@ class StorageSqliteImpl(ConvertStorage):
         version TEXT,
         mime_type TEXT,
         norm_file_path TEXT,
-        result TEXT
+        result TEXT,
+        source_directory TEXT
     );'''
 
     _update_result_str = '''
         UPDATE File 
         SET file_size = ?, modified = ?,  errors = ?, id = ?, 
-            format = ?, version = ?, mime_type = ?, norm_file_path = ?, result = ? 
+            format = ?, version = ?, mime_type = ?, norm_file_path = ?, result = ?, source_directory = ? 
         WHERE source_file_path = ?
         '''
 
@@ -80,9 +81,22 @@ class StorageSqliteImpl(ConvertStorage):
         self._conn.execute(self._update_result_str, data)
         self._conn.commit()
 
-    def get_unconverted_rows(self):
+    def get_unconverted_rows(self, source_dir: str):
         return fromdb(
             self._conn,
-            'SELECT * FROM File WHERE result IS NULL OR result NOT IN(?, ?)',
-            [Result.SUCCESSFUL, Result.MANUAL]
+            '''
+            SELECT * FROM File 
+            WHERE source_directory = ? AND result IS NULL OR result NOT IN(?, ?)
+            ''',
+            [source_dir, Result.SUCCESSFUL, Result.MANUAL]
+        )
+
+    def get_converted_rows(self, source_dir: str):
+        return fromdb(
+            self._conn,
+            ''' 
+            SELECT source_file_path FROM File
+            WHERE source_directory = ? AND result IS NOT NULL AND result IN(?, ?)
+            ''',
+            [source_dir, Result.SUCCESSFUL, Result.MANUAL]
         )

@@ -1,5 +1,7 @@
 from typing import Any, List
 
+from petl.io.db import DbView
+
 
 class ConvertStorage:
 
@@ -14,7 +16,11 @@ class ConvertStorage:
         """Update a row in the store"""
         pass
 
-    def get_unconverted_rows(self):
+    def get_converted_rows(self, source_dir: str) -> DbView:
+        """Returns source_file_path for the files that have been converted"""
+        pass
+
+    def get_unconverted_rows(self, source_dir: str) -> DbView:
         """Returns rows for files that have not been converted yet"""
         pass
 

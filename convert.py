@@ -17,10 +17,11 @@ import os
 import pathlib
 from os.path import relpath
 from pathlib import Path
-from typing import Any
+from typing import Dict, List
 
 import petl as etl
 import typer
+from petl.io.db import DbView
 from ruamel.yaml import YAML
 
 # Load converters
@@ -75,8 +76,8 @@ def convert_folder(source_dir: str,
     if not os.path.isfile(tsv_source_path):
         run_siegfried(source_dir, target_dir, tsv_source_path, zipped)
 
-    row_count = write_sf_file_to_storage(tsv_source_path, file_storage)
-    table = file_storage.get_unconverted_rows()
+    row_count = write_sf_file_to_storage(tsv_source_path, source_dir, file_storage)
+    table = file_storage.get_unconverted_rows(source_dir)
 
     file_count = sum([len(files) for r, d, files in os.walk(source_dir)])
 
@@ -91,6 +92,9 @@ def convert_folder(source_dir: str,
     if not zipped:
         print('Converting files..')
 
+    # print the files in this directory that have already been converted
+    file_count = print_converted_files(file_count, file_storage, source_dir)
+
     # run conversion
     converted_now, errors, file_count = convert_files(
         converted_now, errors, file_count,
@@ -102,58 +106,11 @@ def convert_folder(source_dir: str,
     return msg, file_count, errors
 
 
-def get_conversion_result(converted_now, errors):
-    if converted_now:
-        msg = 'All files converted successfully.'
-        if errors:
-            msg = "Not all files were converted. See the db table for details."
-    else:
-        msg = 'All files converted previously.'
-    print("\n" + msg)
-    return msg
-
-
-def write_sf_file_to_storage(tsv_source_path, file_storage: ConvertStorage):
-    table = etl.fromtsv(tsv_source_path)
-    table = etl.rename(table,
-                       {
-                           'filename': 'source_file_path',
-                           'tika_batch_fs_relative_path': 'source_file_path',
-                           'filesize': 'file_size',
-                           'mime': 'mime_type',
-                           'Content_Type': 'mime_type',
-                           'Version': 'version'
-                       },
-                       strict=False)
-    table = etl.select(table, lambda rec: rec.source_file_path != '')
-    # Remove listing of files in zip
-    table = etl.select(table, lambda rec: '#' not in rec.source_file_path)
-    table = add_fields(table, 'version', 'norm_file_path', 'result', 'id')
-    # Remove Siegfried generated columns
-    table = remove_fields(table, 'namespace', 'basis', 'warning')
-    # TODO: Ikke fullgod sjekk på embedded dokument i linje over da # faktisk kan forekomme i filnavn
-
-    # Treat csv (detected from extension only) as plain text:
-    table = etl.convert(table, 'mime_type',
-                        lambda v, _row: 'text/plain' if _row.id == 'x-fmt/18' else v,
-                        pass_row=True)
-
-    # Update for missing mime types where id is known:
-    table = etl.convert(table, 'mime_type',
-                        lambda v, _row: 'application/xml' if _row.id == 'fmt/979' else v,
-                        pass_row=True)
-
-    file_storage.append_rows(table)
-    row_count = etl.nrows(table)
-    remove_file(tsv_source_path)
-    return row_count
-
-
 def convert_files(converted_now: bool,
                   errors: bool,
                   file_count: int,
                   source_dir: str,
-                  table: Any,
+                  table: DbView,
                   target_dir: str,
                   file_storage: ConvertStorage,
                   zipped: bool):
@@ -171,7 +128,16 @@ def convert_files(converted_now: bool,
     return converted_now, errors, file_count
 
 
-def convert_file(converted_now, errors, file_count, file_storage, row, source_dir, table, target_dir, zipped):
+def convert_file(
+        converted_now: bool,
+        errors: bool,
+        file_count: int,
+        file_storage: ConvertStorage,
+        row: Dict[str, any],
+        source_dir: str,
+        table: DbView,
+        target_dir: str,
+        zipped: bool):
     row['mime_type'] = row['mime_type'].split(';')[0]
     if not row['mime_type']:
         # Siegfried sets mime type only to xml files with xml declaration
@@ -194,6 +160,63 @@ def convert_file(converted_now, errors, file_count, file_storage, row, source_di
 
     file_storage.update_row(row['source_file_path'], list(row.values()))
     return converted_now, errors
+
+
+def write_sf_file_to_storage(tsv_source_path: str, source_dir: str, file_storage: ConvertStorage):
+    table = etl.fromtsv(tsv_source_path)
+    table = etl.rename(table,
+                       {
+                           'filename': 'source_file_path',
+                           'tika_batch_fs_relative_path': 'source_file_path',
+                           'filesize': 'file_size',
+                           'mime': 'mime_type',
+                           'Content_Type': 'mime_type',
+                           'Version': 'version'
+                       },
+                       strict=False)
+    table = etl.select(table, lambda rec: rec.source_file_path != '')
+    # Remove listing of files in zip
+    table = etl.select(table, lambda rec: '#' not in rec.source_file_path)
+    table = add_fields(table, 'version', 'norm_file_path', 'result', 'id')
+    table = etl.addfield(table, 'source_directory', source_dir)
+    # Remove Siegfried generated columns
+    table = remove_fields(table, 'namespace', 'basis', 'warning')
+    # TODO: Ikke fullgod sjekk på embedded dokument i linje over da # faktisk kan forekomme i filnavn
+
+    # Treat csv (detected from extension only) as plain text:
+    table = etl.convert(table, 'mime_type',
+                        lambda v, _row: 'text/plain' if _row.id == 'x-fmt/18' else v,
+                        pass_row=True)
+
+    # Update for missing mime types where id is known:
+    table = etl.convert(table, 'mime_type',
+                        lambda v, _row: 'application/xml' if _row.id == 'fmt/979' else v,
+                        pass_row=True)
+
+    file_storage.append_rows(table)
+    row_count = etl.nrows(table)
+    remove_file(tsv_source_path)
+    return row_count
+
+
+def print_converted_files(file_count: int, file_storage: ConvertStorage, source_dir: str):
+    converted_files = file_storage.get_converted_rows(source_dir)
+    if converted_files.len() > 1:
+        for row in converted_files[1:]:  # drop header row
+            print(f"'{row[0]}' has already been converted")
+            file_count -= 1
+    return file_count
+
+
+def get_conversion_result(converted_now: bool, errors: bool):
+    if converted_now:
+        msg = 'All files converted successfully.'
+        if errors:
+            msg = "Not all files were converted. See the db table for details."
+    else:
+        msg = 'All files converted previously.'
+    print("\n" + msg)
+    return msg
 
 
 if __name__ == "__main__":
