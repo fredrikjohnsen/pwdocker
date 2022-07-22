@@ -53,10 +53,10 @@ class StorageSqliteImpl(ConvertStorage):
         self._conn = sqlite3.connect(storage_path)
         print(f'Opened DB {self.storage_name} successfully')
         if not self.preserve_existing_data:
-            self._conn.cursor().execute('DROP TABLE IF EXISTS File')
+            self._conn.execute('DROP TABLE IF EXISTS File')
             self._conn.commit()
 
-        table = self._conn.cursor().execute("SELECT name FROM sqlite_master WHERE type='table' AND name='File'")
+        table = self._conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='File'")
         if len(table.fetchall()) <= 0:
             self._conn.execute(self._create_table_str)
             self._conn.commit()
@@ -68,7 +68,7 @@ class StorageSqliteImpl(ConvertStorage):
     def append_rows(self, table):
         # select the first row (primary key) and filter away rows that already exist
         self._conn.row_factory = lambda cursor, row: row[0]
-        file_names = self._conn.cursor().execute('SELECT source_file_path FROM File').fetchall()
+        file_names = self._conn.execute('SELECT source_file_path FROM File').fetchall()
         table = petl.select(table, lambda rec: rec.source_file_path not in file_names)
         # append new rows
         appenddb(table, self._conn, 'File')
@@ -77,7 +77,7 @@ class StorageSqliteImpl(ConvertStorage):
     def update_row(self, src_path: str, data: List[Any]):
         data.append(src_path)
         data.pop(0)
-        self._conn.cursor().execute(self._update_result_str, data)
+        self._conn.execute(self._update_result_str, data)
         self._conn.commit()
 
     def get_unconverted_rows(self):

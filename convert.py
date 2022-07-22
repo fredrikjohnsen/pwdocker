@@ -58,7 +58,7 @@ def convert_folder_entrypoint():
     continue_conversion = properties['database']['continue-conversion']
 
     with StorageSqliteImpl(db_dir, db_name, continue_conversion) as file_storage:
-        convert_folder(source_dir, target_dir, file_storage, continue_conversion)
+        convert_folder(source_dir, target_dir, file_storage)
 
 
 def convert_folder(source_dir: str,
