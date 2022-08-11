@@ -17,23 +17,27 @@ import os
 import pathlib
 from os.path import relpath
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict
+from argparse import ArgumentParser, Namespace
 
 import petl as etl
-import typer
 from petl.io.db import DbView
 from ruamel.yaml import YAML
 
 # Load converters
 from storage import ConvertStorage, StorageSqliteImpl
 from util import run_siegfried, remove_file, File, Result
+from util.util import get_property_defaults
 
 yaml = YAML()
 with open("converters.yml", "r") as yamlfile:
     converters = yaml.load(yamlfile)
 with open("application.yml", "r") as properties:
     properties = yaml.load(properties)
-    db_dir, db_name = properties['database']['path'], properties['database']['name']
+
+# Properties set in the local file will overwrite those in application.yml
+with open("application.local.yml", "r") as local_properties:
+    local_properties = yaml.load(local_properties)
 
 pwconv_path = pathlib.Path(__file__).parent.resolve()
 
@@ -54,12 +58,9 @@ def add_fields(table, *args):
     return table
 
 
-def convert_folder_entrypoint():
-    source_dir, target_dir = properties['directories']['source'], properties['directories']['target']
-    continue_conversion = properties['database']['continue-conversion']
-
-    with StorageSqliteImpl(db_dir, db_name, continue_conversion) as file_storage:
-        convert_folder(source_dir, target_dir, file_storage)
+def convert_folder_entrypoint(args: Namespace):
+    with StorageSqliteImpl(args.database_path, args.database_name, args.continue_conversion) as file_storage:
+        convert_folder(args.source_dir, args.target_dir, file_storage)
 
 
 def convert_folder(source_dir: str,
@@ -76,7 +77,8 @@ def convert_folder(source_dir: str,
     if not os.path.isfile(tsv_source_path):
         run_siegfried(source_dir, target_dir, tsv_source_path, zipped)
 
-    row_count = write_sf_file_to_storage(tsv_source_path, source_dir, file_storage)
+    row_count = write_sf_file_to_storage(
+        tsv_source_path, source_dir, file_storage)
     table = file_storage.get_unconverted_rows(source_dir)
 
     file_count = sum([len(files) for r, d, files in os.walk(source_dir)])
@@ -87,7 +89,8 @@ def convert_folder(source_dir: str,
     if file_count != row_count:
         print(f'Row count: {str(row_count)}')
         print(f'File count: {str(file_count)}')
-        print(f"Files listed in '{tsv_source_path}' doesn't match files on disk. Exiting.")
+        print(
+            f"Files listed in '{tsv_source_path}' doesn't match files on disk. Exiting.")
         return 'Error', file_count
     if not zipped:
         print('Converting files..')
@@ -100,7 +103,6 @@ def convert_folder(source_dir: str,
         converted_now, errors, file_count,
         source_dir, table, target_dir, file_storage, zipped
     )
-
     msg = get_conversion_result(converted_now, errors)
 
     return msg, file_count, errors
@@ -144,19 +146,21 @@ def convert_file(
         if os.path.splitext(row['source_file_path'])[1].lower() == '.xml':
             row['mime_type'] = 'application/xml'
     if not zipped:
-        print(f"({str(table.row_count)}/{str(file_count)}): .../{row['source_file_path']} ({row['mime_type']})'")
+        print(
+            f"({str(table.row_count)}/{str(file_count)}): .../{row['source_file_path']} ({row['mime_type']})'")
 
-    source_file = File(row, converters, pwconv_path, file_storage, convert_folder)
+    source_file = File(row, converters, pwconv_path,
+                       file_storage, convert_folder)
     normalized = source_file.convert(source_dir, target_dir)
     row['result'] = normalized['msg']
-
     if row['result'] in (Result.FAILED, Result.NOT_SUPPORTED):
         errors = True
         print(f"{row['mime_type']} {row['result']}")
     if row['result'] in (Result.SUCCESSFUL, Result.MANUAL):
         converted_now = True
     if normalized['norm_file_path']:
-        row['norm_file_path'] = relpath(normalized['norm_file_path'], target_dir)
+        row['norm_file_path'] = relpath(
+            normalized['norm_file_path'], target_dir)
 
     file_storage.update_row(row['source_file_path'], list(row.values()))
     return converted_now, errors
@@ -219,5 +223,24 @@ def get_conversion_result(converted_now: bool, errors: bool):
     return msg
 
 
+def create_args_parser(parser: ArgumentParser):
+    defaults = get_property_defaults(properties, local_properties)
+    parser.add_argument('source_dir', nargs='?', help='Absolute path to the source directory.',
+                        default=defaults['directories']['source'])
+    parser.add_argument('target_dir', nargs='?', help='Absolute path to the target directory.',
+                        default=defaults['directories']['target'])
+    parser.add_argument('database_path', nargs='?', help='Absolute path to the database file',
+                        default=defaults['database']['path'])
+    parser.add_argument('database_name', nargs='?', help='Name of the the db file',
+                        default=defaults['database']['name'])
+    parser.add_argument('continue_conversion', nargs='?',
+                        help='Boolean value - True to continue a previous conversion, False to convert all files.',
+                        default=defaults['database']['continue-conversion'])
+
+
+parser = ArgumentParser('convert.py')
+create_args_parser(parser)
+
 if __name__ == "__main__":
-    typer.run(convert_folder_entrypoint)
+    args = parser.parse_args()
+    convert_folder_entrypoint(args)
