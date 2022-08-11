@@ -20,8 +20,8 @@ mhtml2pdf.py:
   command: mhtml2pdf.py <source> <target>
   comment: |
     Convert archived web content to pdf.
-eml_to_pdf:
-  command: eml_to_pdf <source> <target>
+eml2pdf.py:
+  command: eml2pdf.py <source> <target>
   comment: |
     Convert email to pdf
 convert:
@@ -48,9 +48,14 @@ html2pdf.py:
     Converts html to pdf, using Chrome printing functionality.
 unoconv2x.py:
   command: unoconv2x.py <source> <target> <target_ext> <mime_type>
-  comment: Er denne aktuell lenger? # todo
+  comment: | #todo might not be relevant anymore?
+    Converts spreadsheets to html or pdf. Converts word and rtf to pdf.
 pandoc:
   command: pandoc <source> -s -o <target>
   comment: |
     Converts between many document formats.
     File extension on in- and out-file decides output file format.
+image2pdf:
+  command: image2pdf.py <source> <target>
+  comment: |
+    Converts image formats to pdf/a

@@ -9,9 +9,30 @@ Extensible Markup Language:
       command: convert_sdo.php <source> <target>
       target-ext: pdf
 Hypertext Markup Language:
-  command:  html-to-pdf.py <source> <target> || pandoc <source> -s -o <target>  && pdf2text.py <target>
+  command: html-to-pdf.py <source> <target> || pandoc <source> -s -o <target>  && pdf2text.py <target>
+  target-ext: pdf
+Extensible Hypertext Markup Language:
+  command: xhtml2pdf.py <source> <target>
   target-ext: pdf
 Markdown:
   command: text2utf8.py <source> <target>
 Plain Text File:
   command: text2utf8.py <source> <target>
+MIME Email:
+  command: eml2pdf.py <source> <target>
+  target-ext: pdf
+Exchangeable Image File Format (Compressed):
+  command: image2pdf.py <source> <target>
+  target-ext: pdf
+Microsoft Excel 97 Workbook (xls):
+  command: unoconv2x.py <source> <target> <mime-type> <target-ext>
+  target-ext: pdf
+Rich Text Format:
+  command: office2pdf.py <source> <target>
+  target-ext: pdf
+Rich Text OpenDocument Presentation:
+  command: office2pdf.py <source> <target>
+  target-ext: pdf
+OpenDocument Presentation:
+  command: office2pdf.py <source> <target>
+  target-ext: pdf

@@ -1,18 +1,27 @@
 #!/usr/bin/env python3
 
-import sys
 import typer
-from pdfy import Pdfy
+import pdfkit
+
 
 def html2pdf(src_file_path: str, target_file_path: str):
-    """Convert html to pdf"""
-    norm_file_path = ""
-    try:
-        p = Pdfy()
-        p.html_to_pdf(src_file.path, tmp_file.path)
-    except Exception as e:
-        print(e)
-        sys.exit(1)
+    """
+    Convert html content to pdf
 
-if __name__ == "__main__":
+    Args:
+        src_file_path: path for the file to be converted
+        target_file_path: path for the converted file
+
+    Returns:
+        True on success
+    """
+    try:
+        result = pdfkit.from_file(src_file_path, target_file_path)
+        return True if result is True else False
+    except IOError as e:
+        print(e)
+        return False
+
+
+if __name__ == '__main__':
     typer.run(html2pdf)
