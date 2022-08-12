@@ -59,8 +59,8 @@ def add_fields(table, *args):
 
 
 def convert_folder_entrypoint(args: Namespace):
-    with StorageSqliteImpl(args.database_path, args.database_name, args.continue_conversion) as file_storage:
-        convert_folder(args.source_dir, args.target_dir, file_storage)
+    with StorageSqliteImpl(args.db_path, args.db_name, args.resume) as file_storage:
+        convert_folder(args.source, args.target, file_storage)
 
 
 def convert_folder(source_dir: str,
@@ -225,16 +225,16 @@ def get_conversion_result(converted_now: bool, errors: bool):
 
 def create_args_parser(parser: ArgumentParser):
     defaults = get_property_defaults(properties, local_properties)
-    parser.add_argument('source_dir', nargs='?', help='Absolute path to the source directory.',
+    parser.add_argument('-s', '--source', help='Absolute path to the source directory.',
                         default=defaults['directories']['source'])
-    parser.add_argument('target_dir', nargs='?', help='Absolute path to the target directory.',
+    parser.add_argument('-t', '--target', help='Absolute path to the target directory.',
                         default=defaults['directories']['target'])
-    parser.add_argument('database_path', nargs='?', help='Absolute path to the database file',
+    parser.add_argument('-dp', '--db-path', help='Absolute path to the database file',
                         default=defaults['database']['path'])
-    parser.add_argument('database_name', nargs='?', help='Name of the the db file',
+    parser.add_argument('-dn', '--db-name', help='Name of the the db file',
                         default=defaults['database']['name'])
-    parser.add_argument('continue_conversion', nargs='?',
-                        help='Boolean value - True to continue a previous conversion, False to convert all files.',
+    parser.add_argument('-r', '--resume',
+                        help='Boolean value - True to resume a previous conversion, False to convert all files in the folder.',
                         default=defaults['database']['continue-conversion'])
 
 

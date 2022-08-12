@@ -117,7 +117,7 @@ def _merge_dicts(properties, overwrite_with):
     if isinstance(overwrite_with, dict):
         for k, v in overwrite_with.items():
             if k in properties:
-                properties[k] = merge(properties.get(k), v)
-            return properties
+                properties[k] = _merge_dicts(properties.get(k), v)
+        return properties
     else:
         return overwrite_with
