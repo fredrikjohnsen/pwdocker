@@ -27,7 +27,7 @@ from ruamel.yaml import YAML
 # Load converters
 from storage import ConvertStorage, StorageSqliteImpl
 from util import run_siegfried, remove_file, File, Result
-from util.util import get_property_defaults
+from util.util import get_property_defaults, str_to_bool
 
 yaml = YAML()
 with open("converters.yml", "r") as yamlfile:
@@ -235,7 +235,7 @@ def create_args_parser(parser: ArgumentParser):
                         default=defaults['database']['name'])
     parser.add_argument('-r', '--resume',
                         help='Boolean value - True to resume a previous conversion, False to convert all files in the folder.',
-                        default=defaults['database']['continue-conversion'])
+                        default=defaults['database']['continue-conversion'], type=lambda x: str_to_bool(x), choices=(True, False))
 
 
 parser = ArgumentParser('convert.py')

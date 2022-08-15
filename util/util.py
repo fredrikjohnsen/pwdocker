@@ -92,6 +92,15 @@ def delete_file_or_dir(path: str):
 
     if os.path.isdir(path):
         shutil.rmtree(path)
+        
+def str_to_bool(s)-> bool:
+    if s == 'True':
+         return True
+    elif s == 'False':
+         return False
+    else:
+         raise ValueError
+
 
 
 def extract_nested_zip(zipped_file: str, to_folder: str):

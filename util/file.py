@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Optional, Any, List, Callable, Union, Tuple, Dict
 
 from storage import ConvertStorage
-from util import run_shell_command, delete_file_or_dir, extract_nested_zip, Result
+from util import run_shell_command, delete_file_or_dir, extract_nested_zip, Result 
 
 
 class File:
@@ -49,7 +49,7 @@ class File:
             else:
                 source_file_path = os.path.join(source_dir, self.path)
                 target_file_path = os.path.join(target_dir, self.path)
-
+                
                 if self.format not in self.converters:
                     shutil.copyfile(source_file_path, target_file_path)
                     self.normalized['msg'] = Result.NOT_SUPPORTED
@@ -77,7 +77,7 @@ class File:
         cmd, target_ext = self._get_target_ext_and_cmd(converter)
 
         if target_ext and self.ext != target_ext:
-            target_file_path = os.path.join(target_dir, self.path + '.' + target_ext)
+            target_file_path = os.path.join(target_dir, self.path.replace(self.ext, target_ext))
 
         cmd = cmd.replace('<source>', '"' + source_file_path + '"')
         cmd = cmd.replace('<target>', '"' + target_file_path + '"')
