@@ -13,6 +13,8 @@
 /PWConvert.iml
 /vcs.xml
 /venv/
+__pycache__/
+*.py[co]
 
 # Created by https://www.toptal.com/developers/gitignore/api/pycharm,visualstudiocode
 # Edit at https://www.toptal.com/developers/gitignore?templates=pycharm,visualstudiocode
