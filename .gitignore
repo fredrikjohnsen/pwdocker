@@ -13,6 +13,8 @@
 /PWConvert.iml
 /vcs.xml
 /venv/
+__pycache__/
+*.py[co]
 
 
 # local application config

@@ -11,6 +11,7 @@ class ConvertStorage:
 
     def close_data_source(self):
         """Closes the datasource connection"""
+        pass
 
     def update_row(self, src_path: str, data: List[Any]):
         """Update a row in the store"""
