@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import os
+import shutil
 import sys
 
 import ocrmypdf
@@ -7,7 +9,7 @@ from ocrmypdf import Verbosity, ExitCodeException
 import typer
 
 
-def pdf2pdfa(input_file: str, output_file: str, timeout: int = 180):
+def pdf2pdfa(input_file: str, output_file: str, version: str, timeout: int = 180):
     """
     Convert pdf to pdf/a
 
@@ -21,6 +23,11 @@ def pdf2pdfa(input_file: str, output_file: str, timeout: int = 180):
     Returns:
         exit code
     """
+
+    if version in ('1a', '1b', '2a', '2b'):
+        shutil.copy(input_file, output_file)
+        if os.path.exists(output_file):
+            return 0
 
     ocrmypdf.configure_logging(Verbosity.quiet)
     try:

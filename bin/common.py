@@ -23,7 +23,7 @@ def run_command_and_convert_to_pdfa(command: List[str], tmp_path: str, target_pa
     if not is_conversion_success(initial_convert_status_code, tmp_path):
         remove_tmp_and_exit(initial_convert_status_code, tmp_path)
 
-    status_code = pdf2pdfa(tmp_path, target_path)
+    status_code = pdf2pdfa(tmp_path, target_path, '1.0')
     if not is_conversion_success(status_code, target_path):
         remove_tmp_and_exit(status_code, tmp_path)
 

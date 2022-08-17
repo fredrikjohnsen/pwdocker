@@ -24,13 +24,13 @@ def run_shell_command(command, cwd=None, timeout=30, shell=False):
     stderr = []
 
     # sys.stdout.flush()
-
     proc = subprocess.Popen(
         command,
         cwd=cwd,
         shell=shell,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
+        env=os.environ,
         universal_newlines=True,
     )
 
