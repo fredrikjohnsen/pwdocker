@@ -1,38 +1,37 @@
-Acrobat PDF/A - Portable Document Format:
-  command: cp <source> <target> && pdf2text.py <target>
-Acrobat PDF 1.7 - Portable Document Format:
-  command: python3 pdf2pdfa.py <source> <target> && pdf2text.py <target>
-Extensible Markup Language:
-  command: python3 text2utf8.py <source> <target>
+application/pdf:
+  command: python3 -m bin.pdf2pdfa <source> <target> <version> && python3 -m bin.pdf2text <target>
+  target-ext: pdf
+application/xml:
+  command: python3 -m bin.text2utf8 <source> <target>
   source-ext:
     sdo:
-      command: convert_sdo.php <source> <target>
+      command: ../bin/convert_sdo.php <source> <target>
       target-ext: pdf
-Hypertext Markup Language:
-  command: python3 html2pdf.py <source> <target> || pandoc <source> -s -o <target>  && python3 pdf2text.py <target>
+text/html:
+  command: python3 -m bin.html2pdf <source> <target> || pandoc <source> -s -o <target>  && python3 -m bin.pdf2text <target>
   target-ext: pdf
-Extensible Hypertext Markup Language:
-  command: python3 xhtml2pdf.py <source> <target>
+application/xhtml+xml:
+  command: python3 -m bin.xhtml2pdf <source> <target>
   target-ext: pdf
-Markdown:
-  command: python3 text2utf8.py <source> <target>
-Plain Text File:
-  command: python3 text2utf8.py <source> <target>
-MIME Email:
-  command: python3 eml2pdf.py <source> <target>
+text/markdown:
+  command: python3 -m bin.text2utf8 <source> <target>
+text/plain:
+  command: python3 -m bin.text2utf8 <source> <target>
+message/rfc822:
+  command: python3 -m bin.eml2pdf <source> <target>
   target-ext: pdf
-Exchangeable Image File Format (Compressed):
-  command: python3 image2pdf.py <source> <target>
+image/jpeg:
+  command: python3 -m bin.image2pdf <source> <target>
   target-ext: pdf
 Microsoft Excel 97 Workbook (xls):
-  command: python3 unoconv2x.py <source> <target> <mime-type> <target-ext>
+  command: python3 -m bin.unoconv2x <source> <target> <mime-type> <target-ext>
   target-ext: pdf
-Rich Text Format:
-  command: python3 office2pdf.py <source> <target>
+application/rtf:
+  command: python3 -m bin.office2pdf <source> <target>
   target-ext: pdf
 Rich Text OpenDocument Presentation:
-  command: python3 office2pdf.py <source> <target>
+  command: python3 -m bin.office2pdf <source> <target>
   target-ext: pdf
-OpenDocument Presentation:
-  command: python3 office2pdf.py <source> <target>
+image/tiff:
+  command: python3 -m bin.image2pdf <source> <target> && python3 -m bin.pdf2pdfa <target> <target>
   target-ext: pdf

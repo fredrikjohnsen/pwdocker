@@ -148,7 +148,7 @@ def convert_file(
     if not zipped:
         print(
             f"({str(table.row_count)}/{str(file_count)}): .../{row['source_file_path']} ({row['mime_type']})'")
-
+    
     source_file = File(row, converters, pwconv_path,
                        file_storage, convert_folder)
     normalized = source_file.convert(source_dir, target_dir)
@@ -159,8 +159,7 @@ def convert_file(
     if row['result'] in (Result.SUCCESSFUL, Result.MANUAL):
         converted_now = True
     if normalized['norm_file_path']:
-        row['norm_file_path'] = relpath(
-            normalized['norm_file_path'], target_dir)
+        row['norm_file_path'] = relpath(normalized['norm_file_path'], start=target_dir)
 
     file_storage.update_row(row['source_file_path'], list(row.values()))
     return converted_now, errors
@@ -205,10 +204,14 @@ def write_sf_file_to_storage(tsv_source_path: str, source_dir: str, file_storage
 
 def print_converted_files(file_count: int, file_storage: ConvertStorage, source_dir: str):
     converted_files = file_storage.get_converted_rows(source_dir)
-    if converted_files.len() > 1:
-        for row in converted_files[1:]:  # drop header row
-            print(f"'{row[0]}' has already been converted")
-            file_count -= 1
+    already_converted = etl.nrows(converted_files)
+
+    before = file_count
+    file_count -= already_converted
+    if already_converted > 0:
+        print(
+            f'({already_converted}/{before}) files have already been converted  in {source_dir}')
+
     return file_count
 
 

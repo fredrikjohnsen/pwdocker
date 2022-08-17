@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Optional, Any, List, Callable, Union, Tuple, Dict
 
 from storage import ConvertStorage
-from util import run_shell_command, delete_file_or_dir, extract_nested_zip, Result 
+from util import run_shell_command, delete_file_or_dir, extract_nested_zip, Result
 
 
 class File:
@@ -16,7 +16,8 @@ class File:
                  pwconv_path: Path,
                  file_storage: ConvertStorage,
                  convert_folder: Callable[
-                     [str, str, ConvertStorage, Optional[bool]], Union[Tuple[str, int], Tuple[str, int, bool]]
+                     [str, str, ConvertStorage, Optional[bool]
+                      ], Union[Tuple[str, int], Tuple[str, int, bool]]
                  ]):
         self.converters = converters
         self.pwconv_path = pwconv_path
@@ -44,20 +45,20 @@ class File:
             if self.mime_type == 'n/a':
                 self.normalized['msg'] = Result.NOT_A_DOCUMENT
                 self.normalized['norm_file_path'] = None
-            elif self.mime_type == 'application/zip':
-                self._zip_to_norm(source_dir, target_dir)
+            #elif self.mime_type == 'application/zip':
+            #    self._zip_to_norm(source_dir, target_dir)
             else:
                 source_file_path = os.path.join(source_dir, self.path)
                 target_file_path = os.path.join(target_dir, self.path)
-                
-                if self.format not in self.converters:
-                    shutil.copyfile(source_file_path, target_file_path)
+
+                if self.mime_type not in self.converters:
                     self.normalized['msg'] = Result.NOT_SUPPORTED
                     self.normalized['norm_file_path'] = None
                     return self.normalized
 
-                converter = self.converters[self.format]
-                self._run_conversion_command(converter, source_file_path, target_file_path, target_dir)
+                converter = self.converters[self.mime_type]
+                self._run_conversion_command(
+                    converter, source_file_path, target_file_path, target_dir)
 
         else:
             self.normalized['msg'] = Result.MANUAL
@@ -75,17 +76,17 @@ class File:
               target_dir: path directory where the converted result should be saved
           """
         cmd, target_ext = self._get_target_ext_and_cmd(converter)
-
         if target_ext and self.ext != target_ext:
-            target_file_path = os.path.join(target_dir, self.path.replace(self.ext, target_ext))
+            target_file_path = os.path.join(
+                target_dir, f"{self.path}.{target_ext}")
 
         cmd = cmd.replace('<source>', '"' + source_file_path + '"')
         cmd = cmd.replace('<target>', '"' + target_file_path + '"')
         cmd = cmd.replace('<mime-type>', '"' + self.mime_type + '"')
         cmd = cmd.replace('<target-ext>', '"' + target_ext + '"')
-
-        bin_path = os.path.join(self.pwconv_path, 'bin')
-        result = run_shell_command(cmd, cwd=bin_path, shell=True)
+        cmd = cmd.replace('<version>', '"' + self.version + '"')
+        
+        result = run_shell_command(cmd, cwd=self.pwconv_path, shell=True)
 
         if not os.path.exists(target_file_path):
             self.normalized['msg'] = Result.FAILED
@@ -129,7 +130,8 @@ class File:
                 shutil.copy(src, dest)
 
         def zip_dir(norm_dir_path_param: str, norm_base_path_param: str):
-            shutil.make_archive(norm_base_path_param, 'zip', norm_dir_path_param)
+            shutil.make_archive(norm_base_path_param,
+                                'zip', norm_dir_path_param)
 
         def rm_tmp(rm_paths: List[str]):
             for path in rm_paths:
@@ -142,16 +144,15 @@ class File:
 
         extract_nested_zip(self.path, norm_zip_path)
 
-        msg, file_count, errors = self.convert_folder(norm_zip_path, norm_dir_path, self.file_storage, True)
-
-        if 'succcessfully' in msg:
-            func = copy
-
-            if file_count > 1:
-                func = zip_dir
-
+        msg, file_count, errors = self.convert_folder(
+            norm_zip_path, norm_dir_path, self.file_storage, True)
+        
+        self.normalized['msg'] = msg
+        self.normalized['norm_file_path'] = norm_dir_path
+        
+        if 'successfully' in msg:
             try:
-                func(norm_dir_path, norm_base_path)
+                zip_dir(norm_dir_path, norm_base_path)
             except Exception as e:
                 print(e)
                 return False

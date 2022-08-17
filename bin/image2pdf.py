@@ -9,7 +9,7 @@ import typer
 from bin.common import run_command_and_convert_to_pdfa
 
 
-def eml2pdf(src_file_path: str, target_file_path: str):
+def image2pdf(src_file_path: str, target_file_path: str):
     """
     Convert images to pdf/a
 
@@ -26,4 +26,4 @@ def eml2pdf(src_file_path: str, target_file_path: str):
 
 
 if __name__ == "__main__":
-    typer.run(eml2pdf)
+    typer.run(image2pdf)
