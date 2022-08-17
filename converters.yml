@@ -1,38 +1,38 @@
 Acrobat PDF/A - Portable Document Format:
   command: cp <source> <target> && pdf2text.py <target>
 Acrobat PDF 1.7 - Portable Document Format:
-  command: pdf2pdfa.py <source> <target> && pdf2text.py <target>
+  command: python3 pdf2pdfa.py <source> <target> && pdf2text.py <target>
 Extensible Markup Language:
-  command: text2utf8.py <source> <target>
+  command: python3 text2utf8.py <source> <target>
   source-ext:
     sdo:
       command: convert_sdo.php <source> <target>
       target-ext: pdf
 Hypertext Markup Language:
-  command: html-to-pdf.py <source> <target> || pandoc <source> -s -o <target>  && pdf2text.py <target>
+  command: python3 html2pdf.py <source> <target> || pandoc <source> -s -o <target>  && python3 pdf2text.py <target>
   target-ext: pdf
 Extensible Hypertext Markup Language:
-  command: xhtml2pdf.py <source> <target>
+  command: python3 xhtml2pdf.py <source> <target>
   target-ext: pdf
 Markdown:
-  command: text2utf8.py <source> <target>
+  command: python3 text2utf8.py <source> <target>
 Plain Text File:
-  command: text2utf8.py <source> <target>
+  command: python3 text2utf8.py <source> <target>
 MIME Email:
-  command: eml2pdf.py <source> <target>
+  command: python3 eml2pdf.py <source> <target>
   target-ext: pdf
 Exchangeable Image File Format (Compressed):
-  command: image2pdf.py <source> <target>
+  command: python3 image2pdf.py <source> <target>
   target-ext: pdf
 Microsoft Excel 97 Workbook (xls):
-  command: unoconv2x.py <source> <target> <mime-type> <target-ext>
+  command: python3 unoconv2x.py <source> <target> <mime-type> <target-ext>
   target-ext: pdf
 Rich Text Format:
-  command: office2pdf.py <source> <target>
+  command: python3 office2pdf.py <source> <target>
   target-ext: pdf
 Rich Text OpenDocument Presentation:
-  command: office2pdf.py <source> <target>
+  command: python3 office2pdf.py <source> <target>
   target-ext: pdf
 OpenDocument Presentation:
-  command: office2pdf.py <source> <target>
+  command: python3 office2pdf.py <source> <target>
   target-ext: pdf

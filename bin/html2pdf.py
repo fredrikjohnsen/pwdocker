@@ -16,7 +16,7 @@ def html2pdf(src_file_path: str, target_file_path: str):
         True on success
     """
     try:
-        result = pdfkit.from_file(src_file_path, target_file_path)
+        result = pdfkit.from_file(input=src_file_path, output_path=target_file_path, verbose=True)
         return True if result is True else False
     except IOError as e:
         print(e)

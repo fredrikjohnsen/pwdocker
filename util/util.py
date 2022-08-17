@@ -92,6 +92,15 @@ def delete_file_or_dir(path: str):
 
     if os.path.isdir(path):
         shutil.rmtree(path)
+        
+def str_to_bool(s)-> bool:
+    if s == 'True':
+         return True
+    elif s == 'False':
+         return False
+    else:
+         raise ValueError
+
 
 
 def extract_nested_zip(zipped_file: str, to_folder: str):
@@ -104,3 +113,20 @@ def extract_nested_zip(zipped_file: str, to_folder: str):
             if re.search(r'\.zip$', filename):
                 filespec = os.path.join(root, filename)
                 extract_nested_zip(filespec, root)
+
+
+def get_property_defaults(properties, overwrites):
+    if not overwrites:
+        return properties
+
+    return _merge_dicts(dict(properties), dict(overwrites))
+
+
+def _merge_dicts(properties, overwrite_with):
+    if isinstance(overwrite_with, dict):
+        for k, v in overwrite_with.items():
+            if k in properties:
+                properties[k] = _merge_dicts(properties.get(k), v)
+        return properties
+    else:
+        return overwrite_with
