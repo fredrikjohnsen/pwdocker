@@ -86,7 +86,7 @@ class StorageSqliteImpl(ConvertStorage):
             self._conn,
             '''
             SELECT * FROM File 
-            WHERE source_directory = ? AND result IS NULL OR result NOT IN(?, ?)
+            WHERE source_directory = ? AND (result IS NULL OR result NOT IN(?, ?))
             ''',
             [source_dir, Result.SUCCESSFUL, Result.MANUAL]
         )
@@ -96,7 +96,7 @@ class StorageSqliteImpl(ConvertStorage):
             self._conn,
             ''' 
             SELECT source_file_path FROM File
-            WHERE source_directory = ? AND result IS NOT NULL AND result IN(?, ?)
+            WHERE source_directory = ? AND (result IS NOT NULL AND result IN(?, ?))
             ''',
             [source_dir, Result.SUCCESSFUL, Result.MANUAL]
         )

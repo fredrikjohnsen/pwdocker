@@ -50,7 +50,7 @@ class File:
             else:
                 source_file_path = os.path.join(source_dir, self.path)
                 target_file_path = os.path.join(target_dir, self.path)
-
+                
                 if self.mime_type not in self.converters:
                     self.normalized['msg'] = Result.NOT_SUPPORTED
                     self.normalized['norm_file_path'] = None
@@ -85,7 +85,7 @@ class File:
         cmd = cmd.replace('<mime-type>', '"' + self.mime_type + '"')
         cmd = cmd.replace('<target-ext>', '"' + target_ext + '"')
         cmd = cmd.replace('<version>', '"' + self.version + '"')
-        
+
         result = run_shell_command(cmd, cwd=self.pwconv_path, shell=True)
 
         if not os.path.exists(target_file_path):
@@ -130,14 +130,17 @@ class File:
                 shutil.copy(src, dest)
 
         def zip_dir(norm_dir_path_param: str, norm_base_path_param: str):
-            shutil.make_archive(norm_base_path_param,
-                                'zip', norm_dir_path_param)
-
+            shutil.make_archive(base_name=norm_dir_path_param,
+                                format='zip', root_dir='.', base_dir=norm_base_path_param)
+            
         def rm_tmp(rm_paths: List[str]):
             for path in rm_paths:
                 delete_file_or_dir(path)
 
-        norm_base_path = os.path.join(target_dir, self.relative_root)
+        pathToUse = self.path if self.ext != 'zip' else self.relative_root
+        
+        working_dir = os.getcwd()
+        norm_base_path = os.path.join(target_dir, pathToUse)
         norm_zip_path = norm_base_path + '_zip'
         norm_dir_path = norm_zip_path + '_norm'
         paths = [norm_dir_path + '.tsv', norm_dir_path, norm_zip_path]
@@ -146,20 +149,22 @@ class File:
 
         msg, file_count, errors = self.convert_folder(
             norm_zip_path, norm_dir_path, self.file_storage, True)
-        
+
         self.normalized['msg'] = msg
         self.normalized['norm_file_path'] = norm_dir_path
-        
         if 'successfully' in msg:
             try:
-                zip_dir(norm_dir_path, norm_base_path)
+                zip_dir(norm_base_path, norm_dir_path)
             except Exception as e:
                 print(e)
                 return False
+            finally:
+                os.chdir(working_dir)
 
             rm_tmp(paths)
 
             return True
 
+        os.chdir(working_dir)
         rm_tmp(paths)
         return False

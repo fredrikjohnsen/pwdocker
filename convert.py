@@ -104,7 +104,6 @@ def convert_folder(source_dir: str,
         source_dir, table, target_dir, file_storage, zipped
     )
     msg = get_conversion_result(converted_now, errors)
-
     return msg, file_count, errors
 
 
