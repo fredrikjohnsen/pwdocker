@@ -2,6 +2,7 @@
 
 import os
 import typer
+from pathlib import Path
 
 from util import run_shell_command, remove_file
 
@@ -18,7 +19,7 @@ def office2pdf(source_file: str, target_file: str):
         Nothing
     """
     target_dir = os.path.dirname(target_file)
-    docbuilder_file = os.path.join(target_dir, 'x2x.docbuilder')
+    docbuilder_file = Path('/tmp', 'x2x.docbuilder')
 
     docbuilder = [
         f'builder.OpenFile("{source_file}", "")',
@@ -31,9 +32,6 @@ def office2pdf(source_file: str, target_file: str):
 
     command = ['documentbuilder', docbuilder_file]
     run_shell_command(command)
-
-    remove_file(docbuilder_file)
-
 
 if __name__ == '__main__':
     typer.run(office2pdf)
