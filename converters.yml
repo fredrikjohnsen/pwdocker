@@ -25,7 +25,7 @@ message/rfc822:
 image/jpeg:
   command: python3 -m bin.image2pdf <source> <target>
   target-ext: pdf
-Microsoft Excel 97 Workbook (xls):
+application/vnd.ms-excel:
   command: python3 -m bin.unoconv2x <source> <target> <mime-type> <target-ext>
   target-ext: pdf
 application/rtf:
