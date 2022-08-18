@@ -30,16 +30,16 @@ from util import run_siegfried, remove_file, File, Result
 from util.util import get_property_defaults, str_to_bool
 
 yaml = YAML()
-with open("converters.yml", "r") as yamlfile:
+pwconv_path = pathlib.Path(__file__).parent.resolve()
+
+with open(Path(pwconv_path, "converters.yml"), "r") as yamlfile:
     converters = yaml.load(yamlfile)
-with open("application.yml", "r") as properties:
+with open(Path(pwconv_path,"application.yml"), "r") as properties:
     properties = yaml.load(properties)
 
 # Properties set in the local file will overwrite those in application.yml
-with open("application.local.yml", "r") as local_properties:
+with open(Path(pwconv_path,"application.local.yml"), "r") as local_properties:
     local_properties = yaml.load(local_properties)
-
-pwconv_path = pathlib.Path(__file__).parent.resolve()
 
 
 def remove_fields(table, *args):
