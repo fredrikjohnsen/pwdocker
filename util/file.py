@@ -14,6 +14,7 @@ class File:
                  row: Dict[str, Any],
                  converters: Any,
                  pwconv_path: Path,
+                 debug: bool, 
                  file_storage: ConvertStorage,
                  convert_folder: Callable[
                      [str, str, ConvertStorage, Optional[bool]
@@ -21,6 +22,7 @@ class File:
                  ]):
         self.converters = converters
         self.pwconv_path = pwconv_path
+        self.debug = debug
         self.convert_folder = convert_folder
         self.file_storage = file_storage
         self.path = row['source_file_path']
@@ -85,7 +87,10 @@ class File:
         cmd = cmd.replace('<mime-type>', '"' + self.mime_type + '"')
         cmd = cmd.replace('<target-ext>', '"' + target_ext + '"')
         cmd = cmd.replace('<version>', '"' + self.version + '"')
-
+        
+        if self.debug:
+            print(cmd)
+            
         result = run_shell_command(cmd, cwd=self.pwconv_path, shell=True)
 
         if not os.path.exists(target_file_path):

@@ -61,14 +61,16 @@ def add_fields(table, *args):
 
 def convert_folder_entrypoint(args: Namespace):
     with StorageSqliteImpl(args.db_path, args.db_name, args.resume) as file_storage:
-        convert_folder(args.source, args.target, file_storage)
+        convert_folder(args, file_storage)
 
 
-def convert_folder(source_dir: str,
-                   target_dir: str,
+def convert_folder(args,
                    file_storage: ConvertStorage,
                    zipped: bool = False):
     """Convert all files in folder"""
+    source_dir = args.source
+    target_dir = args.target
+    debug = args.debug
     tsv_source_path = target_dir + '.tsv'
     converted_now = False
     errors = False
@@ -102,7 +104,7 @@ def convert_folder(source_dir: str,
     # run conversion
     converted_now, errors, file_count = convert_files(
         converted_now, errors, file_count,
-        source_dir, table, target_dir, file_storage, zipped
+        source_dir, table, target_dir, file_storage, zipped, debug
     )
     msg = get_conversion_result(converted_now, errors)
     return msg, file_count, errors
@@ -115,7 +117,8 @@ def convert_files(converted_now: bool,
                   table: DbView,
                   target_dir: str,
                   file_storage: ConvertStorage,
-                  zipped: bool):
+                  zipped: bool,
+                  debug: bool):
     table.row_count = 0
     for row in etl.dicts(table):
         # Remove Thumbs.db files
@@ -126,7 +129,7 @@ def convert_files(converted_now: bool,
 
         table.row_count += 1
         converted_now, errors = convert_file(converted_now, errors, file_count, file_storage, row, source_dir, table,
-                                             target_dir, zipped)
+                                             target_dir, zipped, debug)
     return converted_now, errors, file_count
 
 
@@ -139,7 +142,8 @@ def convert_file(
         source_dir: str,
         table: DbView,
         target_dir: str,
-        zipped: bool):
+        zipped: bool,
+        debug: bool):
     row['mime_type'] = row['mime_type'].split(';')[0]
     if not row['mime_type']:
         # Siegfried sets mime type only to xml files with xml declaration
@@ -149,7 +153,7 @@ def convert_file(
         print(
             f"({str(table.row_count)}/{str(file_count)}): .../{row['source_file_path']} ({row['mime_type']})'")
     
-    source_file = File(row, converters, pwconv_path,
+    source_file = File(row, converters, pwconv_path, debug, 
                        file_storage, convert_folder)
     normalized = source_file.convert(source_dir, target_dir)
     row['result'] = normalized['msg']
@@ -239,7 +243,9 @@ def create_args_parser(parser: ArgumentParser):
     parser.add_argument('-r', '--resume',
                         help='Boolean value - True to resume a previous conversion, False to convert all files in the folder.',
                         default=defaults['database']['continue-conversion'], type=lambda x: str_to_bool(x), choices=(True, False))
-
+    parser.add_argument('-d', '--debug',
+                        help='Boolean value - True to print commands.',
+                        default=defaults['options']['debug'], type=lambda x: str_to_bool(x), choices=(True, False))
 
 parser = ArgumentParser('convert.py')
 create_args_parser(parser)

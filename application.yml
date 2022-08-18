@@ -5,3 +5,5 @@ database:
 directories:
   source: <absolute-path to directory>
   target: <absolute-path to directory>
+options:
+  debug: False
