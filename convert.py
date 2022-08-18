@@ -31,6 +31,7 @@ from util.util import get_property_defaults, str_to_bool
 
 yaml = YAML()
 pwconv_path = pathlib.Path(__file__).parent.resolve()
+os.chdir(pwconv_path)
 
 with open(Path(pwconv_path, "converters.yml"), "r") as yamlfile:
     converters = yaml.load(yamlfile)
