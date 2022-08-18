@@ -1,5 +1,6 @@
 application/pdf:
-  command: python3 -m bin.pdf2pdfa <source> <target> <version> && python3 -m bin.pdf2text <target>
+  command: python3 -m bin.pdf2pdfa <source> <target> <version>
+  #command: python3 -m bin.pdf2pdfa <source> <target> <version> && python3 -m bin.pdf2text <target>  
   target-ext: pdf
 application/xml:
   command: python3 -m bin.text2utf8 <source> <target>
@@ -8,7 +9,8 @@ application/xml:
       command: ../bin/convert_sdo.php <source> <target>
       target-ext: pdf
 text/html:
-  command: python3 -m bin.html2pdf <source> <target> || pandoc <source> -s -o <target>  && python3 -m bin.pdf2text <target>
+  command: python3 -m bin.html2pdf <source> <target>
+  #command: python3 -m bin.html2pdf <source> <target> || pandoc <source> -s -o <target>  && python3 -m bin.pdf2text <target>
   target-ext: pdf
 application/xhtml+xml:
   command: python3 -m bin.xhtml2pdf <source> <target>
@@ -33,5 +35,6 @@ Rich Text OpenDocument Presentation:
   command: python3 -m bin.office2pdf <source> <target>
   target-ext: pdf
 image/tiff:
-  command: python3 -m bin.image2pdf <source> <target> && python3 -m bin.pdf2pdfa <target> <target>
+  command: python3 -m bin.image2pdf <source> <target>  
+  #command: python3 -m bin.image2pdf <source> <target> && python3 -m bin.pdf2pdfa <target> <target>
   target-ext: pdf
