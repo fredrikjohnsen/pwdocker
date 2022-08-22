@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
 import os
-import typer
 from pathlib import Path
+
+import typer
 
 from util import run_shell_command, remove_file
 

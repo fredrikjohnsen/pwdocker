@@ -25,9 +25,10 @@ message/rfc822:
 image/jpeg:
   command: python3 -m bin.image2pdf <source> <target>
   target-ext: pdf
-#application/vnd.ms-excel:
-  #command: python3 -m bin.office2pdf <source> <target>
-  #target-ext: pdf
+application/vnd.ms-excel:
+  command: python3 -m bin.unoconv2x <source> <target>
+  #command: python3 -m bin.office2pdf <source> <target>  
+  target-ext: pdf
 application/rtf:
   command: python3 -m bin.office2pdf <source> <target>
   target-ext: pdf
