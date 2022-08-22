@@ -26,8 +26,8 @@ if [ "$EUID" -ne 0 ]; then
     cecho "RED" "Please run as root!"; exit 1;
 fi
 
-DISTRO=$(lsb_release -sc) # Get codename. Supports uma, focal and jammy
-if [[ "${DISTRO}" != @(uma|ulyana|focal|jammy) ]]; then
+DISTRO=$(lsb_release -sc) # Get distro codename
+if [[ "${DISTRO}" != @(uma|ulyana|focal|jammy|Ulyssa|una|vanessa) ]]; then
     cecho "RED" "Distro not supported. Exiting script.."; exit 1;
 fi
 
@@ -82,7 +82,7 @@ fi
 cecho "CYAN" "Installing apt-gettable dependencies..";
 echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | debconf-set-selections;
 apt-get install -y ttf-mscorefonts-installer pandoc abiword sqlite3 uchardet libreoffice python3-wheel dos2unix \
-    ghostscript onlyoffice-desktopeditors onlyoffice-documentbuilder icc-profiles-free clamtk tesseract-ocr 
+    ghostscript onlyoffice-desktopeditors onlyoffice-documentbuilder icc-profiles-free clamtk tesseract-ocr \
     clamav-daemon clamav-unofficial-sigs clamdscan libclamunrar9 wimtools wkhtmltopdf ruby-dev  imagemagick cabextract \
     fontforge python3-pgmagick graphicsmagick graphviz img2pdf golang coolwsd code-brand siegfried;
 recho $?;
@@ -124,7 +124,6 @@ if [ $(fc-list | grep -c Calibri) -eq 0 ]; then
 fi
 
 cecho "CYAN" "Install or update python dependencies.."
-sudo -H -u $OWNER bash -c "pip3 install petl unoserver ruamel.yaml typer[all] ruamel.yaml cchardet pdfkit ocrmypdf \
---upgrade;";
+sudo -H -u $OWNER bash -c "pip3 install petl unoserver ruamel.yaml typer[all] cchardet pdfkit ocrmypdf --upgrade;";
 recho $?
 
