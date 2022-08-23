@@ -14,7 +14,7 @@ class File:
                  row: Dict[str, Any],
                  converters: Any,
                  pwconv_path: Path,
-                 debug: bool, 
+                 debug: bool,
                  file_storage: ConvertStorage,
                  convert_folder: Callable[
                      [str, str, ConvertStorage, Optional[bool]
@@ -35,14 +35,14 @@ class File:
         # relative path without extension
         self.relative_root = split_ext[0]
         self.ext = split_ext[1][1:]
-        self.normalized = {'result': Optional[str], 'norm_file_path': Optional[str], 'error': Optional[str],
-                           'msg': Optional[str]}
+        self.normalized = {
+            'norm_file_path': Optional[str], 'result': Optional[str]}
 
     def convert(self, source_dir: str, target_dir: str):
         """Convert file to archive format"""
 
         if self.mime_type == 'n/a':
-            self.normalized['msg'] = Result.NOT_A_DOCUMENT
+            self.normalized['result'] = Result.NOT_A_DOCUMENT
             self.normalized['norm_file_path'] = None
             return self.normalized
         elif self.mime_type == 'application/zip':
@@ -51,9 +51,9 @@ class File:
 
         source_file_path = os.path.join(source_dir, self.path)
         target_file_path = os.path.join(target_dir, self.path)
-        
+
         if self.mime_type not in self.converters:
-            self.normalized['msg'] = Result.NOT_SUPPORTED
+            self.normalized['result'] = Result.NOT_SUPPORTED
             self.normalized['norm_file_path'] = None
             return self.normalized
 
@@ -83,18 +83,18 @@ class File:
         cmd = cmd.replace('<mime-type>', '"' + self.mime_type + '"')
         cmd = cmd.replace('<target-ext>', '"' + target_ext + '"')
         cmd = cmd.replace('<version>', '"' + self.version + '"')
-            
+
         result = run_shell_command(cmd, cwd=self.pwconv_path, shell=True)
 
         if not os.path.exists(target_file_path):
-            self.normalized['msg'] = Result.FAILED
+            self.normalized['result'] = Result.FAILED
             self.normalized['norm_file_path'] = None
-            
+
             if self.debug:
                 print("Command: " + cmd)
-                #print(str(result[2]))
+                # print(str(result[2]))
         else:
-            self.normalized['msg'] = Result.SUCCESSFUL
+            self.normalized['result'] = Result.SUCCESSFUL
             self.normalized['norm_file_path'] = target_file_path
 
         return result
@@ -154,13 +154,13 @@ class File:
         def zip_dir(norm_dir_path_param: str, norm_base_path_param: str):
             shutil.make_archive(base_name=norm_dir_path_param,
                                 format='zip', root_dir='.', base_dir=norm_base_path_param)
-            
+
         def rm_tmp(rm_paths: List[str]):
             for path in rm_paths:
                 delete_file_or_dir(path)
 
         pathToUse = self.path if self.ext != 'zip' else self.relative_root
-        
+
         working_dir = os.getcwd()
         norm_base_path = os.path.join(target_dir, pathToUse)
         norm_zip_path = norm_base_path + '_zip'
@@ -169,12 +169,12 @@ class File:
 
         extract_nested_zip(self.path, norm_zip_path)
 
-        msg, file_count, errors = self.convert_folder(
+        result = self.convert_folder(
             norm_zip_path, norm_dir_path, self.file_storage, True)
 
-        self.normalized['msg'] = msg
+        self.normalized['result'] = result
         self.normalized['norm_file_path'] = norm_dir_path
-        if 'successfully' in msg:
+        if 'successfully' in result:
             try:
                 zip_dir(norm_base_path, norm_dir_path)
             except Exception as e:

@@ -156,7 +156,7 @@ def convert_file(
     source_file = File(row, converters, pwconv_path, debug, 
                        file_storage, convert_folder)
     normalized = source_file.convert(source_dir, target_dir)
-    row['result'] = normalized['msg']
+    row['result'] = normalized['result']
     if row['result'] in (Result.FAILED, Result.NOT_SUPPORTED):
         errors = True
         print(f"{row['mime_type']} {row['result']}")
