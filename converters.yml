@@ -4,17 +4,15 @@ application/pdf:
   #command: python3 -m bin.pdf2pdfa <source> <target> <version> && python3 -m bin.pdf2text <target>  
   target-ext: pdf
 application/xml:
-  comment: Main command tested.
+  comment: Main command tested. Sub-cmd won't work and needs rethink
   command: python3 -m bin.text2utf8 <source> <target>
-  target-ext: xml # TODO: Feil når html i noen tilfeller
-  source-ext:
-    comment: instead-of-commands for special cases
-    sdo:
-      command: bin/convert_sdo.php <source> <target>
-      target-mime: pdf
-    #test:
-      #command: bin/tull.php <source> <target>
-      #target-ext: pdf      
+  #target-ext: xml # TODO: Feil når html i noen tilfeller
+  #sub-cmds:
+    #comment: instead-of-or-pre-commands for special cases
+    #sdo:
+      #comment: Extract embedded pdf signatures
+      #command: bin/convert_sdo.php <source> <target>
+      #target-mime: application/pdf
 text/html:
   command: python3 -m bin.html2pdf <source> <target>
   #command: python3 -m bin.html2pdf <source> <target> || pandoc <source> -s -o <target> && python3 -m bin.pdf2text <target>

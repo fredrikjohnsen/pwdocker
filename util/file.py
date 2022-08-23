@@ -107,15 +107,23 @@ class File:
         cmd = converter['command']
         target_ext = self.ext if 'target-ext' not in converter else converter['target-ext']
         
-        # special case for subtypes for an example see: sdo in converters.yml
-        if 'source-ext' in converter.keys():
-            for ext in converter['source-ext']:
-                cmd = converter['source-ext'][ext]['command'] + ' && ' + cmd.replace('<source>', '<target>')
-
-            print(cmd)
-
-            if 'target-ext' in converter['source-ext'][ext]:
-                target_ext = converter['source-ext'][ext]['target-ext']
+        # special case for subtypes. For an example see: sdo in converters.yml
+        if 'sub-cmds' in converter.keys():
+            for sub in converter['sub-cmds']:
+                if sub == 'comment':
+                    continue
+                
+                target_mime = (
+                    self.mime_type
+                    if "target-mime" not in converter["sub-cmds"][sub]
+                    else converter["sub-cmds"][sub]["target-mime"]
+                    )
+                
+                sub_cmd = converter['sub-cmds'][sub]['command']
+                if target_mime == self.mime_type:                    
+                    cmd = sub_cmd + ' && ' + cmd.replace('<source>', '<target>')
+                else:
+                    cmd = sub_cmd                    
 
         return cmd, target_ext
 
