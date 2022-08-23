@@ -41,29 +41,25 @@ class File:
     def convert(self, source_dir: str, target_dir: str):
         """Convert file to archive format"""
 
-        # TODO: Finn ut beste måten å håndtere manuelt konverterte filer
-        # if not check_for_files(norm_file_path + '*'):
-        if True:
-            if self.mime_type == 'n/a':
-                self.normalized['msg'] = Result.NOT_A_DOCUMENT
-                self.normalized['norm_file_path'] = None
-            #elif self.mime_type == 'application/zip':
-            #    self._zip_to_norm(source_dir, target_dir)
-            else:
-                source_file_path = os.path.join(source_dir, self.path)
-                target_file_path = os.path.join(target_dir, self.path)
-                
-                if self.mime_type not in self.converters:
-                    self.normalized['msg'] = Result.NOT_SUPPORTED
-                    self.normalized['norm_file_path'] = None
-                    return self.normalized
+        if self.mime_type == 'n/a':
+            self.normalized['msg'] = Result.NOT_A_DOCUMENT
+            self.normalized['norm_file_path'] = None
+            return self.normalized
+        elif self.mime_type == 'application/zip':
+            self._zip_to_norm(source_dir, target_dir)
+            return self.normalized
 
-                converter = self.converters[self.mime_type]
-                self._run_conversion_command(
-                    converter, source_file_path, target_file_path, target_dir)
+        source_file_path = os.path.join(source_dir, self.path)
+        target_file_path = os.path.join(target_dir, self.path)
+        
+        if self.mime_type not in self.converters:
+            self.normalized['msg'] = Result.NOT_SUPPORTED
+            self.normalized['norm_file_path'] = None
+            return self.normalized
 
-        else:
-            self.normalized['msg'] = Result.MANUAL
+        converter = self.converters[self.mime_type]
+        self._run_conversion_command(
+            converter, source_file_path, target_file_path, target_dir)
 
         return self.normalized
 
