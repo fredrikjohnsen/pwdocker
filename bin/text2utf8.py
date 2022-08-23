@@ -21,21 +21,21 @@ def text2utf8(input_file: str, output_file: str):
     # TODO: Test å bruke denne heller enn/i tillegg til replace under:
     #       https://ftfy.readthedocs.io/en/latest/
 
-    repls = (
-        ('‘', 'æ'),
-        ('›', 'ø'),
-        ('†', 'å'),
-        ('&#248;', 'ø'),
-        ('&#229;', 'å'),
-        ('&#230;', 'æ'),
-        ('&#197;', 'Å'),
-        ('&#216;', 'Ø'),
-        ('&#198;', 'Æ'),
-        ('=C2=A0', ' '),
-        ('=C3=A6', 'æ'),
-        ('=C3=B8', 'ø'),
-        ('=C3=A5', 'å'),
-    )
+    #repls = (
+        #('‘', 'æ'),
+        #('›', 'ø'),
+        #('†', 'å'),
+        #('&#248;', 'ø'),
+        #('&#229;', 'å'),
+        #('&#230;', 'æ'),
+        #('&#197;', 'Å'),
+        #('&#216;', 'Ø'),
+        #('&#198;', 'Æ'),
+        #('=C2=A0', ' '),
+        #('=C3=A6', 'æ'),
+        #('=C3=B8', 'ø'),
+        #('=C3=A5', 'å'),
+    #)
 
     with open(output_file, 'wb') as file:
         with open(input_file, 'rb') as file_r:
@@ -54,8 +54,8 @@ def text2utf8(input_file: str, output_file: str):
             except UnicodeDecodeError:
                 return ''
 
-            for k, v in repls:
-                data = re.sub(k, v, data, flags=re.MULTILINE)
+            #for k, v in repls:
+                #data = re.sub(k, v, data, flags=re.MULTILINE)
 
         try:
             file.write(data.encode('utf8'))

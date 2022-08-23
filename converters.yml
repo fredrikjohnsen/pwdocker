@@ -1,16 +1,23 @@
 application/pdf:
-  command: python3 -m bin.pdf2pdfa <source> <target> <version>
+  comment: Tested without pdf2text.
+  command: python3 -m bin.pdf2pdfa <source> <target> <version> 
   #command: python3 -m bin.pdf2pdfa <source> <target> <version> && python3 -m bin.pdf2text <target>  
   target-ext: pdf
 application/xml:
+  comment: Main command tested.
   command: python3 -m bin.text2utf8 <source> <target>
+  target-ext: xml # TODO: Feil når html i noen tilfeller
   source-ext:
+    comment: instead-of-commands for special cases
     sdo:
-      command: ../bin/convert_sdo.php <source> <target>
-      target-ext: pdf
+      command: bin/convert_sdo.php <source> <target>
+      target-mime: pdf
+    #test:
+      #command: bin/tull.php <source> <target>
+      #target-ext: pdf      
 text/html:
   command: python3 -m bin.html2pdf <source> <target>
-  #command: python3 -m bin.html2pdf <source> <target> || pandoc <source> -s -o <target>  && python3 -m bin.pdf2text <target>
+  #command: python3 -m bin.html2pdf <source> <target> || pandoc <source> -s -o <target> && python3 -m bin.pdf2text <target>
   target-ext: pdf
 application/xhtml+xml:
   command: python3 -m bin.xhtml2pdf <source> <target>
@@ -26,7 +33,7 @@ image/jpeg:
   command: python3 -m bin.image2pdf <source> <target>
   target-ext: pdf
 application/vnd.ms-excel:
-  comment: unoconv2x better at converting Excel-files. Target html only works with unoconv2x.  
+  comment: Both commands tested. unoconv2x better at converting Excel-files. Target html only works with unoconv2x.  
   command: python3 -m bin.unoconv2x <source> <target> && python3 -m bin.pdf2pdfa <target> <target> <version>
   #command: python3 -m bin.office2pdf <source> <target> && python3 -m bin.pdf2pdfa <target> <target> <version>
   target-ext: pdf

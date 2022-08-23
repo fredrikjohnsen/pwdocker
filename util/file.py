@@ -106,12 +106,16 @@ class File:
     def _get_target_ext_and_cmd(self, converter: Any):
         cmd = converter['command']
         target_ext = self.ext if 'target-ext' not in converter else converter['target-ext']
-        if 'source-ext' in converter and self.ext in converter['source-ext']:
-            # special case for subtypes for an example see: sdo in converters.yml
-            cmd = converter['source-ext'][self.ext]['command']
+        
+        # special case for subtypes for an example see: sdo in converters.yml
+        if 'source-ext' in converter.keys():
+            for ext in converter['source-ext']:
+                cmd = converter['source-ext'][ext]['command'] + ' && ' + cmd.replace('<source>', '<target>')
 
-            if 'target-ext' in converter['source-ext'][self.ext]:
-                target_ext = converter['source-ext'][self.ext]['target-ext']
+            print(cmd)
+
+            if 'target-ext' in converter['source-ext'][ext]:
+                target_ext = converter['source-ext'][ext]['target-ext']
 
         return cmd, target_ext
 
