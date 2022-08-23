@@ -26,14 +26,12 @@ image/jpeg:
   command: python3 -m bin.image2pdf <source> <target>
   target-ext: pdf
 application/vnd.ms-excel:
-  command: python3 -m bin.unoconv2x <source> <target>
+  command: python3 -m bin.unoconv2x <source> <target> && python3 -m bin.pdf2pdfa <target> <target>
   #command: python3 -m bin.office2pdf <source> <target>  
   target-ext: pdf
 application/rtf:
-  command: python3 -m bin.office2pdf <source> <target>
-  target-ext: pdf
-Rich Text OpenDocument Presentation:
-  command: python3 -m bin.office2pdf <source> <target>
+  command: python3 -m bin.unoconv2x <source> <target> && python3 -m bin.pdf2pdfa <target> <target>
+  #command: python3 -m bin.office2pdf <source> <target>  
   target-ext: pdf
 image/tiff:
   command: python3 -m bin.image2pdf <source> <target>  

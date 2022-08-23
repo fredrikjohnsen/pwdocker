@@ -6,6 +6,8 @@ from pathlib import Path
 import typer
 from unoserver import converter
 
+# from pdf2pdfa import pdf2pdfa
+
 
 def unoconv2x(source_path: str, target_path: str):
     """
@@ -28,12 +30,12 @@ def unoconv2x(source_path: str, target_path: str):
     Returns:
         Nothing if successful otherwise exits with exit code 1
     """
-    
+
     target_ext = Path(target_path).suffix
     _converter = converter.UnoConverter()
-    result = _converter.convert(source_path,None,target_path,target_ext)
- 
-    if not os.path.exists(target_path) or result is not None:
+    result = _converter.convert(source_path, None, target_path, target_ext)
+
+    if not Path(target_path).is_file() or result is not None:
         sys.exit(1)
 
 
