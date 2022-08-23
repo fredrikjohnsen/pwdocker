@@ -88,7 +88,6 @@ class File:
         cmd = cmd.replace('<target-ext>', '"' + target_ext + '"')
         cmd = cmd.replace('<version>', '"' + self.version + '"')
             
-        print(cmd)            
         result = run_shell_command(cmd, cwd=self.pwconv_path, shell=True)
 
         if not os.path.exists(target_file_path):
