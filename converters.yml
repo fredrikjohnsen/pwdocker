@@ -4,8 +4,9 @@ application/pdf:
   #command: python3 -m bin.pdf2pdfa <source> <target> <version> && python3 -m bin.pdf2text <target>  
   target-ext: pdf
 application/xml:
-  comment: Main command tested. Sub-cmd won't work and needs rethink
+  comment: Main command work but could be improved. Sub-cmds won't work as defined now and needs rethink
   command: python3 -m bin.text2utf8 <source> <target>
+  target-ext: html|htm|xhtml|xml
   #target-ext: xml # TODO: Feil når html i noen tilfeller
   #sub-cmds:
     #comment: instead-of-or-pre-commands for special cases

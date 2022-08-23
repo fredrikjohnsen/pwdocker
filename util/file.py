@@ -105,9 +105,17 @@ class File:
 
     def _get_target_ext_and_cmd(self, converter: Any):
         cmd = converter['command']
-        target_ext = self.ext if 'target-ext' not in converter else converter['target-ext']
+        
+        target_ext = self.ext
+        if 'target-ext' in converter:
+            target_extensions = converter['target-ext'].split('|')
+            for ext in converter['target-ext'].split('|'):
+                if ext == self.ext or ext == target_extensions[-1]:
+                    target_ext = ext
+                    break
         
         # special case for subtypes. For an example see: sdo in converters.yml
+        # TODO: This won't work and need rethink or scrapping
         if 'sub-cmds' in converter.keys():
             for sub in converter['sub-cmds']:
                 if sub == 'comment':
@@ -122,8 +130,8 @@ class File:
                 sub_cmd = converter['sub-cmds'][sub]['command']
                 if target_mime == self.mime_type:                    
                     cmd = sub_cmd + ' && ' + cmd.replace('<source>', '<target>')
-                else:
-                    cmd = sub_cmd                    
+                #else:
+                    #cmd = sub_cmd                    
 
         return cmd, target_ext
 

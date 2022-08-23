@@ -52,6 +52,7 @@ def text2utf8(input_file: str, output_file: str):
             try:
                 data = content.decode(char_enc)
             except UnicodeDecodeError:
+                raise typer.Exit(code=1)
                 return ''
 
             #for k, v in repls:
