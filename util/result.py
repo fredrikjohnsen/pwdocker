@@ -4,3 +4,4 @@ class Result:
     FAILED = 'Conversion failed'
     NOT_SUPPORTED = 'Conversion not supported'
     NOT_A_DOCUMENT = 'Not a document'
+    AUTOMATICALLY_DELETED = 'Automatically deleted'

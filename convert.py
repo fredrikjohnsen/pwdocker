@@ -35,11 +35,11 @@ os.chdir(pwconv_path)
 
 with open(Path(pwconv_path, "converters.yml"), "r") as yamlfile:
     converters = yaml.load(yamlfile)
-with open(Path(pwconv_path,"application.yml"), "r") as properties:
+with open(Path(pwconv_path, "application.yml"), "r") as properties:
     properties = yaml.load(properties)
 
 # Properties set in the local file will overwrite those in application.yml
-with open(Path(pwconv_path,"application.local.yml"), "r") as local_properties:
+with open(Path(pwconv_path, "application.local.yml"), "r") as local_properties:
     local_properties = yaml.load(local_properties)
 
 
@@ -61,58 +61,61 @@ def add_fields(table, *args):
 
 def convert_folder_entrypoint(args: Namespace):
     with StorageSqliteImpl(args.db_path, args.db_name, args.resume) as file_storage:
-        convert_folder(args, file_storage)
+        result = convert_folder(args.source, args.target,
+                                args.debug, file_storage, False)
+        print(result)
 
 
-def convert_folder(args,
+def convert_folder(source_dir: str, target_dir: str, debug: bool,
                    file_storage: ConvertStorage,
-                   zipped: bool = False):
+                   zipped: bool):
     """Convert all files in folder"""
-    source_dir = args.source
-    target_dir = args.target
-    debug = args.debug
     tsv_source_path = target_dir + '.tsv'
-    converted_now = False
-    errors = False
 
     Path(target_dir).mkdir(parents=True, exist_ok=True)
 
     if not os.path.isfile(tsv_source_path):
         run_siegfried(source_dir, target_dir, tsv_source_path, zipped)
 
-    row_count = write_sf_file_to_storage(
+    written_row_count = write_sf_file_to_storage(
         tsv_source_path, source_dir, file_storage)
     table = file_storage.get_unconverted_rows(source_dir)
 
-    file_count = sum([len(files) for r, d, files in os.walk(source_dir)])
+    files_on_disk_count = sum([len(files)
+                              for r, d, files in os.walk(source_dir)])
 
-    if row_count == 0:
+    if files_on_disk_count == 0:
         print('No files to convert. Exiting.')
-        return 'Error', file_count
-    if file_count != row_count:
-        print(f'Row count: {str(row_count)}')
-        print(f'File count: {str(file_count)}')
+        return 'Error', files_on_disk_count
+    if files_on_disk_count != written_row_count:
+        print(f'Row count: {str(written_row_count)}')
+        print(f'File count: {str(files_on_disk_count)}')
         print(
             f"Files listed in '{tsv_source_path}' doesn't match files on disk. Exiting.")
-        return 'Error', file_count
+        return 'Error', files_on_disk_count
     if not zipped:
         print('Converting files..')
 
     # print the files in this directory that have already been converted
-    file_count = print_converted_files(file_count, file_storage, source_dir)
+    files_to_convert_count, already_converted_count = print_converted_files(
+        written_row_count, file_storage, source_dir)
+    if files_to_convert_count == 0:
+        return 'All files converted previously.'
 
     # run conversion
-    converted_now, errors, file_count = convert_files(
-        converted_now, errors, file_count,
-        source_dir, table, target_dir, file_storage, zipped, debug
-    )
-    msg = get_conversion_result(converted_now, errors)
-    return msg, file_count, errors
+    convert_files(files_to_convert_count, source_dir, table,
+                  target_dir, file_storage, zipped, debug)
+
+    # check conversion result
+    total_converted_count = etl.nrows(
+        file_storage.get_converted_rows(source_dir))
+    msg = get_conversion_result(
+        already_converted_count, files_to_convert_count, total_converted_count)
+
+    return msg
 
 
-def convert_files(converted_now: bool,
-                  errors: bool,
-                  file_count: int,
+def convert_files(file_count: int,
                   source_dir: str,
                   table: DbView,
                   target_dir: str,
@@ -124,18 +127,18 @@ def convert_files(converted_now: bool,
         # Remove Thumbs.db files
         if os.path.basename(row['source_file_path']) == 'Thumbs.db':
             remove_file(row['source_file_path'])
+            row['result'] = Result.AUTOMATICALLY_DELETED
+            file_storage.update_row(
+                row['source_file_path'], list(row.values()))
             file_count -= 1
             continue
 
         table.row_count += 1
-        converted_now, errors = convert_file(converted_now, errors, file_count, file_storage, row, source_dir, table,
-                                             target_dir, zipped, debug)
-    return converted_now, errors, file_count
+        convert_file(file_count, file_storage, row, source_dir,
+                     table, target_dir, zipped, debug)
 
 
 def convert_file(
-        converted_now: bool,
-        errors: bool,
         file_count: int,
         file_storage: ConvertStorage,
         row: Dict[str, any],
@@ -152,21 +155,16 @@ def convert_file(
     if not zipped:
         print(
             f"({str(table.row_count)}/{str(file_count)}): .../{row['source_file_path']} ({row['mime_type']})'")
-    
-    source_file = File(row, converters, pwconv_path, debug, 
+
+    source_file = File(row, converters, pwconv_path, debug,
                        file_storage, convert_folder)
     normalized = source_file.convert(source_dir, target_dir)
     row['result'] = normalized['result']
-    if row['result'] in (Result.FAILED, Result.NOT_SUPPORTED):
-        errors = True
-        print(f"{row['mime_type']} {row['result']}")
-    if row['result'] in (Result.SUCCESSFUL, Result.MANUAL):
-        converted_now = True
     if normalized['norm_file_path']:
-        row['norm_file_path'] = relpath(normalized['norm_file_path'], start=target_dir)
+        row['norm_file_path'] = relpath(
+            normalized['norm_file_path'], start=target_dir)
 
     file_storage.update_row(row['source_file_path'], list(row.values()))
-    return converted_now, errors
 
 
 def write_sf_file_to_storage(tsv_source_path: str, source_dir: str, file_storage: ConvertStorage):
@@ -206,28 +204,24 @@ def write_sf_file_to_storage(tsv_source_path: str, source_dir: str, file_storage
     return row_count
 
 
-def print_converted_files(file_count: int, file_storage: ConvertStorage, source_dir: str):
+def print_converted_files(total_row_count: int, file_storage: ConvertStorage, source_dir: str):
     converted_files = file_storage.get_converted_rows(source_dir)
     already_converted = etl.nrows(converted_files)
 
-    before = file_count
-    file_count -= already_converted
+    before = total_row_count
+    total_row_count -= already_converted
     if already_converted > 0:
         print(
             f'({already_converted}/{before}) files have already been converted  in {source_dir}')
 
-    return file_count
+    return total_row_count, already_converted
 
 
-def get_conversion_result(converted_now: bool, errors: bool):
-    if converted_now:
-        msg = 'All files converted successfully.'
-        if errors:
-            msg = "Not all files were converted. See the db table for details."
+def get_conversion_result(before: int, to_convert: int, total: int):
+    if total - before == to_convert:
+        return 'All files converted successfully.'
     else:
-        msg = 'All files converted previously.'
-    print("\n" + msg)
-    return msg
+        return "Not all files were converted. See the db table for details."
 
 
 def create_args_parser(parser: ArgumentParser):
@@ -246,6 +240,7 @@ def create_args_parser(parser: ArgumentParser):
     parser.add_argument('-d', '--debug',
                         help='Boolean value - True to print commands.',
                         default=defaults['options']['debug'], type=lambda x: str_to_bool(x), choices=(True, False))
+
 
 parser = ArgumentParser('convert.py')
 create_args_parser(parser)

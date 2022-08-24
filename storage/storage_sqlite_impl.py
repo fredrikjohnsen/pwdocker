@@ -57,7 +57,8 @@ class StorageSqliteImpl(ConvertStorage):
             self._conn.execute('DROP TABLE IF EXISTS File')
             self._conn.commit()
 
-        table = self._conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='File'")
+        table = self._conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='File'")
         if len(table.fetchall()) <= 0:
             self._conn.execute(self._create_table_str)
             self._conn.commit()
@@ -69,8 +70,10 @@ class StorageSqliteImpl(ConvertStorage):
     def append_rows(self, table):
         # select the first row (primary key) and filter away rows that already exist
         self._conn.row_factory = lambda cursor, row: row[0]
-        file_names = self._conn.execute('SELECT source_file_path FROM File').fetchall()
-        table = petl.select(table, lambda rec: rec.source_file_path not in file_names)
+        file_names = self._conn.execute(
+            'SELECT source_file_path FROM File').fetchall()
+        table = petl.select(
+            table, lambda rec: rec.source_file_path not in file_names)
         # append new rows
         appenddb(table, self._conn, 'File')
         self._conn.row_factory = None
@@ -86,9 +89,10 @@ class StorageSqliteImpl(ConvertStorage):
             self._conn,
             '''
             SELECT * FROM File 
-            WHERE source_directory = ? AND (result IS NULL OR result NOT IN(?, ?))
+            WHERE source_directory = ? AND (result IS NULL OR result NOT IN(?, ?, ?))
             ''',
-            [source_dir, Result.SUCCESSFUL, Result.MANUAL]
+            [source_dir, Result.SUCCESSFUL, Result.MANUAL,
+                Result.AUTOMATICALLY_DELETED]
         )
 
     def get_converted_rows(self, source_dir: str):
@@ -96,7 +100,8 @@ class StorageSqliteImpl(ConvertStorage):
             self._conn,
             ''' 
             SELECT source_file_path FROM File
-            WHERE source_directory = ? AND (result IS NOT NULL AND result IN(?, ?))
+            WHERE source_directory = ? AND (result IS NOT NULL AND result IN(?, ?, ?))
             ''',
-            [source_dir, Result.SUCCESSFUL, Result.MANUAL]
+            [source_dir, Result.SUCCESSFUL, Result.MANUAL,
+                Result.AUTOMATICALLY_DELETED]
         )
