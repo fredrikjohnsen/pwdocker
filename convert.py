@@ -121,7 +121,7 @@ def convert_files(
         if not source_file.is_file() or source_file.name == "Thumbs.db":
             remove_file(row["source_file_path"])
             row["result"] = Result.AUTOMATICALLY_DELETED
-            file_storage.update_row(row["source_file_path"], list(row.values()))
+            file_storage.update_row(row["source_file_path"], row["source_directory"], list(row.values()))
             file_count -= 1
             continue
 
@@ -154,7 +154,7 @@ def convert_file(
     if normalized["norm_file_path"]:
         row["norm_file_path"] = relpath(normalized["norm_file_path"], start=target_dir)
 
-    file_storage.update_row(row["source_file_path"], list(row.values()))
+    file_storage.update_row(row["source_file_path"], row["source_directory"], list(row.values()))
 
 
 def write_sf_file_to_storage(tsv_source_path: str, source_dir: str, file_storage: ConvertStorage):

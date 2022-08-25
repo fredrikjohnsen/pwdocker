@@ -12,117 +12,113 @@ from util import run_shell_command, delete_file_or_dir, extract_nested_zip, Resu
 class File:
     """Contains methods for converting files"""
 
-    def __init__(self,
-                 row: Dict[str, Any],
-                 converters: Any,
-                 pwconv_path: Path,
-                 debug: bool,
-                 file_storage: ConvertStorage,
-                 convert_folder: Callable[
-                     [str, str, bool, ConvertStorage,
-                         bool], Union[Tuple[str, int], Tuple[str, int, bool]]
-                 ]):
+    def __init__(
+        self,
+        row: Dict[str, Any],
+        converters: Any,
+        pwconv_path: Path,
+        debug: bool,
+        file_storage: ConvertStorage,
+        convert_folder: Callable[[str, str, bool, ConvertStorage, bool], Union[Tuple[str, int], Tuple[str, int, bool]]],
+    ):
         self.converters = converters
         self.pwconv_path = pwconv_path
         self.debug = debug
         self.convert_folder = convert_folder
         self.row = row
         self.file_storage = file_storage
-        self.path = row['source_file_path']
-        self.mime_type = row['mime_type']
-        self.format = row['format']
-        self.version = row['version']
-        self.file_size = row['file_size']
-        self.id = row['id']
+        self.path = row["source_file_path"]
+        self.mime_type = row["mime_type"]
+        self.format = row["format"]
+        self.version = row["version"]
+        self.file_size = row["file_size"]
+        self.id = row["id"]
         split_ext = os.path.splitext(self.path)
         # relative path without extension
         self.relative_root = split_ext[0]
         self.ext = split_ext[1][1:]
-        self.normalized = {
-            'norm_file_path': Optional[str], 'result': Optional[str], 'mime_type': Optional[str]}
+        self.normalized = {"norm_file_path": Optional[str], "result": Optional[str], "mime_type": Optional[str]}
 
     def convert(self, source_dir: str, target_dir: str):
         """Convert file to archive format"""
 
         source_file_path = os.path.join(source_dir, self.path)
         target_file_path = os.path.join(target_dir, self.path)
-        
-        if self.mime_type == '':
-            self.mime_type = magic.from_file(source_file_path, mime=True)      
-        
-        self.normalized['mime_type'] = self.mime_type
-    
-        if self.mime_type == 'n/a':
-            self.normalized['result'] = Result.NOT_A_DOCUMENT
-            self.normalized['norm_file_path'] = None
+
+        if self.mime_type == "":
+            self.mime_type = magic.from_file(source_file_path, mime=True)
+
+        self.normalized["mime_type"] = self.mime_type
+
+        if self.mime_type == "n/a":
+            self.normalized["result"] = Result.NOT_A_DOCUMENT
+            self.normalized["norm_file_path"] = None
             return self.normalized
-        elif self.mime_type == 'application/zip':
+        elif self.mime_type == "application/zip":
             self._zip_to_norm(source_dir, target_dir)
             return self.normalized
 
         if self.mime_type not in self.converters:
-            self.normalized['result'] = Result.NOT_SUPPORTED
-            self.normalized['norm_file_path'] = None
+            self.normalized["result"] = Result.NOT_SUPPORTED
+            self.normalized["norm_file_path"] = None
             return self.normalized
 
         converter = self.converters[self.mime_type]
-        self._run_conversion_command(
-            converter, source_file_path, target_file_path, target_dir)
+        self._run_conversion_command(converter, source_file_path, target_file_path, target_dir)
 
         return self.normalized
 
     def _run_conversion_command(self, converter: Any, source_file_path: str, target_file_path: str, target_dir: str):
         """
-          Convert function
+        Convert function
 
-          Args:
-              converter: which converter to use
-              source_file_path: source file path for the file to be converted
-              target_file_path: target file path for where the converted file should be saved
-              target_dir: path directory where the converted result should be saved
-          """
+        Args:
+            converter: which converter to use
+            source_file_path: source file path for the file to be converted
+            target_file_path: target file path for where the converted file should be saved
+            target_dir: path directory where the converted result should be saved
+        """
         cmd, target_ext = self._get_target_ext_and_cmd(converter)
         if target_ext and self.ext != target_ext:
-            target_file_path = os.path.join(
-                target_dir, f"{self.path}.{target_ext}")
+            target_file_path = os.path.join(target_dir, f"{self.path}.{target_ext}")
 
-        cmd = cmd.replace('<source>', '"' + source_file_path + '"')
-        cmd = cmd.replace('<target>', '"' + target_file_path + '"')
-        cmd = cmd.replace('<mime-type>', '"' + self.mime_type + '"')
-        cmd = cmd.replace('<target-ext>', '"' + target_ext + '"')
-        cmd = cmd.replace('<version>', '"' + self.version + '"')
+        cmd = cmd.replace("<source>", '"' + source_file_path + '"')
+        cmd = cmd.replace("<target>", '"' + target_file_path + '"')
+        cmd = cmd.replace("<mime-type>", '"' + self.mime_type + '"')
+        cmd = cmd.replace("<target-ext>", '"' + target_ext + '"')
+        cmd = cmd.replace("<version>", '"' + self.version + '"')
 
         result = run_shell_command(cmd, cwd=self.pwconv_path, shell=True)
 
         if not os.path.exists(target_file_path):
-            self.normalized['result'] = Result.FAILED
-            self.normalized['norm_file_path'] = None
+            self.normalized["result"] = Result.FAILED
+            self.normalized["norm_file_path"] = None
 
             if self.debug:
                 print("Command: " + cmd)
                 # print(str(result[2]))
         else:
-            self.normalized['result'] = Result.SUCCESSFUL
-            self.normalized['norm_file_path'] = target_file_path
+            self.normalized["result"] = Result.SUCCESSFUL
+            self.normalized["norm_file_path"] = target_file_path
 
         return result
 
     def _get_target_ext_and_cmd(self, converter: Any):
-        cmd = converter['command']
-    
+        cmd = converter["command"]
+
         target_ext = self.ext
-        if 'target-ext' in converter:
-            target_extensions = converter['target-ext'].split('|')
-            for ext in converter['target-ext'].split('|'):
+        if "target-ext" in converter:
+            target_extensions = converter["target-ext"].split("|")
+            for ext in converter["target-ext"].split("|"):
                 if ext == self.ext or ext == target_extensions[-1]:
                     target_ext = ext
-                    break             
+                    break
 
         # special case for subtypes. For an example see: sdo in converters.yml
         # TODO: This won't work and need rethink or scrapping
-        if 'sub-cmds' in converter.keys():
-            for sub in converter['sub-cmds']:
-                if sub == 'comment':
+        if "sub-cmds" in converter.keys():
+            for sub in converter["sub-cmds"]:
+                if sub == "comment":
                     continue
 
                 target_mime = (
@@ -131,12 +127,11 @@ class File:
                     else converter["sub-cmds"][sub]["target-mime"]
                 )
 
-                sub_cmd = converter['sub-cmds'][sub]['command']
+                sub_cmd = converter["sub-cmds"][sub]["command"]
                 if target_mime == self.mime_type:
-                    cmd = sub_cmd + ' && ' + \
-                        cmd.replace('<source>', '<target>')
+                    cmd = sub_cmd + " && " + cmd.replace("<source>", "<target>")
                 # else:
-                    #cmd = sub_cmd
+                # cmd = sub_cmd
 
         return cmd, target_ext
 
@@ -149,34 +144,34 @@ class File:
         # --> sjekk hvordan det kan stemme når extension på normalsert varierer
 
         def zip_dir(norm_dir_path_param: str, norm_base_path_param: str):
-            return shutil.make_archive(base_name=norm_dir_path_param,
-                                       format='zip', root_dir=norm_base_path_param, base_dir='.')
+            return shutil.make_archive(
+                base_name=norm_dir_path_param, format="zip", root_dir=norm_base_path_param, base_dir="."
+            )
 
         def rm_tmp(rm_paths: List[str]):
             for path in rm_paths:
                 delete_file_or_dir(path)
 
-        path_to_use = self.path if self.ext != 'zip' else self.relative_root
+        path_to_use = self.path if self.ext != "zip" else self.relative_root
 
         working_dir = os.getcwd()
         norm_base_path = os.path.join(target_dir, path_to_use)
-        norm_zip_path = norm_base_path + '_zip'
-        norm_dir_path = norm_zip_path + '_norm'
-        paths = [norm_dir_path + '.tsv', norm_dir_path, norm_zip_path]
+        norm_zip_path = norm_base_path + "_zip"
+        norm_dir_path = norm_zip_path + "_norm"
+        paths = [norm_dir_path + ".tsv", norm_dir_path, norm_zip_path]
 
         extract_nested_zip(self.path, norm_zip_path)
 
-        result = self.convert_folder(
-            norm_zip_path, norm_dir_path, self.debug, self.file_storage, True)
+        result = self.convert_folder(norm_zip_path, norm_dir_path, self.debug, self.file_storage, True)
 
-        if 'successfully' in result:
+        if "successfully" in result:
             try:
                 norm_zip = zip_dir(norm_base_path, norm_dir_path)
-                self.normalized['result'] = Result.SUCCESSFUL
-                self.normalized['norm_file_path'] = norm_zip
+                self.normalized["result"] = Result.SUCCESSFUL
+                self.normalized["norm_file_path"] = norm_zip
             except Exception as e:
-                self.normalized['result'] = Result.FAILED
-                self.normalized['norm_file_path'] = None
+                self.normalized["result"] = Result.FAILED
+                self.normalized["norm_file_path"] = None
                 return False
             finally:
                 os.chdir(working_dir)
@@ -184,8 +179,8 @@ class File:
 
             return True
         else:
-            self.normalized['result'] = Result.FAILED
-            self.normalized['norm_file_path'] = None
+            self.normalized["result"] = Result.FAILED
+            self.normalized["norm_file_path"] = None
 
         os.chdir(working_dir)
         rm_tmp(paths)

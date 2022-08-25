@@ -19,7 +19,7 @@ def run_shell_command(command, cwd=None, timeout=30, shell=False):
     Returns:
         Tuple[subprocess return code, strings written to stdout, strings written to stderr]
     """
-    os.environ['PYTHONUNBUFFERED'] = "1"
+    os.environ["PYTHONUNBUFFERED"] = "1"
     stdout = []
     stderr = []
 
@@ -45,7 +45,6 @@ def run_shell_command(command, cwd=None, timeout=30, shell=False):
     for line in proc.stderr:
         stderr.append(line.rstrip())
 
-    print(command)
     return proc.returncode, stdout, stderr
 
 
@@ -60,21 +59,15 @@ def run_siegfried(source_dir: str, target_dir: str, tsv_path: str, zipped=False)
         zipped: nothing...
     """
     if not zipped:
-        print('\nIdentifying file types...')
+        print("\nIdentifying file types...")
 
-    csv_path = os.path.join(target_dir, 'siegfried.csv')
+    csv_path = os.path.join(target_dir, "siegfried.csv")
     os.chdir(source_dir)
-    subprocess.run(
-        'sf -z -csv * > ' + csv_path,
-        stderr=subprocess.DEVNULL,
-        stdout=subprocess.DEVNULL,
-        shell=True
+    subprocess.run("sf -z -csv * > " + csv_path, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL, shell=True)
 
-    )
-
-    with open(csv_path, 'r') as csvin, open(tsv_path, 'w') as tsvout:
+    with open(csv_path, "r") as csvin, open(tsv_path, "w") as tsvout:
         csvin = csv.reader(csvin)
-        tsvout = csv.writer(tsvout, delimiter='\t')
+        tsvout = csv.writer(tsvout, delimiter="\t")
         for row in csvin:
             tsvout.writerow(row)
 
@@ -93,25 +86,25 @@ def delete_file_or_dir(path: str):
 
     if os.path.isdir(path):
         shutil.rmtree(path)
-        
-def str_to_bool(s)-> bool:
-    if s == 'True':
-         return True
-    elif s == 'False':
-         return False
-    else:
-         raise ValueError
 
+
+def str_to_bool(s) -> bool:
+    if s == "True":
+        return True
+    elif s == "False":
+        return False
+    else:
+        raise ValueError
 
 
 def extract_nested_zip(zipped_file: str, to_folder: str):
     """Extract nested zipped files to specified folder"""
-    with zipfile.ZipFile(zipped_file, 'r') as zfile:
+    with zipfile.ZipFile(zipped_file, "r") as zfile:
         zfile.extractall(path=to_folder)
 
     for root, dirs, files in os.walk(to_folder):
         for filename in files:
-            if re.search(r'\.zip$', filename):
+            if re.search(r"\.zip$", filename):
                 filespec = os.path.join(root, filename)
                 extract_nested_zip(filespec, root)
 

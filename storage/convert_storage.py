@@ -4,7 +4,6 @@ from petl.io.db import DbView
 
 
 class ConvertStorage:
-
     def load_data_source(self):
         """Load the datasource"""
         pass
@@ -13,7 +12,7 @@ class ConvertStorage:
         """Closes the datasource connection"""
         pass
 
-    def update_row(self, src_path: str, data: List[Any]):
+    def update_row(self, src_path: str, src_directory: str, data: List[Any]):
         """Update a row in the store"""
         pass
 
