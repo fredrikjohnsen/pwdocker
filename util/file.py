@@ -156,10 +156,10 @@ class File:
             for path in rm_paths:
                 delete_file_or_dir(path)
 
-        pathToUse = self.path if self.ext != 'zip' else self.relative_root
+        path_to_use = self.path if self.ext != 'zip' else self.relative_root
 
         working_dir = os.getcwd()
-        norm_base_path = os.path.join(target_dir, pathToUse)
+        norm_base_path = os.path.join(target_dir, path_to_use)
         norm_zip_path = norm_base_path + '_zip'
         norm_dir_path = norm_zip_path + '_norm'
         paths = [norm_dir_path + '.tsv', norm_dir_path, norm_zip_path]
