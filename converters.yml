@@ -33,6 +33,10 @@ message/rfc822:
   comment: Command tested
   command: python3 -m bin.eml2pdf <source> <target>
   target-ext: pdf
+image/gif:
+  comment: Command tested
+  command: python3 -m bin.image2pdf <source> <target>
+  target-ext: pdf  
 image/jpeg:
   comment: Command tested
   command: python3 -m bin.image2pdf <source> <target>
