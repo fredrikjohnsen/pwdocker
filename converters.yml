@@ -1,0 +1,48 @@
+application/pdf:
+  comment: Tested without pdf2text.
+  command: python3 -m bin.pdf2pdfa <source> <target> <version> 
+  #command: python3 -m bin.pdf2pdfa <source> <target> <version> && python3 -m bin.pdf2text <target>  
+  target-ext: pdf
+application/xml:
+  comment: Main command works but could be improved. Sub-cmds won't work as defined now and needs rethink. Multiple subcmds how?
+  command: python3 -m bin.text2utf8 <source> <target>
+  target-ext: html|htm|xhtml|xml
+  #target-ext: xml # TODO: Feil når html i noen tilfeller
+  #sub-cmds:
+    #comment: instead-of-or-pre-commands for special cases
+    #sdo:
+      #comment: Extract embedded pdf signatures
+      #command: bin/convert_sdo.php <source> <target>
+      #target-mime: application/pdf
+text/html:
+  comment: Main command tested. ||-commando with pandoc not tested.
+  command: python3 -m bin.html2pdf <source> <target> && python3 -m bin.pdf2pdfa <target> <target> <version>
+  #command: python3 -m bin.html2pdf <source> <target> || pandoc <source> -s -o <target> && python3 -m bin.pdf2text <target>
+  target-ext: pdf
+application/xhtml+xml:
+  command: python3 -m bin.xhtml2pdf <source> <target>
+  target-ext: pdf
+text/markdown:
+  command: python3 -m bin.text2utf8 <source> <target>
+text/plain:
+  command: python3 -m bin.text2utf8 <source> <target>
+message/rfc822:
+  command: python3 -m bin.eml2pdf <source> <target>
+  target-ext: pdf
+image/jpeg:
+  command: python3 -m bin.image2pdf <source> <target>
+  target-ext: pdf
+application/vnd.ms-excel:
+  comment: Both commands tested. unoconv2x better at converting Excel-files. Target html only works with unoconv2x.  
+  command: python3 -m bin.unoconv2x <source> <target> && python3 -m bin.pdf2pdfa <target> <target> <version>
+  #command: python3 -m bin.office2pdf <source> <target> && python3 -m bin.pdf2pdfa <target> <target> <version>
+  target-ext: pdf
+  #target-ext: html
+application/rtf:
+  command: python3 -m bin.unoconv2x <source> <target> && python3 -m bin.pdf2pdfa <target> <target> <version>
+  #command: python3 -m bin.office2pdf <source> <target>  
+  target-ext: pdf
+image/tiff:
+  command: python3 -m bin.image2pdf <source> <target>  
+  #command: python3 -m bin.image2pdf <source> <target> && python3 -m bin.pdf2pdfa <target> <target>
+  target-ext: pdf
