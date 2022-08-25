@@ -150,6 +150,7 @@ def convert_file(
     source_file = File(row, converters, pwconv_path, debug, file_storage, convert_folder)
     normalized = source_file.convert(source_dir, target_dir)
     row["result"] = normalized["result"]
+    row["mime_type"] = normalized["mime_type"]
     if normalized["norm_file_path"]:
         row["norm_file_path"] = relpath(normalized["norm_file_path"], start=target_dir)
 

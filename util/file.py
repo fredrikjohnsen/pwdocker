@@ -3,6 +3,8 @@ import shutil
 from pathlib import Path
 from typing import Optional, Any, List, Callable, Union, Tuple, Dict
 
+import magic
+
 from storage import ConvertStorage
 from util import run_shell_command, delete_file_or_dir, extract_nested_zip, Result
 
@@ -24,6 +26,7 @@ class File:
         self.pwconv_path = pwconv_path
         self.debug = debug
         self.convert_folder = convert_folder
+        self.row = row
         self.file_storage = file_storage
         self.path = row['source_file_path']
         self.mime_type = row['mime_type']
@@ -36,11 +39,19 @@ class File:
         self.relative_root = split_ext[0]
         self.ext = split_ext[1][1:]
         self.normalized = {
-            'norm_file_path': Optional[str], 'result': Optional[str]}
+            'norm_file_path': Optional[str], 'result': Optional[str], 'mime_type': Optional[str]}
 
     def convert(self, source_dir: str, target_dir: str):
         """Convert file to archive format"""
 
+        source_file_path = os.path.join(source_dir, self.path)
+        target_file_path = os.path.join(target_dir, self.path)
+        
+        if self.mime_type == '':
+            self.mime_type = magic.from_file(source_file_path, mime=True)      
+        
+        self.normalized['mime_type'] = self.mime_type
+    
         if self.mime_type == 'n/a':
             self.normalized['result'] = Result.NOT_A_DOCUMENT
             self.normalized['norm_file_path'] = None
@@ -48,9 +59,6 @@ class File:
         elif self.mime_type == 'application/zip':
             self._zip_to_norm(source_dir, target_dir)
             return self.normalized
-
-        source_file_path = os.path.join(source_dir, self.path)
-        target_file_path = os.path.join(target_dir, self.path)
 
         if self.mime_type not in self.converters:
             self.normalized['result'] = Result.NOT_SUPPORTED
@@ -101,14 +109,14 @@ class File:
 
     def _get_target_ext_and_cmd(self, converter: Any):
         cmd = converter['command']
-
+    
         target_ext = self.ext
         if 'target-ext' in converter:
             target_extensions = converter['target-ext'].split('|')
             for ext in converter['target-ext'].split('|'):
                 if ext == self.ext or ext == target_extensions[-1]:
                     target_ext = ext
-                    break
+                    break             
 
         # special case for subtypes. For an example see: sdo in converters.yml
         # TODO: This won't work and need rethink or scrapping

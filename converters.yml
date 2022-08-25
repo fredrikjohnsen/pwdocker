@@ -4,7 +4,7 @@ application/pdf:
   #command: python3 -m bin.pdf2pdfa <source> <target> <version> && python3 -m bin.pdf2text <target>  
   target-ext: pdf
 application/xml:
-  comment: Main command works but could be improved. Sub-cmds won't work as defined now and needs rethink. Multiple subcmds how?
+  comment: Main command works but could be improved. Sub-cmds won't work as defined now and needs rethink. Use pronom id rather than extension?
   command: python3 -m bin.text2utf8 <source> <target>
   target-ext: html|htm|xhtml|xml
   #target-ext: xml # TODO: Feil når html i noen tilfeller
@@ -15,21 +15,26 @@ application/xml:
       #command: bin/convert_sdo.php <source> <target>
       #target-mime: application/pdf
 text/html:
-  comment: Main command tested. ||-commando with pandoc not tested.
+  comment: Main command tested. Or-commando with pandoc not tested.
   command: python3 -m bin.html2pdf <source> <target> && python3 -m bin.pdf2pdfa <target> <target> <version>
   #command: python3 -m bin.html2pdf <source> <target> || pandoc <source> -s -o <target> && python3 -m bin.pdf2text <target>
   target-ext: pdf
 application/xhtml+xml:
+  comment: Command tested and produces pdf/a
   command: python3 -m bin.xhtml2pdf <source> <target>
   target-ext: pdf
 text/markdown:
+  comment: Command tested
   command: python3 -m bin.text2utf8 <source> <target>
 text/plain:
   command: python3 -m bin.text2utf8 <source> <target>
+  target-ext: txt
 message/rfc822:
+  comment: Command tested
   command: python3 -m bin.eml2pdf <source> <target>
   target-ext: pdf
 image/jpeg:
+  comment: Command tested
   command: python3 -m bin.image2pdf <source> <target>
   target-ext: pdf
 application/vnd.ms-excel:
