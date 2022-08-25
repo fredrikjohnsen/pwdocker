@@ -7,7 +7,7 @@ import os
 import zipfile
 
 
-def run_shell_command(command, cwd=None, timeout=30, shell=False):
+def run_shell_command(command, cwd=None, timeout=30, shell=False) -> tuple[int, list, list]:
     """
     Run the given command as a subprocess
 
@@ -48,7 +48,7 @@ def run_shell_command(command, cwd=None, timeout=30, shell=False):
     return proc.returncode, stdout, stderr
 
 
-def run_siegfried(source_dir: str, target_dir: str, tsv_path: str, zipped=False):
+def run_siegfried(source_dir: str, target_dir: str, tsv_path: str, zipped=False) -> None:
     """
     Generate tsv file with info about file types by running
 
@@ -74,12 +74,12 @@ def run_siegfried(source_dir: str, target_dir: str, tsv_path: str, zipped=False)
     remove_file(csv_path)
 
 
-def remove_file(src_path: str):
+def remove_file(src_path: str) -> None:
     if os.path.exists(src_path):
         os.remove(src_path)
 
 
-def delete_file_or_dir(path: str):
+def delete_file_or_dir(path: str) -> None:
     """Delete file or directory tree"""
     if os.path.isfile(path):
         os.remove(path)
@@ -97,7 +97,7 @@ def str_to_bool(s) -> bool:
         raise ValueError
 
 
-def extract_nested_zip(zipped_file: str, to_folder: str):
+def extract_nested_zip(zipped_file: str, to_folder: str) -> None:
     """Extract nested zipped files to specified folder"""
     with zipfile.ZipFile(zipped_file, "r") as zfile:
         zfile.extractall(path=to_folder)
@@ -109,7 +109,7 @@ def extract_nested_zip(zipped_file: str, to_folder: str):
                 extract_nested_zip(filespec, root)
 
 
-def get_property_defaults(properties, overwrites):
+def get_property_defaults(properties, overwrites) -> dict:
     if not overwrites:
         return properties
 

@@ -1,7 +1,7 @@
 import os
 import shutil
 from pathlib import Path
-from typing import Optional, Any, List, Callable, Union, Tuple, Dict
+from typing import Optional, Any, List, Callable, Type, Union, Tuple, Dict
 
 import magic
 
@@ -39,7 +39,7 @@ class File:
         self.ext = split_ext[1][1:]
         self.normalized = {"norm_file_path": Optional[str], "result": Optional[str], "mime_type": Optional[str]}
 
-    def convert(self, source_dir: str, target_dir: str):
+    def convert(self, source_dir: str, target_dir: str) -> dict[str, Type[str]]:
         """Convert file to archive format"""
 
         source_file_path = os.path.join(source_dir, self.path)
@@ -55,7 +55,7 @@ class File:
             self.normalized["norm_file_path"] = None
             return self.normalized
         elif self.mime_type == "application/zip":
-            self._zip_to_norm(source_dir, target_dir)
+            self._zip_to_norm(target_dir)
             return self.normalized
 
         if self.mime_type not in self.converters:
@@ -68,7 +68,9 @@ class File:
 
         return self.normalized
 
-    def _run_conversion_command(self, converter: Any, source_file_path: str, target_file_path: str, target_dir: str):
+    def _run_conversion_command(
+        self, converter: Any, source_file_path: str, target_file_path: str, target_dir: str
+    ) -> tuple[int, list, list]:
         """
         Convert function
 
@@ -96,14 +98,22 @@ class File:
 
             if self.debug:
                 print("Command: " + cmd)
-                # print(str(result[2]))
         else:
             self.normalized["result"] = Result.SUCCESSFUL
             self.normalized["norm_file_path"] = target_file_path
 
         return result
 
-    def _get_target_ext_and_cmd(self, converter: Any):
+    def _get_target_ext_and_cmd(self, converter: Any) -> Tuple:
+        """
+        Extract the target extension and the conversion command
+
+        Args:
+            converter: The converter to use
+        Returns:
+            A Tuple containing the command and target extension
+        """
+
         cmd = converter["command"]
 
         target_ext = self.ext
@@ -135,13 +145,13 @@ class File:
 
         return cmd, target_ext
 
-    def _zip_to_norm(self, source_dir: str, target_dir: str):
-        """Exctract all files, convert them, and zip them again"""
+    def _zip_to_norm(self, target_dir: str) -> None:
+        """
+        Extract the zipped files, convert them and zip them again.
 
-        # TODO: Blir sjekk på om normalisert fil finnes nå riktig
-        #       for konvertering av zip-fil når ext kan variere?
-        # --> Blir skrevet til tsv som 'converted successfully'
-        # --> sjekk hvordan det kan stemme når extension på normalsert varierer
+        Args:
+            target_dir: Directory for the resulting zip
+        """
 
         def zip_dir(norm_dir_path_param: str, norm_base_path_param: str):
             return shutil.make_archive(
@@ -172,16 +182,9 @@ class File:
             except Exception as e:
                 self.normalized["result"] = Result.FAILED
                 self.normalized["norm_file_path"] = None
-                return False
-            finally:
-                os.chdir(working_dir)
-                rm_tmp(paths)
-
-            return True
         else:
             self.normalized["result"] = Result.FAILED
             self.normalized["norm_file_path"] = None
 
         os.chdir(working_dir)
         rm_tmp(paths)
-        return False

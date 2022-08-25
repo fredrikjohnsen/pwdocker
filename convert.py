@@ -59,13 +59,13 @@ def add_fields(table, *args):
     return table
 
 
-def convert_folder_entrypoint(args: Namespace):
+def convert_folder_entrypoint(args: Namespace) -> None:
     with StorageSqliteImpl(args.db_path, args.db_name, args.resume) as file_storage:
         result = convert_folder(args.source, args.target, args.debug, file_storage, False)
         print(result)
 
 
-def convert_folder(source_dir: str, target_dir: str, debug: bool, file_storage: ConvertStorage, zipped: bool):
+def convert_folder(source_dir: str, target_dir: str, debug: bool, file_storage: ConvertStorage, zipped: bool) -> str:
     """Convert all files in folder"""
     tsv_source_path = target_dir + ".tsv"
 
@@ -113,7 +113,7 @@ def convert_files(
     file_storage: ConvertStorage,
     zipped: bool,
     debug: bool,
-):
+) -> None:
     table.row_count = 0
     for row in etl.dicts(table):
         # Remove Thumbs.db files and non-files like links
@@ -138,7 +138,7 @@ def convert_file(
     target_dir: str,
     zipped: bool,
     debug: bool,
-):
+) -> None:
     row["mime_type"] = row["mime_type"].split(";")[0]
     if not row["mime_type"]:
         # Siegfried sets mime type only to xml files with xml declaration
@@ -157,7 +157,7 @@ def convert_file(
     file_storage.update_row(row["source_file_path"], row["source_directory"], list(row.values()))
 
 
-def write_sf_file_to_storage(tsv_source_path: str, source_dir: str, file_storage: ConvertStorage):
+def write_sf_file_to_storage(tsv_source_path: str, source_dir: str, file_storage: ConvertStorage) -> int:
     table = etl.fromtsv(tsv_source_path)
     table = etl.rename(
         table,
@@ -194,7 +194,7 @@ def write_sf_file_to_storage(tsv_source_path: str, source_dir: str, file_storage
     return row_count
 
 
-def print_converted_files(total_row_count: int, file_storage: ConvertStorage, source_dir: str):
+def print_converted_files(total_row_count: int, file_storage: ConvertStorage, source_dir: str) -> tuple[int, int]:
     converted_files = file_storage.get_converted_rows(source_dir)
     already_converted = etl.nrows(converted_files)
 
@@ -206,7 +206,7 @@ def print_converted_files(total_row_count: int, file_storage: ConvertStorage, so
     return total_row_count, already_converted
 
 
-def get_conversion_result(before: int, to_convert: int, total: int):
+def get_conversion_result(before: int, to_convert: int, total: int) -> str:
     if total - before == to_convert:
         return "All files converted successfully."
     else:
