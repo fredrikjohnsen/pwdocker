@@ -45,6 +45,7 @@ def run_shell_command(command, cwd=None, timeout=30, shell=False):
     for line in proc.stderr:
         stderr.append(line.rstrip())
 
+    print(command)
     return proc.returncode, stdout, stderr
 
 

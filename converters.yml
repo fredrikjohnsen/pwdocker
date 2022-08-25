@@ -30,8 +30,9 @@ text/plain:
   command: python3 -m bin.text2utf8 <source> <target>
   target-ext: txt
 message/rfc822:
-  comment: Command tested
-  command: python3 -m bin.eml2pdf <source> <target>
+  comment: eml2pdf command tested
+  command: python3 -m bin.email2pdf <source> <target>
+  #command: python3 -m bin.eml2pdf <source> <target>
   target-ext: pdf
 image/gif:
   comment: Command tested

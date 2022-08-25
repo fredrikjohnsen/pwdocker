@@ -2,6 +2,7 @@
 SCRIPTPATH=$(dirname $(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null||echo $0))
 OWNER=$(stat -c '%U' $SCRIPTPATH)
 UPDATE=false
+EMAILCONVERTPATH=/home/$OWNER/bin/emailconvert
 # USERID=$(id -u $OWNER)
 # export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$USERID/bus";
 
@@ -105,6 +106,12 @@ recho $?;
 cecho "CYAN" "Install mail converter..";
 gem install eml_to_pdf;
 recho $?;
+
+cecho "CYAN" "Installing java email converter..";
+if [ ! -f $EMAILCONVERTPATH/emailconverter.jar ]; then
+    sudo -H -u $OWNER bash -c "mkdir -p $EMAILCONVERTPATH; \
+    curl -o $EMAILCONVERTPATH/emailconverter.jar -L https://github.com/nickrussler/email-to-pdf-converter/releases/download/2.5.3/emailconverter-2.5.3-all.jar";  
+fi
 
 cecho "CYAN" "Fix fuse permissions..";
 sed -i -e 's/#user_allow_other/user_allow_other/' /etc/fuse.conf;
