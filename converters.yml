@@ -30,8 +30,8 @@ text/plain:
   command: python3 -m bin.text2utf8 <source> <target>
   target-ext: txt|csv|tsv
 message/rfc822:
-  comment: Tested. eml2pdf has problems with embedded attachments.
-  command: python3 -m bin.email2pdf <source> <target>
+  comment: Tested. Both have problems with embedded attachments? email2pdf have som encoding issues as well
+  command: python3 -m bin.text2utf8 <source> <target> && python3 -m bin.email2pdf <target> <target>
   #command: python3 -m bin.eml2pdf <source> <target>
   target-ext: pdf
 image/gif:
