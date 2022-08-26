@@ -28,9 +28,9 @@ text/markdown:
   command: python3 -m bin.text2utf8 <source> <target>
 text/plain:
   command: python3 -m bin.text2utf8 <source> <target>
-  target-ext: txt
+  target-ext: txt|csv|tsv
 message/rfc822:
-  comment: eml2pdf command tested
+  comment: Tested. eml2pdf has problems with embedded attachments.
   command: python3 -m bin.email2pdf <source> <target>
   #command: python3 -m bin.eml2pdf <source> <target>
   target-ext: pdf

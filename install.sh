@@ -110,7 +110,9 @@ recho $?;
 cecho "CYAN" "Installing java email converter..";
 if [ ! -f $EMAILCONVERTPATH/emailconverter.jar ]; then
     sudo -H -u $OWNER bash -c "mkdir -p $EMAILCONVERTPATH; \
-    curl -o $EMAILCONVERTPATH/emailconverter.jar -L https://github.com/nickrussler/email-to-pdf-converter/releases/download/2.5.3/emailconverter-2.5.3-all.jar";  
+    curl -o $EMAILCONVERTPATH/emailconverter.jar -L \
+    https://github.com/nickrussler/email-to-pdf-converter/releases/download/2.5.3/emailconverter-2.5.3-all.jar";
+    recho $?;  
 fi
 
 cecho "CYAN" "Fix fuse permissions..";
