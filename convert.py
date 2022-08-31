@@ -15,13 +15,10 @@
 
 from __future__ import annotations
 import os
-import time
-import psutil
 import pathlib
 from os.path import relpath
 from pathlib import Path
 from typing import Dict
-import subprocess
 from argparse import ArgumentParser, Namespace
 
 import petl as etl
@@ -31,7 +28,7 @@ from unoserver import server
 
 # Load converters
 from storage import ConvertStorage, StorageSqliteImpl
-from util import run_siegfried, remove_file, File, Result
+from util import run_siegfried, remove_file, File, Result, start_uno_server, stop_uno_server
 from util.util import get_property_defaults, str_to_bool
 
 yaml = YAML()
@@ -100,14 +97,8 @@ def convert_folder(source_dir: str, target_dir: str, debug: bool, file_storage: 
     if files_to_convert_count == 0:
         return "All files converted previously."
 
-    # warm up libreoffice:
-    unoserver = subprocess.Popen(
-        Path(Path.home(), ".local/bin/unoserver"),
-        start_new_session=True,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.STDOUT,
-    )
-    time.sleep(3)  # Wait for server to start up    
+    # Warm up libreoffice:
+    server = start_uno_server()            
     
     # run conversion:
     convert_files(files_to_convert_count, source_dir, table, target_dir, file_storage, zipped, debug)
@@ -117,10 +108,7 @@ def convert_folder(source_dir: str, target_dir: str, debug: bool, file_storage: 
     msg = get_conversion_result(already_converted_count, files_to_convert_count, total_converted_count)
 
     # Stop libreoffice server
-    unoserver.terminate()
-    for process in psutil.process_iter():
-        if process.name() == 'unoserver':
-            process.kill()
+    stop_uno_server(server)
     
     return msg
 

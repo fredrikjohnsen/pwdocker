@@ -54,10 +54,24 @@ application/vnd.openxmlformats-officedocument.wordprocessingml.document:
   #command: python3 -m bin.office2pdf <source> <target> && python3 -m bin.pdf2pdfa <target> <target> <version>
   target-ext: pdf
   #target-ext: html  
+application/msword:
+  comment: Both commands tested. Target html only works with unoconv2x.  
+  command: python3 -m bin.unoconv2x <source> <target> && python3 -m bin.pdf2pdfa <target> <target> <version>
+  #command: python3 -m bin.office2pdf <source> <target> && python3 -m bin.pdf2pdfa <target> <target> <version>
+  target-ext: pdf
+  #target-ext: html    
+application/vnd.ms-powerpoint:
+  comment: Both commands tested. Target html only works with unoconv2x.  
+  command: python3 -m bin.unoconv2x <source> <target> && python3 -m bin.pdf2pdfa <target> <target> <version>
+  #command: python3 -m bin.office2pdf <source> <target> && python3 -m bin.pdf2pdfa <target> <target> <version>
+  target-ext: pdf
+  #target-ext: html    
 application/rtf:
+  comment: Both commands tested. Target html only works with unoconv2x.  
   command: python3 -m bin.unoconv2x <source> <target> && python3 -m bin.pdf2pdfa <target> <target> <version>
   #command: python3 -m bin.office2pdf <source> <target>  
   target-ext: pdf
+  #target-ext: html    
 image/tiff:
   command: python3 -m bin.image2pdf <source> <target>  
   #command: python3 -m bin.image2pdf <source> <target> && python3 -m bin.pdf2pdfa <target> <target>

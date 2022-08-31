@@ -5,10 +5,13 @@ from pathlib import Path
 
 import typer
 from unoserver import converter
+#from util import start_uno_server, stop_uno_server
 
 # from pdf2pdfa import pdf2pdfa
 
 # TODO: Make check for running unoserver for standalone use of script
+# Can use start/stop_uno_server after check with psutil
+# -> Or check first if convert.py is running?
 
 def unoconv2x(source_path: str, target_path: str):
     """
