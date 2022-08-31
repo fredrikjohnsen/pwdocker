@@ -48,6 +48,12 @@ application/vnd.ms-excel:
   #command: python3 -m bin.office2pdf <source> <target> && python3 -m bin.pdf2pdfa <target> <target> <version>
   target-ext: pdf
   #target-ext: html
+application/vnd.openxmlformats-officedocument.wordprocessingml.document:
+  comment: Both commands tested. Target html only works with unoconv2x.  
+  command: python3 -m bin.unoconv2x <source> <target> && python3 -m bin.pdf2pdfa <target> <target> <version>
+  #command: python3 -m bin.office2pdf <source> <target> && python3 -m bin.pdf2pdfa <target> <target> <version>
+  target-ext: pdf
+  #target-ext: html  
 application/rtf:
   command: python3 -m bin.unoconv2x <source> <target> && python3 -m bin.pdf2pdfa <target> <target> <version>
   #command: python3 -m bin.office2pdf <source> <target>  

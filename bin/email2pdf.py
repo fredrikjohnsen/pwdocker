@@ -7,6 +7,7 @@ import typer
 import uuid
 
 from bin.common import run_command_and_convert_to_pdfa
+from util import run_shell_command, remove_file
 
 
 def email2pdf(src_file_path: str, target_file_path: str):
@@ -21,9 +22,18 @@ def email2pdf(src_file_path: str, target_file_path: str):
         Exit code 0 if successful, otherwise 1.
     """
     tmp_file = f"{os.path.dirname(os.path.realpath(src_file_path))}/{uuid.uuid4()}.pdf"
+    r_command = ['eml_to_pdf', src_file_path, tmp_file]
+    run_shell_command(r_command)
+    # TODO: Den over for selve mailen og den under for å håndtere vedlegg -> må zippe til slutt da 
+    # -> sjekk først om finnes vedlegg da? 
+    
+    # TODO: Smarteste måten disse kan kombineres? 
+    
+    
+    tmp_file = f"{os.path.dirname(os.path.realpath(src_file_path))}/{uuid.uuid4()}.pdf"
     jar_file = f"{Path.home()}/bin/emailconvert/emailconverter.jar"
-    command = ['java', '-jar', jar_file, src_file_path, "-o", tmp_file]
-    return sys.exit(run_command_and_convert_to_pdfa(command, tmp_file, target_file_path))
+    j_command = ['java', '-jar', jar_file, src_file_path, "-o", tmp_file]
+    return sys.exit(run_command_and_convert_to_pdfa(j_command, tmp_file, target_file_path))
 
 
 if __name__ == "__main__":

@@ -8,6 +8,7 @@ from unoserver import converter
 
 # from pdf2pdfa import pdf2pdfa
 
+# TODO: Make check for running unoserver for standalone use of script
 
 def unoconv2x(source_path: str, target_path: str):
     """
@@ -33,6 +34,7 @@ def unoconv2x(source_path: str, target_path: str):
 
     target_ext = Path(target_path).suffix
     _converter = converter.UnoConverter()
+    #_converter.service
     result = _converter.convert(source_path, None, target_path, target_ext)
 
     if not Path(target_path).is_file() or result is not None:

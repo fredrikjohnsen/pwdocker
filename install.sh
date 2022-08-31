@@ -82,9 +82,9 @@ fi
 
 cecho "CYAN" "Installing apt-gettable dependencies..";
 echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | debconf-set-selections;
-apt-get install -y ttf-mscorefonts-installer pandoc abiword sqlite3 uchardet libreoffice python3-wheel dos2unix \
-    ghostscript onlyoffice-desktopeditors onlyoffice-documentbuilder icc-profiles-free clamtk tesseract-ocr php-cli \
-    clamav-daemon clamav-unofficial-sigs clamdscan libclamunrar9 wimtools wkhtmltopdf ruby-dev  imagemagick cabextract \
+apt-get install -y ttf-mscorefonts-installer pandoc abiword sqlite3 uchardet libreoffice python3-wheel tesseract-ocr \
+    ghostscript onlyoffice-desktopeditors onlyoffice-documentbuilder icc-profiles-free clamtk  php-cli wkhtmltopdf \
+    clamav-daemon clamav-unofficial-sigs clamdscan libclamunrar9 wimtools ruby-dev  imagemagick cabextract dos2unix \
     fontforge python3-pgmagick graphicsmagick graphviz img2pdf golang coolwsd code-brand siegfried php-xml;
 recho $?;
 

@@ -15,15 +15,19 @@
 
 from __future__ import annotations
 import os
+import time
+import psutil
 import pathlib
 from os.path import relpath
 from pathlib import Path
 from typing import Dict
+import subprocess
 from argparse import ArgumentParser, Namespace
 
 import petl as etl
 from petl.io.db import DbView
 from ruamel.yaml import YAML
+from unoserver import server
 
 # Load converters
 from storage import ConvertStorage, StorageSqliteImpl
@@ -96,13 +100,28 @@ def convert_folder(source_dir: str, target_dir: str, debug: bool, file_storage: 
     if files_to_convert_count == 0:
         return "All files converted previously."
 
-    # run conversion
+    # warm up libreoffice:
+    unoserver = subprocess.Popen(
+        Path(Path.home(), ".local/bin/unoserver"),
+        start_new_session=True,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.STDOUT,
+    )
+    time.sleep(3)  # Wait for server to start up    
+    
+    # run conversion:
     convert_files(files_to_convert_count, source_dir, table, target_dir, file_storage, zipped, debug)
 
     # check conversion result
     total_converted_count = etl.nrows(file_storage.get_converted_rows(source_dir))
     msg = get_conversion_result(already_converted_count, files_to_convert_count, total_converted_count)
 
+    # Stop libreoffice server
+    unoserver.terminate()
+    for process in psutil.process_iter():
+        if process.name() == 'unoserver':
+            process.kill()
+    
     return msg
 
 
