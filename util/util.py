@@ -3,7 +3,6 @@ import csv
 import re
 import shutil
 import signal
-import time
 import subprocess
 import os
 import zipfile
