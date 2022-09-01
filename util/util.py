@@ -7,27 +7,8 @@ import time
 import subprocess
 import os
 import zipfile
-import psutil
 from pathlib import Path
 
-
-def start_uno_server():
-    unoserver = subprocess.Popen(
-        Path(Path.home(), ".local/bin/unoserver"),
-        start_new_session=True,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.STDOUT,
-    )
-    time.sleep(3)  # Wait for server to start up  
-    return unoserver
-    
-    
-def stop_uno_server(unoserver):
-    unoserver.terminate()
-    for process in psutil.process_iter():
-        if process.name() == 'unoserver':
-            process.kill()
-                
 
 def run_shell_command(command, cwd=None, timeout=30, shell=False) -> tuple[int, list, list]:
     """

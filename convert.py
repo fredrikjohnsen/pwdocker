@@ -28,7 +28,7 @@ from unoserver import server
 
 # Load converters
 from storage import ConvertStorage, StorageSqliteImpl
-from util import run_siegfried, remove_file, File, Result, start_uno_server, stop_uno_server
+from util import run_siegfried, remove_file, File, Result
 from util.util import get_property_defaults, str_to_bool
 
 yaml = YAML()
@@ -95,10 +95,7 @@ def convert_folder(source_dir: str, target_dir: str, debug: bool, file_storage: 
     # print the files in this directory that have already been converted
     files_to_convert_count, already_converted_count = print_converted_files(written_row_count, file_storage, source_dir)
     if files_to_convert_count == 0:
-        return "All files converted previously."
-
-    # Warm up libreoffice:
-    server = start_uno_server()            
+        return "All files converted previously."         
     
     # run conversion:
     convert_files(files_to_convert_count, source_dir, table, target_dir, file_storage, zipped, debug)
@@ -106,9 +103,6 @@ def convert_folder(source_dir: str, target_dir: str, debug: bool, file_storage: 
     # check conversion result
     total_converted_count = etl.nrows(file_storage.get_converted_rows(source_dir))
     msg = get_conversion_result(already_converted_count, files_to_convert_count, total_converted_count)
-
-    # Stop libreoffice server
-    stop_uno_server(server)
     
     return msg
 

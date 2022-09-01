@@ -1,17 +1,35 @@
 #!/usr/bin/env python3
 import os
 import sys
+import psutil
 from pathlib import Path
 
 import typer
 from unoserver import converter
-#from util import start_uno_server, stop_uno_server
 
 # from pdf2pdfa import pdf2pdfa
 
-# TODO: Make check for running unoserver for standalone use of script
-# Can use start/stop_uno_server after check with psutil
-# -> Or check first if convert.py is running?
+
+def start_uno_server():
+    if uno_server_running():
+        return
+
+    subprocess.Popen(
+        Path(Path.home(), ".local/bin/unoserver"),
+        start_new_session=True,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.STDOUT,
+    )
+    time.sleep(3)  # Wait for server to start up
+
+
+def uno_server_running():
+    for process in psutil.process_iter():
+        if process.name() == "unoserver":
+            return True
+
+    return False
+
 
 def unoconv2x(source_path: str, target_path: str):
     """
@@ -35,9 +53,9 @@ def unoconv2x(source_path: str, target_path: str):
         Nothing if successful otherwise exits with exit code 1
     """
 
+    start_uno_server()
     target_ext = Path(target_path).suffix
     _converter = converter.UnoConverter()
-    #_converter.service
     result = _converter.convert(source_path, None, target_path, target_ext)
 
     if not Path(target_path).is_file() or result is not None:
