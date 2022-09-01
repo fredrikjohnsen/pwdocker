@@ -26,20 +26,21 @@ application/xhtml+xml:
 text/markdown:
   comment: Command tested
   command: python3 -m bin.text2utf8 <source> <target>
+  target-ext: md
 text/plain:
   command: python3 -m bin.text2utf8 <source> <target>
   target-ext: txt|csv|tsv
-message/rfc822:
-  comment: Tested. Both have problems with embedded attachments? email2pdf have som encoding issues as well
-  command: python3 -m bin.text2utf8 <source> <target> && python3 -m bin.email2pdf <target> <target>
+#message/rfc822:
+  #comment: Tested. Both have problems with embedded attachments? email2pdf have som encoding issues as well
+  #command: python3 -m bin.text2utf8 <source> <target> && python3 -m bin.email2pdf <target> <target>
   #command: python3 -m bin.eml2pdf <source> <target>
-  target-ext: pdf
+  #target-ext: pdf
 image/gif:
-  comment: Command tested
+  comment: Command tested and produces pdf/a
   command: python3 -m bin.image2pdf <source> <target>
   target-ext: pdf  
 image/jpeg:
-  comment: Command tested
+  comment: Command tested and produces pdf/a
   command: python3 -m bin.image2pdf <source> <target>
   target-ext: pdf
 application/vnd.ms-excel:
@@ -73,6 +74,7 @@ application/rtf:
   target-ext: pdf
   #target-ext: html    
 image/tiff:
+  comment: Command tested and produces pdf/a
   command: python3 -m bin.image2pdf <source> <target>  
   #command: python3 -m bin.image2pdf <source> <target> && python3 -m bin.pdf2pdfa <target> <target>
   target-ext: pdf
