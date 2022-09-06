@@ -4,6 +4,7 @@ import re
 import shutil
 import signal
 import subprocess
+from subprocess import TimeoutExpired
 import os
 import zipfile
 from pathlib import Path
@@ -37,15 +38,25 @@ def run_shell_command(command, cwd=None, timeout=30, shell=False) -> tuple[int, 
     )
 
     try:
-        proc.wait(timeout=timeout)
-    except subprocess.TimeoutExpired:
-        os.kill(proc.pid, signal.SIGINT)
+        # Communicate with process, collect stderr
+        _, errs = proc.communicate(timeout=timeout)
+    except TimeoutExpired:
+        # Process timed out. Kill and re-raise.
+        proc.kill()
+        #raise
 
-    for line in proc.stdout:
-        stdout.append(line.rstrip())
+    #try:
+        #proc.wait(timeout=timeout)
+    #except subprocess.TimeoutExpired:
+        #proc.kill()
+        #raise
+        #os.kill(proc.pid, signal.SIGINT)
 
-    for line in proc.stderr:
-        stderr.append(line.rstrip())
+    #for line in proc.stdout:
+        #stdout.append(line.rstrip())
+#
+    #for line in proc.stderr:
+        #stderr.append(line.rstrip())
 
     return proc.returncode, stdout, stderr
 

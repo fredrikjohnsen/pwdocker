@@ -91,7 +91,7 @@ class File:
         cmd = cmd.replace("<target-ext>", '"' + target_ext + '"')
         cmd = cmd.replace("<version>", '"' + self.version + '"')
 
-        result = run_shell_command(cmd, cwd=self.pwconv_path, shell=True)
+        run_shell_command(cmd, cwd=self.pwconv_path, shell=True)
 
         if not os.path.exists(target_file_path):
             self.normalized["result"] = Result.FAILED
@@ -103,7 +103,6 @@ class File:
             self.normalized["result"] = Result.SUCCESSFUL
             self.normalized["norm_file_path"] = target_file_path
 
-        return result
 
     def _get_target_ext_and_cmd(self, converter: Any) -> Tuple:
         """

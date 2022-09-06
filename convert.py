@@ -24,7 +24,6 @@ from argparse import ArgumentParser, Namespace
 import petl as etl
 from petl.io.db import DbView
 from ruamel.yaml import YAML
-from unoserver import server
 
 # Load converters
 from storage import ConvertStorage, StorageSqliteImpl
