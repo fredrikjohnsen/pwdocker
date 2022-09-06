@@ -10,7 +10,7 @@ import zipfile
 from pathlib import Path
 
 
-def run_shell_command(command, cwd=None, timeout=30, shell=False) -> tuple[int, list, list]:
+def run_shell_command(command, cwd=None, timeout=30, shell=False) -> int:
     """
     Run the given command as a subprocess
 
@@ -23,10 +23,7 @@ def run_shell_command(command, cwd=None, timeout=30, shell=False) -> tuple[int, 
         Tuple[subprocess return code, strings written to stdout, strings written to stderr]
     """
     os.environ["PYTHONUNBUFFERED"] = "1"
-    stdout = []
-    stderr = []
 
-    # sys.stdout.flush()
     proc = subprocess.Popen(
         command,
         cwd=cwd,
@@ -38,27 +35,11 @@ def run_shell_command(command, cwd=None, timeout=30, shell=False) -> tuple[int, 
     )
 
     try:
-        # Communicate with process, collect stderr
         _, errs = proc.communicate(timeout=timeout)
     except TimeoutExpired:
-        # Process timed out. Kill and re-raise.
         proc.kill()
-        #raise
 
-    #try:
-        #proc.wait(timeout=timeout)
-    #except subprocess.TimeoutExpired:
-        #proc.kill()
-        #raise
-        #os.kill(proc.pid, signal.SIGINT)
-
-    #for line in proc.stdout:
-        #stdout.append(line.rstrip())
-#
-    #for line in proc.stderr:
-        #stderr.append(line.rstrip())
-
-    return proc.returncode, stdout, stderr
+    return proc.returncode
 
 
 def run_siegfried(source_dir: str, target_dir: str, tsv_path: str, zipped=False) -> None:

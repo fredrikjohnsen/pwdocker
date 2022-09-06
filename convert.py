@@ -117,9 +117,8 @@ def convert_files(
 ) -> None:
     table.row_count = 0
     for row in etl.dicts(table):
-        # Remove Thumbs.db files and non-files like links
         source_file = Path(os.path.basename(row["source_file_path"]))
-        if not source_file.is_file() or source_file.name == "Thumbs.db":
+        if source_file.is_symlink() or source_file.name == "Thumbs.db":
             remove_file(row["source_file_path"])
             row["result"] = Result.AUTOMATICALLY_DELETED
             file_storage.update_row(row["source_file_path"], row["source_directory"], list(row.values()))
