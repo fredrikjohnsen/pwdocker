@@ -172,7 +172,7 @@ class File:
 
         extract_nested_zip(self.path, norm_zip_path)
 
-        result = self.convert_folder(norm_zip_path, norm_dir_path, self.debug, self.file_storage, True)
+        result = self.convert_folder(norm_zip_path, norm_dir_path, self.debug, self.file_storage, True, True)
 
         if "successfully" in result:
             try:

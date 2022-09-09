@@ -4,7 +4,7 @@ from sqlite3 import Connection
 from typing import Optional, Any, List
 
 import petl
-from petl import appenddb, fromdb
+from petl import appenddb, fromdb, todb
 
 from storage import ConvertStorage
 from util import Result
@@ -66,6 +66,10 @@ class StorageSqliteImpl(ConvertStorage):
     def close_data_source(self):
         if self._conn:
             self._conn.close()
+            
+    def import_rows(self, table):
+        # import rows
+        todb(table, self._conn, "File")
 
     def append_rows(self, table):
         # select the first row (primary key) and filter away rows that already exist
@@ -85,6 +89,19 @@ class StorageSqliteImpl(ConvertStorage):
         data.pop(0)
         self._conn.execute(self._update_result_str, data)
         self._conn.commit()
+
+    def get_row_count(self):
+        cursor = self._conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM File")
+        return(cursor.fetchone()[0])
+        
+    def get_all_rows(self, source_dir: str):
+        return fromdb(
+            self._conn,
+            """
+            SELECT * FROM File 
+            """
+        )        
 
     def get_unconverted_rows(self, source_dir: str):
         return fromdb(

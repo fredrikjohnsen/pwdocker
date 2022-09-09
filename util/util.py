@@ -20,7 +20,7 @@ def run_shell_command(command, cwd=None, timeout=30, shell=False) -> int:
         timeout: The number of seconds to wait before timing out the subprocess
         shell: If true, the command will be executed through the shell.
     Returns:
-        Tuple[subprocess return code, strings written to stdout, strings written to stderr]
+        exit code
     """
     os.environ["PYTHONUNBUFFERED"] = "1"
 

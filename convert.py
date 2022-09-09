@@ -15,12 +15,14 @@
 
 from __future__ import annotations
 import os
+import sys
 import pathlib
 from os.path import relpath
 from pathlib import Path
 from typing import Dict
 from argparse import ArgumentParser, Namespace
 
+from rich.console import Console
 import petl as etl
 from petl.io.db import DbView
 from ruamel.yaml import YAML
@@ -31,6 +33,8 @@ from util import run_siegfried, remove_file, File, Result
 from util.util import get_property_defaults, str_to_bool
 
 yaml = YAML()
+# csv.field_size_limit(sys.maxsize)
+console = Console()
 pwconv_path = pathlib.Path(__file__).parent.resolve()
 os.chdir(pwconv_path)
 
@@ -61,48 +65,62 @@ def add_fields(table, *args):
 
 
 def convert_folder_entrypoint(args: Namespace) -> None:
+    Path(args.target).mkdir(parents=True, exist_ok=True)
+
+    first_run = False
+    if not os.path.isfile(Path(args.db_path, args.db_name)):
+        first_run = True
+
     with StorageSqliteImpl(args.db_path, args.db_name, args.resume) as file_storage:
-        result = convert_folder(args.source, args.target, args.debug, file_storage, False)
+        result = convert_folder(args.source, args.target, args.debug, file_storage, False, first_run)
         print(result)
 
 
-def convert_folder(source_dir: str, target_dir: str, debug: bool, file_storage: ConvertStorage, zipped: bool) -> str:
+def convert_folder(
+    source_dir: str, target_dir: str, debug: bool, file_storage: ConvertStorage, zipped: bool, first_run: bool
+) -> str:
     """Convert all files in folder"""
-    tsv_source_path = target_dir + ".tsv"
 
-    Path(target_dir).mkdir(parents=True, exist_ok=True)
-
-    if not os.path.isfile(tsv_source_path):
-        run_siegfried(source_dir, target_dir, tsv_source_path, zipped)
-
-    written_row_count = write_sf_file_to_storage(tsv_source_path, source_dir, file_storage)
-    table = file_storage.get_unconverted_rows(source_dir)
+    if first_run:
+        tsv_source_path = target_dir + ".tsv"
+        run_siegfried(args.source, target_dir, tsv_source_path, False)
+        written_row_count = write_sf_file_to_storage(tsv_source_path, source_dir, file_storage)
+    else:
+        written_row_count = file_storage.get_row_count()
 
     files_on_disk_count = sum([len(files) for r, d, files in os.walk(source_dir)])
-
     if files_on_disk_count == 0:
         print("No files to convert. Exiting.")
         return "Error", files_on_disk_count
     if files_on_disk_count != written_row_count:
         print(f"Row count: {str(written_row_count)}")
         print(f"File count: {str(files_on_disk_count)}")
-        print(f"Files listed in '{tsv_source_path}' doesn't match files on disk. Exiting.")
+        print(f"Files listed in '{args.db_name}' doesn't match files on disk. Exiting.")
         return "Error", files_on_disk_count
     if not zipped:
         print("Converting files..")
 
-    # print the files in this directory that have already been converted
-    files_to_convert_count, already_converted_count = print_converted_files(written_row_count, file_storage, source_dir)
-    if files_to_convert_count == 0:
-        return "All files converted previously."         
-    
+    if first_run:
+        files_to_convert_count = written_row_count
+        already_converted_count = 0
+        table = file_storage.get_all_rows(source_dir)
+    else:
+        # print the files in this directory that have already been converted
+        files_to_convert_count, already_converted_count = print_converted_files(
+            written_row_count, file_storage, source_dir
+        )
+        if files_to_convert_count == 0:
+            return "All files converted previously."
+
+        table = file_storage.get_unconverted_rows(source_dir)
+
     # run conversion:
     convert_files(files_to_convert_count, source_dir, table, target_dir, file_storage, zipped, debug)
 
     # check conversion result
     total_converted_count = etl.nrows(file_storage.get_converted_rows(source_dir))
     msg = get_conversion_result(already_converted_count, files_to_convert_count, total_converted_count)
-    
+
     return msg
 
 
@@ -188,7 +206,9 @@ def write_sf_file_to_storage(tsv_source_path: str, source_dir: str, file_storage
         table, "mime_type", lambda v, _row: "application/xml" if _row.id == "fmt/979" else v, pass_row=True
     )
 
-    file_storage.append_rows(table)
+    # TODO: Sjekk om første import
+    # file_storage.append_rows(table)
+    file_storage.import_rows(table)
     row_count = etl.nrows(table)
     remove_file(tsv_source_path)
     return row_count
@@ -249,3 +269,4 @@ create_args_parser(parser)
 if __name__ == "__main__":
     args = parser.parse_args()
     convert_folder_entrypoint(args)
+    console.print("Colour", "Test!", style="bold red")
