@@ -24,13 +24,14 @@ class StorageSqliteImpl(ConvertStorage):
         norm_file_path TEXT,
         result TEXT,
         source_directory TEXT NOT NULL,
+        moved_to_target INTEGER DEFAULT 0,
         PRIMARY KEY (source_file_path, source_directory)
     );"""
 
     _update_result_str = """
         UPDATE File 
-        SET file_size = ?, modified = ?,  errors = ?, id = ?, 
-            format = ?, version = ?, mime_type = ?, norm_file_path = ?, result = ?, source_directory = ? 
+        SET file_size = ?, modified = ?,  errors = ?, id = ?, format = ?, version = ?, mime_type = ?, 
+        norm_file_path = ?, result = ?, source_directory = ?, moved_to_target = ? 
         WHERE source_file_path = ? AND source_directory = ?
         """
 
@@ -53,7 +54,6 @@ class StorageSqliteImpl(ConvertStorage):
 
         storage_path = f"{self.storage_dir}/{self.storage_name}"
         self._conn = sqlite3.connect(storage_path)
-        print(f"Opened DB {self.storage_name} successfully")
         if not self.preserve_existing_data:
             self._conn.execute("DROP TABLE IF EXISTS File")
             self._conn.commit()
@@ -66,7 +66,7 @@ class StorageSqliteImpl(ConvertStorage):
     def close_data_source(self):
         if self._conn:
             self._conn.close()
-            
+
     def import_rows(self, table):
         # import rows
         todb(table, self._conn, "File")
@@ -93,15 +93,15 @@ class StorageSqliteImpl(ConvertStorage):
     def get_row_count(self):
         cursor = self._conn.cursor()
         cursor.execute("SELECT COUNT(*) FROM File")
-        return(cursor.fetchone()[0])
-        
+        return cursor.fetchone()[0]
+
     def get_all_rows(self, source_dir: str):
         return fromdb(
             self._conn,
             """
             SELECT * FROM File 
-            """
-        )        
+            """,
+        )
 
     def get_unconverted_rows(self, source_dir: str):
         return fromdb(

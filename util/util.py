@@ -10,7 +10,7 @@ import zipfile
 from pathlib import Path
 
 
-def run_shell_command(command, cwd=None, timeout=30, shell=False) -> int:
+def run_shell_command(command, cwd=None, timeout=60, shell=False) -> int:
     """
     Run the given command as a subprocess
 
@@ -52,8 +52,6 @@ def run_siegfried(source_dir: str, target_dir: str, tsv_path: str, zipped=False)
         tsv_path: The target path for tsv file
         zipped: nothing...
     """
-    if not zipped:
-        print("\nIdentifying file types...")
 
     csv_path = os.path.join(target_dir, "siegfried.csv")
     os.chdir(source_dir)

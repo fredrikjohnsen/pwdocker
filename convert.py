@@ -17,6 +17,7 @@ from __future__ import annotations
 import os
 import sys
 import pathlib
+import shutil
 from os.path import relpath
 from pathlib import Path
 from typing import Dict
@@ -72,16 +73,19 @@ def convert_folder_entrypoint(args: Namespace) -> None:
         first_run = True
 
     with StorageSqliteImpl(args.db_path, args.db_name, args.resume) as file_storage:
-        result = convert_folder(args.source, args.target, args.debug, file_storage, False, first_run)
-        print(result)
+        result, color = convert_folder(args.source, args.target, args.debug, file_storage, False, first_run)
+        console.print(result, style=color)
 
 
 def convert_folder(
     source_dir: str, target_dir: str, debug: bool, file_storage: ConvertStorage, zipped: bool, first_run: bool
-) -> str:
+) -> tuple[str, str]:
     """Convert all files in folder"""
 
     if first_run:
+        if not zipped:
+            console.print("Identifying file types...", style="bold cyan")
+
         tsv_source_path = target_dir + ".tsv"
         run_siegfried(args.source, target_dir, tsv_source_path, False)
         written_row_count = write_sf_file_to_storage(tsv_source_path, source_dir, file_storage)
@@ -90,15 +94,13 @@ def convert_folder(
 
     files_on_disk_count = sum([len(files) for r, d, files in os.walk(source_dir)])
     if files_on_disk_count == 0:
-        print("No files to convert. Exiting.")
-        return "Error", files_on_disk_count
+        return "No files to convert. Exiting.", "bold red"
     if files_on_disk_count != written_row_count:
-        print(f"Row count: {str(written_row_count)}")
-        print(f"File count: {str(files_on_disk_count)}")
-        print(f"Files listed in '{args.db_name}' doesn't match files on disk. Exiting.")
-        return "Error", files_on_disk_count
+        console.print(f"Row count: {str(written_row_count)}", style="red")
+        console.print(f"File count: {str(files_on_disk_count)}", style="red")
+        return f"Files listed in {args.db_name} doesn't match files on disk. Exiting.", "bold red"
     if not zipped:
-        print("Converting files..")
+        console.print("Converting files..", style="bold cyan")
 
     if first_run:
         files_to_convert_count = written_row_count
@@ -110,7 +112,7 @@ def convert_folder(
             written_row_count, file_storage, source_dir
         )
         if files_to_convert_count == 0:
-            return "All files converted previously."
+            return "All files converted previously.", "bold cyan"
 
         table = file_storage.get_unconverted_rows(source_dir)
 
@@ -119,9 +121,9 @@ def convert_folder(
 
     # check conversion result
     total_converted_count = etl.nrows(file_storage.get_converted_rows(source_dir))
-    msg = get_conversion_result(already_converted_count, files_to_convert_count, total_converted_count)
+    msg, color = get_conversion_result(already_converted_count, files_to_convert_count, total_converted_count)
 
-    return msg
+    return msg, color
 
 
 def convert_files(
@@ -156,21 +158,36 @@ def convert_file(
     target_dir: str,
     zipped: bool,
     debug: bool,
-) -> None:
+) -> None:        
     row["mime_type"] = row["mime_type"].split(";")[0]
     if not row["mime_type"]:
         # Siegfried sets mime type only to xml files with xml declaration
         if os.path.splitext(row["source_file_path"])[1].lower() == ".xml":
             row["mime_type"] = "application/xml"
     if not zipped:
-        print(f"({str(table.row_count)}/{str(file_count)}): .../{row['source_file_path']} ({row['mime_type']})'")
+        print(f"({str(table.row_count)}/{str(file_count)}): .../{row['source_file_path']} ({row['mime_type']})", end="")
 
     source_file = File(row, converters, pwconv_path, debug, file_storage, convert_folder)
     normalized = source_file.convert(source_dir, target_dir)
     row["result"] = normalized["result"]
     row["mime_type"] = normalized["mime_type"]
-    if normalized["norm_file_path"]:
+    moved_to_target_path = Path(target_dir, row["source_file_path"])
+    
+    if normalized["norm_file_path"]:        
+        print() # Go to next line
+        
+        if str(normalized["norm_file_path"]) != str(moved_to_target_path):
+            if moved_to_target_path.is_file():
+                moved_to_target_path.unlink()
+            
+        row["moved_to_target"] = 0
         row["norm_file_path"] = relpath(normalized["norm_file_path"], start=target_dir)
+    else:          
+        console.print('  ' + row["result"], style="bold red")
+        shutil.copy(Path(source_dir, row["source_file_path"]), moved_to_target_path)
+        if moved_to_target_path.is_file():
+            row["moved_to_target"] = 1
+            
 
     file_storage.update_row(row["source_file_path"], row["source_directory"], list(row.values()))
 
@@ -221,16 +238,18 @@ def print_converted_files(total_row_count: int, file_storage: ConvertStorage, so
     before = total_row_count
     total_row_count -= already_converted
     if already_converted > 0:
-        print(f"({already_converted}/{before}) files have already been converted  in {source_dir}")
+        console.print(
+            f"({already_converted}/{before}) files have already been converted  in {source_dir}", style="bold cyan"
+        )
 
     return total_row_count, already_converted
 
 
-def get_conversion_result(before: int, to_convert: int, total: int) -> str:
+def get_conversion_result(before: int, to_convert: int, total: int) -> tuple[str, str]:
     if total - before == to_convert:
-        return "All files converted successfully."
+        return "All files converted successfully.", "bold green"
     else:
-        return "Not all files were converted. See the db table for details."
+        return "Not all files were converted. See the db table for details.", "bold cyan"
 
 
 def create_args_parser(parser: ArgumentParser):
@@ -269,4 +288,3 @@ create_args_parser(parser)
 if __name__ == "__main__":
     args = parser.parse_args()
     convert_folder_entrypoint(args)
-    console.print("Colour", "Test!", style="bold red")

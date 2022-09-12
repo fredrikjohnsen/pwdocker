@@ -7,8 +7,8 @@ EMAILCONVERTPATH=/home/$OWNER/bin/emailconvert
 # export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$USERID/bus";
 
 cecho(){
-    RED="\033[0;31m"
-    GREEN="\033[0;32m"  # <-- [0 is not bold
+    RED="\033[1;31m"
+    GREEN="\033[1;32m"  # <-- [0 is not bold
     YELLOW="\033[1;33m" # <-- [1 is bold
     CYAN="\033[1;36m"
     NC="\033[0m" # No Color

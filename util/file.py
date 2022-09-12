@@ -98,7 +98,7 @@ class File:
             self.normalized["norm_file_path"] = None
 
             if self.debug:
-                print("Command: " + cmd)
+                print("\nCommand: " + cmd, end="")                
         else:
             self.normalized["result"] = Result.SUCCESSFUL
             self.normalized["norm_file_path"] = target_file_path
