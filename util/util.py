@@ -54,11 +54,12 @@ def run_siegfried(source_dir: str, target_dir: str, tsv_path: str, zipped=False)
     """
 
     csv_path = os.path.join(target_dir, "siegfried.csv")
-    os.chdir(source_dir)
-    subprocess.run("sf -z -csv * > " + csv_path, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL, shell=True)
+    if not os.path.isfile(csv_path):
+        os.chdir(source_dir)
+        subprocess.run("sf -z -csv * > " + csv_path, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL, shell=True)
 
     with open(csv_path, "r") as csvin, open(tsv_path, "w") as tsvout:
-        csvin = csv.reader(csvin)
+        csvin = csv.reader(x.replace('\0', '') for x in csvin)
         tsvout = csv.writer(tsvout, delimiter="\t")
         for row in csvin:
             tsvout.writerow(row)
