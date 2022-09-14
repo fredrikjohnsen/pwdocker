@@ -39,10 +39,10 @@ image/gif:
   comment: Command tested and produces pdf/a
   command: python3 -m bin.image2pdf <source> <target>
   target-ext: pdf  
-image/jpeg:
-  comment: Command tested and produces pdf/a
-  command: python3 -m bin.image2pdf <source> <target>
-  target-ext: pdf
+#image/jpeg:
+  #comment: Command tested and produces pdf/a
+  #command: python3 -m bin.image2pdf <source> <target>
+  #target-ext: pdf
 application/vnd.ms-excel:
   comment: Both commands tested. unoconv2x better at converting Excel-files. Target html only works with unoconv2x.  
   command: python3 -m bin.unoconv2x <source> <target> && python3 -m bin.pdf2pdfa <target> <target> <version>
