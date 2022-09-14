@@ -55,9 +55,9 @@ class File:
             self.normalized["result"] = Result.NOT_A_DOCUMENT
             self.normalized["norm_file_path"] = None
             return self.normalized
-        elif self.mime_type == "application/zip":
-            self._zip_to_norm(target_dir)
-            return self.normalized
+        #elif self.mime_type == "application/zip":
+            #self._zip_to_norm(target_dir)
+            #return self.normalized
 
         if self.mime_type not in self.converters:
             self.normalized["result"] = Result.NOT_SUPPORTED
