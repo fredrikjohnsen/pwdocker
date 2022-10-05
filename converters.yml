@@ -1,6 +1,6 @@
 application/pdf:
   comment: Tested without pdf2text.
-  command: python3 -m bin.pdf2pdfa <source> <target> <version> 
+  command: python3 -m bin.pdf2pdfa <source> <target> --version <version> 
   #command: python3 -m bin.pdf2pdfa <source> <target> <version> && python3 -m bin.pdf2text <target>  
   target-ext: pdf
 application/xml:

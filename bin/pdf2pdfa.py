@@ -9,7 +9,7 @@ from ocrmypdf import Verbosity, ExitCodeException
 import typer
 
 
-def pdf2pdfa(input_file: str, output_file: str, version: str, timeout: int = 0):
+def pdf2pdfa(input_file: str, output_file: str, version: str = None, timeout: int = 0):
     """
     Convert pdf to pdf/a
 
