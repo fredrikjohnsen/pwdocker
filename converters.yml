@@ -75,6 +75,6 @@ application/rtf:
   #target-ext: html    
 image/tiff:
   comment: Command tested and produces pdf/a
-  command: python3 -m bin.image2pdf <source> <target>  
+  command: convert <source> <target> && python3 -m bin.pdf2pdfa <target> <target>
   #command: python3 -m bin.image2pdf <source> <target> && python3 -m bin.pdf2pdfa <target> <target>
   target-ext: pdf
