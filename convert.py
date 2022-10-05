@@ -18,6 +18,7 @@ import os
 import sys
 import pathlib
 import shutil
+import time
 from os.path import relpath
 from pathlib import Path
 from typing import Dict
@@ -82,6 +83,7 @@ def convert_folder(
 ) -> tuple[str, str]:
     """Convert all files in folder"""
 
+    t0 = time.time()
     if first_run:
         if not zipped:
             console.print("Identifying file types...", style="bold cyan")
@@ -118,6 +120,8 @@ def convert_folder(
 
     # run conversion:
     convert_files(files_to_convert_count, source_dir, table, target_dir, file_storage, zipped, debug)
+
+    print(str(round(time.time() - t0, 2)) + ' sek')
 
     # check conversion result
     total_converted_count = etl.nrows(file_storage.get_converted_rows(source_dir))
@@ -165,10 +169,12 @@ def convert_file(
         if os.path.splitext(row["source_file_path"])[1].lower() == ".xml":
             row["mime_type"] = "application/xml"
     if not zipped:
-        print(f"({str(table.row_count)}/{str(file_count)}): .../{row['source_file_path']} ({row['mime_type']})", end="")
+        print(f"({str(table.row_count)}/{str(file_count)}): .../{row['source_file_path']} ({row['mime_type']})", end=" ")
 
     source_file = File(row, converters, pwconv_path, debug, file_storage, convert_folder)
+    t1 = time.time()
     normalized = source_file.convert(source_dir, target_dir)
+    print(str(round(time.time() - t1, 2)) + ' sek', end="")
     row["result"] = normalized["result"]
     row["mime_type"] = normalized["mime_type"]
     moved_to_target_path = Path(target_dir, row["source_file_path"])
