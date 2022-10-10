@@ -1,7 +1,6 @@
 application/pdf:
   comment: Tested without pdf2text.
-  command: python3 -m bin.pdf2pdfa <source> <target> --version <version> 
-  #command: python3 -m bin.pdf2pdfa <source> <target> <version> && python3 -m bin.pdf2text <target>  
+  command: bin/pdf2pdfa.sh <source> <target>
   target-ext: pdf
 application/xml:
   comment: Main command works but could be improved. Sub-cmds won't work as defined now and needs rethink. Use pronom id rather than extension?
@@ -16,7 +15,7 @@ application/xml:
       #target-mime: application/pdf
 text/html:
   comment: Main command tested. Or-commando with pandoc not tested.
-  command: python3 -m bin.html2pdf <source> <target> && python3 -m bin.pdf2pdfa <target> <target> <version>
+  command: python3 -m bin.html2pdf <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
   #command: python3 -m bin.html2pdf <source> <target> || pandoc <source> -s -o <target> && python3 -m bin.pdf2text <target>
   target-ext: pdf
 application/xhtml+xml:
@@ -45,36 +44,35 @@ image/gif:
   #target-ext: pdf
 application/vnd.ms-excel:
   comment: Both commands tested. unoconv2x better at converting Excel-files. Target html only works with unoconv2x.  
-  command: python3 -m bin.unoconv2x <source> <target> && python3 -m bin.pdf2pdfa <target> <target> <version>
-  #command: python3 -m bin.office2pdf <source> <target> && python3 -m bin.pdf2pdfa <target> <target> <version>
+  command: python3 -m bin.unoconv2x <source> /tmp/file.pdf && bin/pdf2pdfa /tmp/file.pdf <target>
+  #command: python3 -m bin.office2pdf <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
   target-ext: pdf
   #target-ext: html
 application/vnd.openxmlformats-officedocument.wordprocessingml.document:
   comment: Both commands tested. Target html only works with unoconv2x.  
-  command: python3 -m bin.unoconv2x <source> <target> && python3 -m bin.pdf2pdfa <target> <target> <version>
-  #command: python3 -m bin.office2pdf <source> <target> && python3 -m bin.pdf2pdfa <target> <target> <version>
+  command: python3 -m bin.unoconv2x <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
+  #command: python3 -m bin.office2pdf <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
   target-ext: pdf
   #target-ext: html  
 application/msword:
   comment: Both commands tested. Target html only works with unoconv2x.  
-  command: python3 -m bin.unoconv2x <source> <target> && python3 -m bin.pdf2pdfa <target> <target> <version>
-  #command: python3 -m bin.office2pdf <source> <target> && python3 -m bin.pdf2pdfa <target> <target> <version>
+  command: python3 -m bin.unoconv2x <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
+  #command: python3 -m bin.office2pdf <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
   target-ext: pdf
   #target-ext: html    
 application/vnd.ms-powerpoint:
   comment: Both commands tested. Target html only works with unoconv2x.  
-  command: python3 -m bin.unoconv2x <source> <target> && python3 -m bin.pdf2pdfa <target> <target> <version>
-  #command: python3 -m bin.office2pdf <source> <target> && python3 -m bin.pdf2pdfa <target> <target> <version>
+  command: python3 -m bin.unoconv2x <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
+  #command: python3 -m bin.office2pdf <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
   target-ext: pdf
   #target-ext: html    
 application/rtf:
   comment: Both commands tested. Target html only works with unoconv2x.  
-  command: python3 -m bin.unoconv2x <source> <target> && python3 -m bin.pdf2pdfa <target> <target> <version>
+  command: python3 -m bin.unoconv2x <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
   #command: python3 -m bin.office2pdf <source> <target>  
   target-ext: pdf
   #target-ext: html    
 image/tiff:
   comment: Command tested and produces pdf/a
-  command: convert <source> <target> && python3 -m bin.pdf2pdfa <target> <target>
-  #command: python3 -m bin.image2pdf <source> <target> && python3 -m bin.pdf2pdfa <target> <target>
+  command: tiff2pdf -o /tmp/file.pdf <source>  && bin/pdf2pdfa.sh /tmp/file.pdf <target>
   target-ext: pdf

@@ -85,7 +85,8 @@ echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select tr
 apt-get install -y ttf-mscorefonts-installer pandoc abiword sqlite3 uchardet libreoffice python3-wheel tesseract-ocr \
     ghostscript onlyoffice-desktopeditors onlyoffice-documentbuilder icc-profiles-free clamtk  php-cli wkhtmltopdf \
     clamav-daemon clamav-unofficial-sigs clamdscan libclamunrar9 wimtools ruby-dev  imagemagick cabextract dos2unix \
-    fontforge python3-pgmagick graphicsmagick graphviz img2pdf golang coolwsd code-brand siegfried php-xml;
+    fontforge python3-pgmagick graphicsmagick graphviz img2pdf golang coolwsd code-brand siegfried php-xml \
+    libtiff-tools;
 recho $?;
 
 if [[ $UPDATE = true ]]; then
