@@ -76,3 +76,6 @@ image/tiff:
   comment: Command tested and produces pdf/a
   command: tiff2pdf -o /tmp/file.pdf <source>  && bin/pdf2pdfa.sh /tmp/file.pdf <target>
   target-ext: pdf
+application/vnd.wordperfect:
+  command: python3 -m bin.unoconv2x <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
+  target-ext: pdf
