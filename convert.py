@@ -74,12 +74,18 @@ def convert_folder_entrypoint(args: Namespace) -> None:
         first_run = True
 
     with StorageSqliteImpl(args.db_path, args.db_name, args.resume) as file_storage:
-        result, color = convert_folder(args.source, args.target, args.debug, file_storage, False, first_run)
+        result, color = convert_folder(args.source, args.target, args.debug, args.keep_ext, file_storage, False, first_run)
         console.print(result, style=color)
 
 
 def convert_folder(
-    source_dir: str, target_dir: str, debug: bool, file_storage: ConvertStorage, zipped: bool, first_run: bool
+    source_dir: str,
+    target_dir: str,
+    debug: bool,
+    keep_ext: bool,
+    file_storage: ConvertStorage,
+    zipped: bool,
+    first_run: bool
 ) -> tuple[str, str]:
     """Convert all files in folder"""
 
@@ -119,7 +125,7 @@ def convert_folder(
         table = file_storage.get_unconverted_rows(source_dir)
 
     # run conversion:
-    convert_files(files_to_convert_count, source_dir, table, target_dir, file_storage, zipped, debug)
+    convert_files(files_to_convert_count, source_dir, table, target_dir, file_storage, zipped, debug, keep_ext)
 
     print(str(round(time.time() - t0, 2)) + ' sek')
 
@@ -138,6 +144,7 @@ def convert_files(
     file_storage: ConvertStorage,
     zipped: bool,
     debug: bool,
+    keep_ext: bool
 ) -> None:
     table.row_count = 0
     for row in etl.dicts(table):
@@ -150,7 +157,7 @@ def convert_files(
             continue
 
         table.row_count += 1
-        convert_file(file_count, file_storage, row, source_dir, table, target_dir, zipped, debug)
+        convert_file(file_count, file_storage, row, source_dir, table, target_dir, zipped, debug, keep_ext)
 
 
 def convert_file(
@@ -162,6 +169,7 @@ def convert_file(
     target_dir: str,
     zipped: bool,
     debug: bool,
+    keep_ext: bool,
 ) -> None:        
     row["mime_type"] = row["mime_type"].split(";")[0]
     if not row["mime_type"]:
@@ -173,7 +181,7 @@ def convert_file(
 
     source_file = File(row, converters, pwconv_path, debug, file_storage, convert_folder)
     t1 = time.time()
-    normalized = source_file.convert(source_dir, target_dir)
+    normalized = source_file.convert(source_dir, target_dir, keep_ext)
     print(str(round(time.time() - t1, 2)) + ' sek', end="")
     row["result"] = normalized["result"]
     row["mime_type"] = normalized["mime_type"]
@@ -286,6 +294,14 @@ def create_args_parser(parser: ArgumentParser):
         default=defaults["options"]["debug"],
         type=lambda x: str_to_bool(x),
         choices=(True, False),
+    )
+    parser.add_argument(
+        "-oe",
+        "--keep-ext",
+        help="Boolean value - True to add original extension to file name.",
+        default=defaults["options"]["keep-ext"],
+        type=lambda x: str_to_bool(x),
+        choices=(True, False)
     )
 
 

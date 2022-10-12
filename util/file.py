@@ -40,11 +40,14 @@ class File:
         self.ext = split_ext[1][1:]
         self.normalized = {"norm_file_path": Optional[str], "result": Optional[str], "mime_type": Optional[str]}
 
-    def convert(self, source_dir: str, target_dir: str) -> dict[str, Type[str]]:
+    def convert(self, source_dir: str, target_dir: str, keep_ext: bool) -> dict[str, Type[str]]:
         """Convert file to archive format"""
 
         source_file_path = os.path.join(source_dir, self.path)
-        target_file_path = os.path.join(target_dir, self.path)
+        if keep_ext:
+            target_file_path = os.path.join(target_dir, self.path)
+        else:
+            target_file_path = os.path.join(target_dir, self.relative_root)
 
         if self.mime_type == "":
             self.mime_type = magic.from_file(source_file_path, mime=True)
@@ -65,12 +68,12 @@ class File:
             return self.normalized
 
         converter = self.converters[self.mime_type]
-        self._run_conversion_command(converter, source_file_path, target_file_path, target_dir)
+        self._run_conversion_command(converter, source_file_path, target_file_path, target_dir, keep_ext)
 
         return self.normalized
 
     def _run_conversion_command(
-        self, converter: Any, source_file_path: str, target_file_path: str, target_dir: str
+        self, converter: Any, source_file_path: str, target_file_path: str, target_dir: str, keep_ext: bool
     ) -> tuple[int, list, list]:
         """
         Convert function
@@ -82,8 +85,8 @@ class File:
             target_dir: path directory where the converted result should be saved
         """
         cmd, target_ext = self._get_target_ext_and_cmd(converter)
-        if target_ext and self.ext != target_ext:
-            target_file_path = os.path.join(target_dir, f"{self.path}.{target_ext}")
+        if not keep_ext or (target_ext and self.ext != target_ext):
+            target_file_path = target_file_path + '.' + target_ext
 
         cmd = cmd.replace("<source>", '"' + source_file_path + '"')
         cmd = cmd.replace("<target>", '"' + target_file_path + '"')

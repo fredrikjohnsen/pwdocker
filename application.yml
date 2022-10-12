@@ -7,3 +7,7 @@ directories:
   target: <absolute-path to directory>
 options:
   debug: False
+  # keep original extension in file name, e.g. test.doc -> test.doc.pdf
+  keep-ext: True
+    # This avoids overwriting files with same name but different extension,
+    # e.g. test.doc and test.xls both becoming test.pdf
