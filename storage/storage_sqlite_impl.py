@@ -122,3 +122,15 @@ class StorageSqliteImpl(ConvertStorage):
             """,
             [source_dir, Result.SUCCESSFUL, Result.MANUAL, Result.AUTOMATICALLY_DELETED],
         )
+
+    def get_unconv_mime_types(self, source_dir: str):
+        return fromdb(
+            self._conn,
+            """
+            SELECT count(*) as no, mime_type FROM File
+            WHERE source_directory= ? AND result is NULL OR result NOT IN(?, ?, ?)
+            GROUP BY mime_type
+            ORDER BY count(*) desc
+            """,
+            [source_dir, Result.SUCCESSFUL, Result.MANUAL, Result.AUTOMATICALLY_DELETED]
+        )

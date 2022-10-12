@@ -100,6 +100,14 @@ def convert_folder(
     else:
         written_row_count = file_storage.get_row_count()
 
+    unconv_mime_types = file_storage.get_unconv_mime_types(source_dir)
+    missing_mime_types = etl.select(unconv_mime_types, lambda rec: rec.mime_type not in converters)
+    if etl.nrows(missing_mime_types):
+        print("Following file types haven't got a converter:")
+        print(missing_mime_types)
+        if input("Do you wish to continue [y/n]: ") != 'y':
+            return "User terminated", "bold red"
+
     files_on_disk_count = sum([len(files) for r, d, files in os.walk(source_dir)])
     if files_on_disk_count == 0:
         return "No files to convert. Exiting.", "bold red"
