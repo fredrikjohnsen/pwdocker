@@ -304,7 +304,7 @@ def create_args_parser(parser: ArgumentParser):
         choices=(True, False),
     )
     parser.add_argument(
-        "-oe",
+        "-ke",
         "--keep-ext",
         help="Boolean value - True to add original extension to file name.",
         default=defaults["options"]["keep-ext"],
