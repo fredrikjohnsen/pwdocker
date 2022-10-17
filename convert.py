@@ -31,7 +31,7 @@ from ruamel.yaml import YAML
 
 # Load converters
 from storage import ConvertStorage, StorageSqliteImpl
-from util import run_siegfried, remove_file, File, Result
+from util import run_siegfried, run_file_command, remove_file, File, Result
 from util.util import get_property_defaults, str_to_bool
 
 yaml = YAML()
@@ -74,7 +74,9 @@ def convert_folder_entrypoint(args: Namespace) -> None:
         first_run = True
 
     with StorageSqliteImpl(args.db_path, args.db_name, args.resume) as file_storage:
-        result, color = convert_folder(args.source, args.target, args.debug, args.keep_ext, file_storage, False, first_run)
+        result, color = convert_folder(args.source, args.target, args.debug,
+                                       args.keep_ext, args.identifier, file_storage,
+                                       False, first_run)
         console.print(result, style=color)
 
 
@@ -83,6 +85,7 @@ def convert_folder(
     target_dir: str,
     debug: bool,
     keep_ext: bool,
+    identifier: str,
     file_storage: ConvertStorage,
     zipped: bool,
     first_run: bool
@@ -95,8 +98,11 @@ def convert_folder(
             console.print("Identifying file types...", style="bold cyan")
 
         tsv_source_path = target_dir + ".tsv"
-        run_siegfried(args.source, target_dir, tsv_source_path, False)
-        written_row_count = write_sf_file_to_storage(tsv_source_path, source_dir, file_storage)
+        if identifier == 'sf':
+            run_siegfried(args.source, target_dir, tsv_source_path, False)
+        else:
+            run_file_command(args.source, target_dir, tsv_source_path, False)
+        written_row_count = write_id_file_to_storage(tsv_source_path, source_dir, file_storage)
     else:
         written_row_count = file_storage.get_row_count()
 
@@ -215,7 +221,7 @@ def convert_file(
     file_storage.update_row(row["source_file_path"], row["source_directory"], list(row.values()))
 
 
-def write_sf_file_to_storage(tsv_source_path: str, source_dir: str, file_storage: ConvertStorage) -> int:
+def write_id_file_to_storage(tsv_source_path: str, source_dir: str, file_storage: ConvertStorage) -> int:
     table = etl.fromtsv(tsv_source_path)
     table = etl.rename(
         table,
@@ -310,6 +316,13 @@ def create_args_parser(parser: ArgumentParser):
         default=defaults["options"]["keep-ext"],
         type=lambda x: str_to_bool(x),
         choices=(True, False)
+    )
+    parser.add_argument(
+        "-i",
+        "--identifier",
+        help="File type identifier",
+        default=defaults["options"]["file-type-identifier"],
+        choices=("sf", "file")
     )
 
 

@@ -41,6 +41,16 @@ def run_shell_command(command, cwd=None, timeout=60, shell=False) -> int:
 
     return proc.returncode
 
+def run_file_command(source_dir: str, target_dir: str, tsv_path: str, zipped=False) -> None:
+    filelist_path = os.path.join(source_dir, "filelist.txt")
+    csv_path = os.path.join(target_dir, "siegfried.csv")
+    os.chdir(source_dir)
+    subprocess.run('find -type f -not -path "./.*" > filelist.txt', stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL, shell=True)
+    subprocess.run("echo 'filename, mime' > " + csv_path, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL, shell=True)
+    subprocess.run('file -e compress -F , -N -P bytes=4096 --mime-type -f filelist.txt >> ' + csv_path, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL, shell=True)
+    csv_to_tsv(csv_path, tsv_path)
+    remove_file(filelist_path)
+    remove_file(csv_path)
 
 def run_siegfried(source_dir: str, target_dir: str, tsv_path: str, zipped=False) -> None:
     """
@@ -58,14 +68,16 @@ def run_siegfried(source_dir: str, target_dir: str, tsv_path: str, zipped=False)
         os.chdir(source_dir)
         subprocess.run("sf -multi 256 -csv * > " + csv_path, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL, shell=True)
 
-    with open(csv_path, "r") as csvin, open(tsv_path, "w") as tsvout:
-        csvin = csv.reader(x.replace('\0', '') for x in csvin)
-        tsvout = csv.writer(tsvout, delimiter="\t")
-        for row in csvin:
-            tsvout.writerow(row)
+    csv_to_tsv(csv_path, tsv_path)
 
     remove_file(csv_path)
 
+def csv_to_tsv(csv_path, tsv_path) -> None:
+    with open(csv_path, "r") as csvin, open(tsv_path, "w") as tsvout:
+        csvin = csv.reader((x.replace('\0', '') for x in csvin), skipinitialspace=True)
+        tsvout = csv.writer(tsvout, delimiter="\t")
+        for row in csvin:
+            tsvout.writerow(row)
 
 def remove_file(src_path: str) -> None:
     if os.path.exists(src_path):

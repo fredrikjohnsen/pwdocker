@@ -92,7 +92,9 @@ class File:
         cmd = cmd.replace("<target>", '"' + target_file_path + '"')
         cmd = cmd.replace("<mime-type>", '"' + self.mime_type + '"')
         cmd = cmd.replace("<target-ext>", '"' + target_ext + '"')
-        cmd = cmd.replace("<version>", '"' + self.version + '"')
+        # Disabled because not in use, and file command doesn't have version
+        # with option --mime-type
+        # cmd = cmd.replace("<version>", '"' + self.version + '"')
 
         run_shell_command(cmd, cwd=self.pwconv_path, shell=True)
 
