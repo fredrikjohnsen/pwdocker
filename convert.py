@@ -191,19 +191,16 @@ def convert_file(
         if os.path.splitext(row["source_file_path"])[1].lower() == ".xml":
             row["mime_type"] = "application/xml"
     if not zipped:
-        print(f"({str(table.row_count)}/{str(file_count)}): .../{row['source_file_path']} ({row['mime_type']})", end=" ")
+        print(end='\x1b[2K') # clear line
+        print(f"\r({str(table.row_count)}/{str(file_count)}): {row['source_file_path']} ({row['mime_type']})", end=" ", flush=True)
 
     source_file = File(row, converters, pwconv_path, debug, file_storage, convert_folder)
-    t1 = time.time()
     normalized = source_file.convert(source_dir, target_dir, keep_ext)
-    print(str(round(time.time() - t1, 2)) + ' sek', end="")
     row["result"] = normalized["result"]
     row["mime_type"] = normalized["mime_type"]
     moved_to_target_path = Path(target_dir, row["source_file_path"])
-    
+
     if normalized["norm_file_path"]:        
-        print() # Go to next line
-        
         if str(normalized["norm_file_path"]) != str(moved_to_target_path):
             if moved_to_target_path.is_file():
                 moved_to_target_path.unlink()
