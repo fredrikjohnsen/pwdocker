@@ -73,7 +73,7 @@ def convert_folder_entrypoint(args: Namespace) -> None:
     if not os.path.isfile(Path(args.db_path, args.db_name)):
         first_run = True
 
-    with StorageSqliteImpl(args.db_path, args.db_name, args.resume) as file_storage:
+    with StorageSqliteImpl(args.db_path, args.resume) as file_storage:
         result, color = convert_folder(args.source, args.target, args.debug,
                                        args.keep_ext, args.identifier, file_storage,
                                        False, first_run)
@@ -120,7 +120,7 @@ def convert_folder(
     if files_on_disk_count != written_row_count:
         console.print(f"Row count: {str(written_row_count)}", style="red")
         console.print(f"File count: {str(files_on_disk_count)}", style="red")
-        return f"Files listed in {args.db_name} doesn't match files on disk. Exiting.", "bold red"
+        return f"Files listed in {args.db_path} doesn't match files on disk. Exiting.", "bold red"
     if not zipped:
         console.print("Converting files..", style="bold cyan")
 
@@ -292,7 +292,6 @@ def create_args_parser(parser: ArgumentParser):
     parser.add_argument(
         "-dp", "--db-path", help="Absolute path to the database file", default=defaults["database"]["path"]
     )
-    parser.add_argument("-dn", "--db-name", help="Name of the the db file", default=defaults["database"]["name"])
     parser.add_argument(
         "-r",
         "--resume",

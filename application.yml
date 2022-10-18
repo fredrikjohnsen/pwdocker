@@ -1,6 +1,5 @@
 database:
-  path: <absolute-path to directory>
-  name: <name of db>
+  path: <absolute-path to SQLite file>
   continue-conversion: True
 directories:
   source: <absolute-path to directory>
