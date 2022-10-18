@@ -93,7 +93,8 @@ def convert_folder(
     """Convert all files in folder"""
 
     t0 = time.time()
-    if first_run:
+    filelist_path = os.path.join(args.target, "filelist.txt")
+    if first_run or os.path.isfile(filelist_path):
         if not zipped:
             console.print("Identifying file types...", style="bold cyan")
 
@@ -102,9 +103,9 @@ def convert_folder(
             run_siegfried(args.source, target_dir, tsv_source_path, False)
         else:
             run_file_command(args.source, target_dir, tsv_source_path, False)
-        written_row_count = write_id_file_to_storage(tsv_source_path, source_dir, file_storage)
-    else:
-        written_row_count = file_storage.get_row_count()
+        write_id_file_to_storage(tsv_source_path, source_dir, file_storage)
+
+    written_row_count = file_storage.get_row_count()
 
     unconv_mime_types = file_storage.get_unconv_mime_types(source_dir)
     missing_mime_types = etl.select(unconv_mime_types, lambda rec: rec.mime_type not in converters)
@@ -249,9 +250,7 @@ def write_id_file_to_storage(tsv_source_path: str, source_dir: str, file_storage
         table, "mime_type", lambda v, _row: "application/xml" if _row.id == "fmt/979" else v, pass_row=True
     )
 
-    # TODO: Sjekk om første import
-    # file_storage.append_rows(table)
-    file_storage.import_rows(table)
+    file_storage.append_rows(table)
     row_count = etl.nrows(table)
     remove_file(tsv_source_path)
     return row_count

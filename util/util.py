@@ -42,12 +42,13 @@ def run_shell_command(command, cwd=None, timeout=60, shell=False) -> int:
     return proc.returncode
 
 def run_file_command(source_dir: str, target_dir: str, tsv_path: str, zipped=False) -> None:
-    filelist_path = os.path.join(source_dir, "filelist.txt")
+    filelist_path = os.path.join(target_dir, "filelist.txt")
     csv_path = os.path.join(target_dir, "siegfried.csv")
     os.chdir(source_dir)
-    subprocess.run('find -type f -not -path "./.*" > filelist.txt', stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL, shell=True)
+    if not os.path.isfile(filelist_path):
+        subprocess.run('find -type f -not -path "./.*" > ' + filelist_path, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL, shell=True)
     subprocess.run("echo 'filename, mime' > " + csv_path, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL, shell=True)
-    subprocess.run('file -e compress -F , -N -P bytes=4096 --mime-type -f filelist.txt >> ' + csv_path, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL, shell=True)
+    subprocess.run('file -e compress -F , -N -P bytes=4096 --mime-type -f ' + filelist_path + ' >> ' + csv_path, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL, shell=True)
     csv_to_tsv(csv_path, tsv_path)
     remove_file(filelist_path)
     remove_file(csv_path)
