@@ -70,7 +70,7 @@ def convert_folder_entrypoint(args: Namespace) -> None:
     Path(args.target).mkdir(parents=True, exist_ok=True)
 
     first_run = False
-    if not os.path.isfile(Path(args.db_path, args.db_name)):
+    if not os.path.isfile(args.db_path):
         first_run = True
 
     with StorageSqliteImpl(args.db_path, args.resume) as file_storage:

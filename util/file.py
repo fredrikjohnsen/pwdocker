@@ -47,7 +47,7 @@ class File:
         if keep_ext:
             target_file_path = os.path.join(target_dir, self.path)
         else:
-            target_file_path = os.path.join(target_dir, self.relative_root)
+            target_file_path = os.path.abspath(os.path.join(target_dir, self.relative_root))
 
         if self.mime_type == "":
             self.mime_type = magic.from_file(source_file_path, mime=True)
