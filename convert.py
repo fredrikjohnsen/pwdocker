@@ -284,18 +284,29 @@ def get_conversion_result(before: int, to_convert: int, total: int) -> tuple[str
 def create_args_parser(parser: ArgumentParser):
     defaults = get_property_defaults(properties, local_properties)
     parser.add_argument(
-        "-s", "--source", help="Absolute path to the source directory.", default=defaults["directories"]["source"]
+        "-s",
+        "--source",
+        help="Absolute path to the source directory. Default: " + defaults['directories']['source'],
+        default=defaults["directories"]["source"]
     )
     parser.add_argument(
-        "-t", "--target", help="Absolute path to the target directory.", default=defaults["directories"]["target"]
+        "-t",
+        "--target",
+        help="Absolute path to the target directory. Default: " + defaults['directories']['target'],
+        default=defaults["directories"]["target"]
     )
     parser.add_argument(
-        "-dp", "--db-path", help="Absolute path to the database file", default=defaults["database"]["path"]
+        "-dp",
+        "--db-path",
+        help="Absolute path to the database file. Default: " + defaults['database']['path'],
+        default=defaults["database"]["path"]
     )
     parser.add_argument(
         "-r",
         "--resume",
-        help="Boolean value - True to resume a previous conversion, False to convert all files in the folder.",
+        help="""Resume a previous conversion.
+        False to convert all files in the folder.
+        Default: """ + str(defaults['database']['continue-conversion']),
         default=defaults["database"]["continue-conversion"],
         type=lambda x: str_to_bool(x),
         choices=(True, False),
@@ -303,7 +314,7 @@ def create_args_parser(parser: ArgumentParser):
     parser.add_argument(
         "-d",
         "--debug",
-        help="Boolean value - True to print commands.",
+        help="Print commands. Default: " + str(defaults['options']['debug']),
         default=defaults["options"]["debug"],
         type=lambda x: str_to_bool(x),
         choices=(True, False),
@@ -311,7 +322,7 @@ def create_args_parser(parser: ArgumentParser):
     parser.add_argument(
         "-ke",
         "--keep-ext",
-        help="Boolean value - True to add original extension to file name.",
+        help="Add original extension to file name. Default: " + str(defaults['options']['keep-ext']),
         default=defaults["options"]["keep-ext"],
         type=lambda x: str_to_bool(x),
         choices=(True, False)
@@ -319,7 +330,7 @@ def create_args_parser(parser: ArgumentParser):
     parser.add_argument(
         "-i",
         "--identifier",
-        help="File type identifier",
+        help="File type identifier. Default: " + defaults['options']['file-type-identifier'],
         default=defaults["options"]["file-type-identifier"],
         choices=("sf", "file")
     )
