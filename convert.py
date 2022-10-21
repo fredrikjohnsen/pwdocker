@@ -211,7 +211,10 @@ def convert_file(
     else:          
         console.print('  ' + row["result"], style="bold red")
         Path(moved_to_target_path.parent).mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(Path(source_dir, row["source_file_path"]), moved_to_target_path)
+        try:
+            shutil.copyfile(Path(source_dir, row["source_file_path"]), moved_to_target_path)
+        except Exception as e:
+            print(e)
         if moved_to_target_path.is_file():
             row["moved_to_target"] = 1
             
