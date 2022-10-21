@@ -75,7 +75,8 @@ def convert_folder_entrypoint(args: Namespace) -> None:
 
     with StorageSqliteImpl(args.db_path, args.resume) as file_storage:
         result, color = convert_folder(args.source, args.target, args.debug,
-                                       args.keep_ext, args.identifier, file_storage,
+                                       args.keep_ext, args.identifier, args.confirm,
+                                       file_storage,
                                        False, first_run)
         console.print(result, style=color)
 
@@ -86,6 +87,7 @@ def convert_folder(
     debug: bool,
     keep_ext: bool,
     identifier: str,
+    confirm: bool,
     file_storage: ConvertStorage,
     zipped: bool,
     first_run: bool
@@ -112,7 +114,7 @@ def convert_folder(
     if etl.nrows(missing_mime_types):
         print("Following file types haven't got a converter:")
         print(missing_mime_types)
-        if input("Do you wish to continue [y/n]: ") != 'y':
+        if not confirm and input("Do you wish to continue [y/n]: ") != 'y':
             return "User terminated", "bold red"
 
     files_on_disk_count = sum([len(files) for r, d, files in os.walk(source_dir)])
@@ -332,6 +334,14 @@ def create_args_parser(parser: ArgumentParser):
         help="File type identifier. Default: " + defaults['options']['file-type-identifier'],
         default=defaults["options"]["file-type-identifier"],
         choices=("sf", "file")
+    )
+    parser.add_argument(
+        "-c",
+        "--confirm",
+        help="Confirm automatically to continue if missing conversion for specific file types",
+        default=False,
+        type=lambda x: str_to_bool(x),
+        choices=(True, False)
     )
 
 
