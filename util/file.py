@@ -97,14 +97,15 @@ class File:
         # with option --mime-type
         # cmd = cmd.replace("<version>", '"' + self.version + '"')
 
-        run_shell_command(cmd, cwd=self.pwconv_path, shell=True)
+        returncode = run_shell_command(cmd, cwd=self.pwconv_path, shell=True)
 
-        if not os.path.exists(target_file_path):
+        # if not os.path.exists(target_file_path):
+        if returncode:
             self.normalized["result"] = Result.FAILED
             self.normalized["norm_file_path"] = None
 
             if self.debug:
-                print("\nCommand: " + cmd, end="")                
+                print("\nCommand: " + cmd + f" ({returncode})", end="")
         else:
             self.normalized["result"] = Result.SUCCESSFUL
             self.normalized["norm_file_path"] = target_file_path
