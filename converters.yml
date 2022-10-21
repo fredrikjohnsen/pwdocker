@@ -44,7 +44,7 @@ image/gif:
   #target-ext: pdf
 application/vnd.ms-excel:
   comment: Both commands tested. unoconv2x better at converting Excel-files. Target html only works with unoconv2x.  
-  command: python3 -m bin.unoconv2x <source> /tmp/file.pdf && bin/pdf2pdfa /tmp/file.pdf <target>
+  command: python3 -m bin.unoconv2x <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
   #command: python3 -m bin.office2pdf <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
   target-ext: pdf
   #target-ext: html
