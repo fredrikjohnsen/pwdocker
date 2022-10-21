@@ -34,10 +34,10 @@ text/plain:
   #command: python3 -m bin.text2utf8 <source> <target> && python3 -m bin.email2pdf <target> <target>
   #command: python3 -m bin.eml2pdf <source> <target>
   #target-ext: pdf
-image/gif:
-  comment: Command tested and produces pdf/a
-  command: python3 -m bin.image2pdf <source> <target>
-  target-ext: pdf  
+#image/gif:
+  #comment: Command tested and produces pdf/a
+  #command: python3 -m bin.image2pdf <source> <target>
+  #target-ext: pdf
 #image/jpeg:
   #comment: Command tested and produces pdf/a
   #command: python3 -m bin.image2pdf <source> <target>
