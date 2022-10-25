@@ -31,7 +31,7 @@ from ruamel.yaml import YAML
 
 # Load converters
 from storage import ConvertStorage, StorageSqliteImpl
-from util import run_siegfried, run_file_command, remove_file, File, Result
+from util import run_siegfried, run_file_command, mime_from_ext, remove_file, File, Result
 from util.util import get_property_defaults, str_to_bool
 
 yaml = YAML()
@@ -103,8 +103,10 @@ def convert_folder(
         tsv_source_path = target_dir + ".tsv"
         if identifier == 'sf':
             run_siegfried(args.source, target_dir, tsv_source_path, False)
-        else:
+        elif identifier == 'file':
             run_file_command(args.source, target_dir, tsv_source_path, False)
+        else:
+            mime_from_ext(args.source, target_dir, tsv_source_path, False)
         write_id_file_to_storage(tsv_source_path, source_dir, file_storage)
 
     written_row_count = file_storage.get_row_count()
