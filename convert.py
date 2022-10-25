@@ -96,7 +96,8 @@ def convert_folder(
 
     t0 = time.time()
     filelist_path = os.path.join(args.target, "filelist.txt")
-    if first_run or os.path.isfile(filelist_path):
+    is_new_batch = os.path.isfile(filelist_path)
+    if first_run or is_new_batch:
         if not zipped:
             console.print("Identifying file types...", style="bold cyan")
 
@@ -111,7 +112,10 @@ def convert_folder(
 
     written_row_count = file_storage.get_row_count()
 
-    unconv_mime_types = file_storage.get_unconv_mime_types(source_dir)
+    if is_new_batch:
+        unconv_mime_types = file_storage.get_new_mime_types(source_dir)
+    else:
+        unconv_mime_types = file_storage.get_unconv_mime_types(source_dir)
     missing_mime_types = etl.select(unconv_mime_types, lambda rec: rec.mime_type not in converters)
     if etl.nrows(missing_mime_types):
         print("Following file types haven't got a converter:")
@@ -133,6 +137,10 @@ def convert_folder(
         files_to_convert_count = written_row_count
         already_converted_count = 0
         table = file_storage.get_all_rows(source_dir)
+    elif is_new_batch:
+        table = file_storage.get_new_rows(source_dir)
+        already_converted_count = 0
+        files_to_convert_count = etl.nrows(table)
     else:
         # print the files in this directory that have already been converted
         files_to_convert_count, already_converted_count = print_converted_files(

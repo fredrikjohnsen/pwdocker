@@ -102,6 +102,16 @@ class StorageSqliteImpl(ConvertStorage):
             """,
         )
 
+    def get_new_rows(self, source_dir: str):
+        return fromdb(
+            self._conn,
+            """
+            SELECT * FROM File
+            WHERE  source_directory = ? AND result IS NULL
+            """,
+            [source_dir]
+        )
+
     def get_unconverted_rows(self, source_dir: str):
         return fromdb(
             self._conn,
@@ -122,12 +132,24 @@ class StorageSqliteImpl(ConvertStorage):
             [source_dir, Result.SUCCESSFUL, Result.MANUAL, Result.AUTOMATICALLY_DELETED],
         )
 
+    def get_new_mime_types(self, source_dir: str):
+        return fromdb(
+            self._conn,
+            """
+            SELECT count(*) as no, mime_type FROM File
+            WHERE source_directory= ? AND result is NULL
+            GROUP BY mime_type
+            ORDER BY count(*) desc
+            """,
+            [source_dir]
+        )
+
     def get_unconv_mime_types(self, source_dir: str):
         return fromdb(
             self._conn,
             """
             SELECT count(*) as no, mime_type FROM File
-            WHERE source_directory= ? AND result is NULL OR result NOT IN(?, ?, ?)
+            WHERE source_directory= ? AND (result is NULL OR result NOT IN(?, ?, ?))
             GROUP BY mime_type
             ORDER BY count(*) desc
             """,
