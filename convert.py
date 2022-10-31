@@ -129,7 +129,9 @@ def convert_folder(
     if files_on_disk_count != written_row_count:
         console.print(f"Row count: {str(written_row_count)}", style="red")
         console.print(f"File count: {str(files_on_disk_count)}", style="red")
-        return f"Files listed in {args.db_path} doesn't match files on disk. Exiting.", "bold red"
+        if input("Files listed in {args.db_path} doesn't match files on disk. Continue? [y/n] ") != 'y':
+            return "User terminated", "bold red"
+
     if not zipped:
         console.print("Converting files..", style="bold cyan")
 
