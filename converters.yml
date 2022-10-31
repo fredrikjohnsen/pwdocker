@@ -34,14 +34,18 @@ text/plain:
   #command: python3 -m bin.text2utf8 <source> <target> && python3 -m bin.email2pdf <target> <target>
   #command: python3 -m bin.eml2pdf <source> <target>
   #target-ext: pdf
-#image/gif:
+image/gif:
   #comment: Command tested and produces pdf/a
   #command: python3 -m bin.image2pdf <source> <target>
+  command: convert <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
   #target-ext: pdf
-#image/jpeg:
+image/jpeg:
   #comment: Command tested and produces pdf/a
   #command: python3 -m bin.image2pdf <source> <target>
+  command: convert <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
   #target-ext: pdf
+image/png:
+  command: convert <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
 application/vnd.ms-excel:
   comment: Both commands tested. unoconv2x better at converting Excel-files. Target html only works with unoconv2x.  
   command: python3 -m bin.unoconv2x <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
