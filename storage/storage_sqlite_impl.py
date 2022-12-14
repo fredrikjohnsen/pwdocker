@@ -76,7 +76,8 @@ class StorageSqliteImpl(ConvertStorage):
         file_names = self._conn.execute("SELECT source_file_path FROM File").fetchall()
         source_dirs = self._conn.execute("SELECT source_directory FROM File").fetchall()
         table = petl.select(
-            table, lambda rec: (rec.source_file_path not in file_names) or (rec.source_directory not in source_dirs)
+            table,
+            lambda rec: (rec.source_file_path not in file_names) or (rec.source_directory not in source_dirs)
         )
         # append new rows
         appenddb(table, self._conn, "File")

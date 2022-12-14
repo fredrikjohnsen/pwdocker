@@ -50,7 +50,7 @@ class File:
             target_file_path = os.path.join(target_dir, self.relative_root)
         target_file_path = os.path.abspath(target_file_path)
 
-        if self.mime_type == "":
+        if self.mime_type in ['', 'None', None]:
             self.mime_type = magic.from_file(source_file_path, mime=True)
 
         self.normalized["mime_type"] = self.mime_type

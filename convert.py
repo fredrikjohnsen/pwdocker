@@ -31,7 +31,7 @@ from ruamel.yaml import YAML
 
 # Load converters
 from storage import ConvertStorage, StorageSqliteImpl
-from util import run_siegfried, run_file_command, mime_from_ext, remove_file, File, Result
+from util import run_siegfried, run_file_command, make_filelist, remove_file, File, Result
 from util.util import get_property_defaults, str_to_bool
 
 yaml = YAML()
@@ -107,7 +107,9 @@ def convert_folder(
         elif identifier == 'file':
             run_file_command(args.source, target_dir, tsv_source_path, False)
         else:
-            mime_from_ext(args.source, target_dir, tsv_source_path, False)
+            if not is_new_batch:
+                make_filelist(args.source, filelist_path)
+            tsv_source_path = filelist_path
         write_id_file_to_storage(tsv_source_path, source_dir, file_storage)
 
     written_row_count = file_storage.get_row_count()
@@ -117,7 +119,7 @@ def convert_folder(
     else:
         unconv_mime_types = file_storage.get_unconv_mime_types(source_dir)
     missing_mime_types = etl.select(unconv_mime_types, lambda rec: rec.mime_type not in converters)
-    if etl.nrows(missing_mime_types):
+    if identifier and etl.nrows(missing_mime_types):
         print("Following file types haven't got a converter:")
         print(missing_mime_types)
         if not confirm and input("Do you wish to continue [y/n]: ") != 'y':
@@ -199,9 +201,11 @@ def convert_file(
     zipped: bool,
     debug: bool,
     keep_ext: bool,
-) -> None:        
-    row["mime_type"] = row["mime_type"].split(";")[0]
-    if not row["mime_type"]:
+) -> None:
+    if row['mime_type']:
+        # TODO: Why is this necessary?
+        row["mime_type"] = row["mime_type"].split(";")[0]
+    else:
         # Siegfried sets mime type only to xml files with xml declaration
         if os.path.splitext(row["source_file_path"])[1].lower() == ".xml":
             row["mime_type"] = "application/xml"
@@ -237,7 +241,11 @@ def convert_file(
 
 
 def write_id_file_to_storage(tsv_source_path: str, source_dir: str, file_storage: ConvertStorage) -> int:
-    table = etl.fromtsv(tsv_source_path)
+    ext = os.path.splitext(tsv_source_path)[1]
+    if ext == '.tsv':
+        table = etl.fromtsv(tsv_source_path)
+    else:
+        table = etl.fromtext(tsv_source_path, header=['filename'])
     table = etl.rename(
         table,
         {
@@ -253,7 +261,7 @@ def write_id_file_to_storage(tsv_source_path: str, source_dir: str, file_storage
     table = etl.select(table, lambda rec: rec.source_file_path != "")
     # Remove listing of files in zip
     table = etl.select(table, lambda rec: "#" not in rec.source_file_path)
-    table = add_fields(table, "version", "norm_file_path", "result", "id")
+    table = add_fields(table, "mime_type", "version", "norm_file_path", "result", "id")
     table = etl.addfield(table, "source_directory", source_dir)
     # Remove Siegfried generated columns
     table = remove_fields(table, "namespace", "basis", "warning")
@@ -343,7 +351,7 @@ def create_args_parser(parser: ArgumentParser):
     parser.add_argument(
         "-i",
         "--identifier",
-        help="File type identifier. Default: " + defaults['options']['file-type-identifier'],
+        help="File type identifier. Default: " + str(defaults['options']['file-type-identifier']),
         default=defaults["options"]["file-type-identifier"],
         choices=("sf", "file")
     )

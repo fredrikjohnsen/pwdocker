@@ -46,22 +46,11 @@ def run_shell_command(command, cwd=None, timeout=60, shell=False) -> int:
 
     return proc.returncode
 
-def mime_from_ext(source_dir: str, target_dir: str, tsv_path: str, zipped=False) -> None:
-    filelist_path = os.path.join(target_dir, 'filelist.txt')
-    os.chdir(source_dir)
-    if not os.path.isfile(filelist_path):
-        subprocess.run('find -type f -not -path "./.*" > ' + filelist_path, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL, shell=True)
-    with open(filelist_path, 'r') as filelist, open(tsv_path, 'w') as tsvout:
-        tsvout = csv.writer(tsvout, delimiter="\t")
-        tsvout.writerow(['filename','mime'])
-        for line in filelist:
-            line = line.strip()
-            filename = os.path.basename(line)
-            mime_type, _ = mimetypes.guess_type(filename)
-            row = [line, str(mime_type)]
-            tsvout.writerow(row)
 
-    remove_file(filelist_path)
+def make_filelist(source_dir: str, filelist_path: str) -> None:
+    os.chdir(source_dir)
+    subprocess.run('find -type f -not -path "./.*" > ' + filelist_path, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL, shell=True)
+
 
 def run_file_command(source_dir: str, target_dir: str, tsv_path: str, zipped=False) -> None:
     filelist_path = os.path.join(target_dir, "filelist.txt")
@@ -74,6 +63,7 @@ def run_file_command(source_dir: str, target_dir: str, tsv_path: str, zipped=Fal
     csv_to_tsv(csv_path, tsv_path)
     remove_file(filelist_path)
     remove_file(csv_path)
+
 
 def run_siegfried(source_dir: str, target_dir: str, tsv_path: str, zipped=False) -> None:
     """
