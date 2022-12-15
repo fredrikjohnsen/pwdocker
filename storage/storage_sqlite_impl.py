@@ -35,10 +35,9 @@ class StorageSqliteImpl(ConvertStorage):
         WHERE source_file_path = ? AND source_directory = ?
         """
 
-    def __init__(self, storage_path: str, preserve_existing_data: bool = True):
+    def __init__(self, path: str):
         self._conn = Optional[Connection]
-        self.storage_path = storage_path
-        self.preserve_existing_data = preserve_existing_data
+        self.path = path
 
     def __enter__(self):
         self.load_data_source()
@@ -48,15 +47,11 @@ class StorageSqliteImpl(ConvertStorage):
         self.close_data_source()
 
     def load_data_source(self):
-        storage_dir = os.path.dirname(self.storage_path)
+        storage_dir = os.path.dirname(self.path)
         if not os.path.isdir(storage_dir):
             os.makedirs(storage_dir)
 
-        self._conn = sqlite3.connect(self.storage_path)
-        if not self.preserve_existing_data:
-            self._conn.execute("DROP TABLE IF EXISTS File")
-            self._conn.commit()
-
+        self._conn = sqlite3.connect(self.path)
         table = self._conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='File'")
         if len(table.fetchall()) <= 0:
             self._conn.execute(self._create_table_str)

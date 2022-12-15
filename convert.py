@@ -72,14 +72,13 @@ def convert(source: str, target: str, orig_ext: bool=True) -> None:
 
     first_run = False
     db_path = target + '.db'
-    resume = defaults["database"]["continue-conversion"] # TODO Trenger vi denne?
     debug = defaults["options"]["debug"] # TODO Trenger vi denne?
     identifier = defaults["options"]["file-type-identifier"] # TODO Fjern når jeg får omskrevet koden
     confirm = True # TODO Fjern når jeg får omskrevet koden
     if not os.path.isfile(db_path):
         first_run = True
 
-    with StorageSqliteImpl(db_path, resume) as file_storage:
+    with StorageSqliteImpl(db_path) as file_storage:
         result, color = convert_folder(source, target, debug,
                                        orig_ext, identifier, confirm,
                                        file_storage,
@@ -137,7 +136,7 @@ def convert_folder(
     if files_on_disk_count != written_row_count:
         console.print(f"Row count: {str(written_row_count)}", style="red")
         console.print(f"File count: {str(files_on_disk_count)}", style="red")
-        if input(f"Files listed in {file_storage.storage_path} doesn't match files on disk. Continue? [y/n] ") != 'y':
+        if input(f"Files listed in {file_storage.path} doesn't match files on disk. Continue? [y/n] ") != 'y':
             return "User terminated", "bold red"
 
     if not zipped:
