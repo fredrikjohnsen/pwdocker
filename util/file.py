@@ -40,11 +40,11 @@ class File:
         self.ext = split_ext[1][1:]
         self.normalized = {"norm_file_path": Optional[str], "result": Optional[str], "mime_type": Optional[str]}
 
-    def convert(self, source_dir: str, target_dir: str, keep_ext: bool) -> dict[str, Type[str]]:
+    def convert(self, source_dir: str, target_dir: str, orig_ext: bool) -> dict[str, Type[str]]:
         """Convert file to archive format"""
 
         source_file_path = os.path.join(source_dir, self.path)
-        if keep_ext:
+        if orig_ext:
             target_file_path = os.path.join(target_dir, self.path)
         else:
             target_file_path = os.path.join(target_dir, self.relative_root)
@@ -69,12 +69,12 @@ class File:
             return self.normalized
 
         converter = self.converters[self.mime_type]
-        self._run_conversion_command(converter, source_file_path, target_file_path, target_dir, keep_ext)
+        self._run_conversion_command(converter, source_file_path, target_file_path, target_dir, orig_ext)
 
         return self.normalized
 
     def _run_conversion_command(
-        self, converter: Any, source_file_path: str, target_file_path: str, target_dir: str, keep_ext: bool
+        self, converter: Any, source_file_path: str, target_file_path: str, target_dir: str, orig_ext: bool
     ) -> tuple[int, list, list]:
         """
         Convert function
@@ -86,7 +86,7 @@ class File:
             target_dir: path directory where the converted result should be saved
         """
         cmd, target_ext = self._get_target_ext_and_cmd(converter)
-        if not keep_ext or (target_ext and self.ext != target_ext):
+        if not orig_ext or (target_ext and self.ext != target_ext):
             target_file_path = target_file_path + '.' + target_ext
 
         cmd = cmd.replace("<source>", '"' + source_file_path + '"')

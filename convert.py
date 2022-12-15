@@ -22,7 +22,7 @@ import time
 from os.path import relpath
 from pathlib import Path
 from typing import Dict
-from argparse import ArgumentParser, Namespace
+import typer
 
 from rich.console import Console
 import petl as etl
@@ -66,16 +66,22 @@ def add_fields(table, *args):
     return table
 
 
-def convert_folder_entrypoint(args: Namespace) -> None:
-    Path(args.target).mkdir(parents=True, exist_ok=True)
+def convert(source: str, target: str, orig_ext: bool=True) -> None:
+    Path(target).mkdir(parents=True, exist_ok=True)
+    defaults = get_property_defaults(properties, local_properties)
 
     first_run = False
-    if not os.path.isfile(args.db_path):
+    db_path = target + '.db'
+    resume = defaults["database"]["continue-conversion"] # TODO Trenger vi denne?
+    debug = defaults["options"]["debug"] # TODO Trenger vi denne?
+    identifier = defaults["options"]["file-type-identifier"] # TODO Fjern når jeg får omskrevet koden
+    confirm = True # TODO Fjern når jeg får omskrevet koden
+    if not os.path.isfile(db_path):
         first_run = True
 
-    with StorageSqliteImpl(args.db_path, args.resume) as file_storage:
-        result, color = convert_folder(args.source, args.target, args.debug,
-                                       args.keep_ext, args.identifier, args.confirm,
+    with StorageSqliteImpl(db_path, resume) as file_storage:
+        result, color = convert_folder(source, target, debug,
+                                       orig_ext, identifier, confirm,
                                        file_storage,
                                        False, first_run)
         console.print(result, style=color)
@@ -85,7 +91,7 @@ def convert_folder(
     source_dir: str,
     target_dir: str,
     debug: bool,
-    keep_ext: bool,
+    orig_ext: bool,
     identifier: str,
     confirm: bool,
     file_storage: ConvertStorage,
@@ -95,7 +101,7 @@ def convert_folder(
     """Convert all files in folder"""
 
     t0 = time.time()
-    filelist_path = os.path.join(args.target, "filelist.txt")
+    filelist_path = os.path.join(target_dir, "filelist.txt")
     is_new_batch = os.path.isfile(filelist_path)
     if first_run or is_new_batch:
         if not zipped:
@@ -103,12 +109,12 @@ def convert_folder(
 
         tsv_source_path = target_dir + ".tsv"
         if identifier == 'sf':
-            run_siegfried(args.source, target_dir, tsv_source_path, False)
+            run_siegfried(source_dir, target_dir, tsv_source_path, False)
         elif identifier == 'file':
-            run_file_command(args.source, target_dir, tsv_source_path, False)
+            run_file_command(source_dir, target_dir, tsv_source_path, False)
         else:
             if not is_new_batch:
-                make_filelist(args.source, filelist_path)
+                make_filelist(source_dir, filelist_path)
             tsv_source_path = filelist_path
         write_id_file_to_storage(tsv_source_path, source_dir, file_storage)
 
@@ -131,7 +137,7 @@ def convert_folder(
     if files_on_disk_count != written_row_count:
         console.print(f"Row count: {str(written_row_count)}", style="red")
         console.print(f"File count: {str(files_on_disk_count)}", style="red")
-        if input("Files listed in {args.db_path} doesn't match files on disk. Continue? [y/n] ") != 'y':
+        if input(f"Files listed in {file_storage.storage_path} doesn't match files on disk. Continue? [y/n] ") != 'y':
             return "User terminated", "bold red"
 
     if not zipped:
@@ -156,7 +162,7 @@ def convert_folder(
         table = file_storage.get_unconverted_rows(source_dir)
 
     # run conversion:
-    convert_files(files_to_convert_count, source_dir, table, target_dir, file_storage, zipped, debug, keep_ext)
+    convert_files(files_to_convert_count, source_dir, table, target_dir, file_storage, zipped, debug, orig_ext)
 
     print(str(round(time.time() - t0, 2)) + ' sek')
 
@@ -175,7 +181,7 @@ def convert_files(
     file_storage: ConvertStorage,
     zipped: bool,
     debug: bool,
-    keep_ext: bool
+    orig_ext: bool
 ) -> None:
     table.row_count = 0
     for row in etl.dicts(table):
@@ -188,7 +194,7 @@ def convert_files(
             continue
 
         table.row_count += 1
-        convert_file(file_count, file_storage, row, source_dir, table, target_dir, zipped, debug, keep_ext)
+        convert_file(file_count, file_storage, row, source_dir, table, target_dir, zipped, debug, orig_ext)
 
 
 def convert_file(
@@ -200,7 +206,7 @@ def convert_file(
     target_dir: str,
     zipped: bool,
     debug: bool,
-    keep_ext: bool,
+    orig_ext: bool,
 ) -> None:
     if row['mime_type']:
         # TODO: Why is this necessary?
@@ -214,7 +220,7 @@ def convert_file(
         print(f"\r({str(table.row_count)}/{str(file_count)}): {row['source_file_path']} ({row['mime_type']})", end=" ", flush=True)
 
     source_file = File(row, converters, pwconv_path, debug, file_storage, convert_folder)
-    normalized = source_file.convert(source_dir, target_dir, keep_ext)
+    normalized = source_file.convert(source_dir, target_dir, orig_ext)
     row["result"] = normalized["result"]
     row["mime_type"] = normalized["mime_type"]
     moved_to_target_path = Path(target_dir, row["source_file_path"])
@@ -302,72 +308,5 @@ def get_conversion_result(before: int, to_convert: int, total: int) -> tuple[str
         return "Not all files were converted. See the db table for details.", "bold cyan"
 
 
-def create_args_parser(parser: ArgumentParser):
-    defaults = get_property_defaults(properties, local_properties)
-    parser.add_argument(
-        "-s",
-        "--source",
-        help="Absolute path to the source directory. Default: " + defaults['directories']['source'],
-        default=defaults["directories"]["source"]
-    )
-    parser.add_argument(
-        "-t",
-        "--target",
-        help="Absolute path to the target directory. Default: " + defaults['directories']['target'],
-        default=defaults["directories"]["target"]
-    )
-    parser.add_argument(
-        "-dp",
-        "--db-path",
-        help="Absolute path to the database file. Default: " + defaults['database']['path'],
-        default=defaults["database"]["path"]
-    )
-    parser.add_argument(
-        "-r",
-        "--resume",
-        help="""Resume a previous conversion.
-        False to convert all files in the folder.
-        Default: """ + str(defaults['database']['continue-conversion']),
-        default=defaults["database"]["continue-conversion"],
-        type=lambda x: str_to_bool(x),
-        choices=(True, False),
-    )
-    parser.add_argument(
-        "-d",
-        "--debug",
-        help="Print commands. Default: " + str(defaults['options']['debug']),
-        default=defaults["options"]["debug"],
-        type=lambda x: str_to_bool(x),
-        choices=(True, False),
-    )
-    parser.add_argument(
-        "-ke",
-        "--keep-ext",
-        help="Add original extension to file name. Default: " + str(defaults['options']['keep-ext']),
-        default=defaults["options"]["keep-ext"],
-        type=lambda x: str_to_bool(x),
-        choices=(True, False)
-    )
-    parser.add_argument(
-        "-i",
-        "--identifier",
-        help="File type identifier. Default: " + str(defaults['options']['file-type-identifier']),
-        default=defaults["options"]["file-type-identifier"],
-        choices=("sf", "file")
-    )
-    parser.add_argument(
-        "-c",
-        "--confirm",
-        help="Confirm automatically to continue if missing conversion for specific file types",
-        default=False,
-        type=lambda x: str_to_bool(x),
-        choices=(True, False)
-    )
-
-
-parser = ArgumentParser("convert.py")
-create_args_parser(parser)
-
 if __name__ == "__main__":
-    args = parser.parse_args()
-    convert_folder_entrypoint(args)
+    typer.run(convert)
