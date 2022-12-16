@@ -12,15 +12,15 @@ class ConvertStorage:
         """Closes the datasource connection"""
         pass
 
-    def update_row(self, src_path: str, src_directory: str, data: List[Any]):
+    def update_row(self, src_path: str, data: List[Any]):
         """Update a row in the store"""
         pass
 
-    def get_converted_rows(self, source_dir: str) -> DbView:
+    def get_converted_rows(self) -> DbView:
         """Returns source_file_path for the files that have been converted"""
         pass
 
-    def get_unconverted_rows(self, source_dir: str) -> DbView:
+    def get_unconverted_rows(self) -> DbView:
         """Returns rows for files that have not been converted yet"""
         pass
 

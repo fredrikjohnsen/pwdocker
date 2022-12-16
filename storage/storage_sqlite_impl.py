@@ -23,16 +23,15 @@ class StorageSqliteImpl(ConvertStorage):
         mime_type TEXT,
         norm_file_path TEXT,
         result TEXT,
-        source_directory TEXT NOT NULL,
         moved_to_target INTEGER DEFAULT 0,
-        PRIMARY KEY (source_file_path, source_directory)
+        PRIMARY KEY (source_file_path)
     );"""
 
     _update_result_str = """
         UPDATE File 
         SET file_size = ?, modified = ?,  errors = ?, id = ?, format = ?, version = ?, mime_type = ?, 
-        norm_file_path = ?, result = ?, source_directory = ?, moved_to_target = ? 
-        WHERE source_file_path = ? AND source_directory = ?
+        norm_file_path = ?, result = ?, moved_to_target = ?
+        WHERE source_file_path = ?
         """
 
     def __init__(self, path: str):
@@ -69,18 +68,16 @@ class StorageSqliteImpl(ConvertStorage):
         # select the first row (primary key) and filter away rows that already exist
         self._conn.row_factory = lambda cursor, row: row[0]
         file_names = self._conn.execute("SELECT source_file_path FROM File").fetchall()
-        source_dirs = self._conn.execute("SELECT source_directory FROM File").fetchall()
         table = petl.select(
             table,
-            lambda rec: (rec.source_file_path not in file_names) or (rec.source_directory not in source_dirs)
+            lambda rec: (rec.source_file_path not in file_names)
         )
         # append new rows
         appenddb(table, self._conn, "File")
         self._conn.row_factory = None
 
-    def update_row(self, src_path: str, src_directory: str, data: List[Any]):
+    def update_row(self, src_path: str, data: List[Any]):
         data.append(src_path)
-        data.append(src_directory)
         data.pop(0)
         self._conn.execute(self._update_result_str, data)
         self._conn.commit()
@@ -90,7 +87,7 @@ class StorageSqliteImpl(ConvertStorage):
         cursor.execute("SELECT COUNT(*) FROM File")
         return cursor.fetchone()[0]
 
-    def get_all_rows(self, source_dir: str):
+    def get_all_rows(self):
         return fromdb(
             self._conn,
             """
@@ -98,56 +95,55 @@ class StorageSqliteImpl(ConvertStorage):
             """,
         )
 
-    def get_new_rows(self, source_dir: str):
+    def get_new_rows(self):
         return fromdb(
             self._conn,
             """
             SELECT * FROM File
-            WHERE  source_directory = ? AND result IS NULL
+            WHERE  result IS NULL
             """,
             [source_dir]
         )
 
-    def get_unconverted_rows(self, source_dir: str):
+    def get_unconverted_rows(self):
         return fromdb(
             self._conn,
             """
             SELECT * FROM File 
-            WHERE source_directory = ? AND (result IS NULL OR result NOT IN(?, ?, ?))
+            WHERE  result IS NULL OR result NOT IN(?, ?, ?)
             """,
-            [source_dir, Result.SUCCESSFUL, Result.MANUAL, Result.AUTOMATICALLY_DELETED],
+            [Result.SUCCESSFUL, Result.MANUAL, Result.AUTOMATICALLY_DELETED],
         )
 
-    def get_converted_rows(self, source_dir: str):
+    def get_converted_rows(self):
         return fromdb(
             self._conn,
             """ 
             SELECT source_file_path FROM File
-            WHERE source_directory = ? AND (result IS NOT NULL AND result IN(?, ?, ?))
+            WHERE  result IS NOT NULL AND result IN(?, ?, ?)
             """,
-            [source_dir, Result.SUCCESSFUL, Result.MANUAL, Result.AUTOMATICALLY_DELETED],
+            [Result.SUCCESSFUL, Result.MANUAL, Result.AUTOMATICALLY_DELETED],
         )
 
-    def get_new_mime_types(self, source_dir: str):
+    def get_new_mime_types(self):
         return fromdb(
             self._conn,
             """
             SELECT count(*) as no, mime_type FROM File
-            WHERE source_directory= ? AND result is NULL
+            WHERE result is NULL
             GROUP BY mime_type
             ORDER BY count(*) desc
-            """,
-            [source_dir]
+            """
         )
 
-    def get_unconv_mime_types(self, source_dir: str):
+    def get_unconv_mime_types(self):
         return fromdb(
             self._conn,
             """
             SELECT count(*) as no, mime_type FROM File
-            WHERE source_directory= ? AND (result is NULL OR result NOT IN(?, ?, ?))
+            WHERE result is NULL OR result NOT IN(?, ?, ?)
             GROUP BY mime_type
             ORDER BY count(*) desc
             """,
-            [source_dir, Result.SUCCESSFUL, Result.MANUAL, Result.AUTOMATICALLY_DELETED]
+            [Result.SUCCESSFUL, Result.MANUAL, Result.AUTOMATICALLY_DELETED]
         )

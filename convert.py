@@ -119,9 +119,9 @@ def convert_folder(
     written_row_count = file_storage.get_row_count()
 
     if is_new_batch:
-        unconv_mime_types = file_storage.get_new_mime_types(source_dir)
+        unconv_mime_types = file_storage.get_new_mime_types()
     else:
-        unconv_mime_types = file_storage.get_unconv_mime_types(source_dir)
+        unconv_mime_types = file_storage.get_unconv_mime_types()
     missing_mime_types = etl.select(unconv_mime_types, lambda rec: rec.mime_type not in converters)
     if identifier and etl.nrows(missing_mime_types):
         print("Following file types haven't got a converter:")
@@ -144,20 +144,20 @@ def convert_folder(
     if first_run:
         files_to_convert_count = written_row_count
         already_converted_count = 0
-        table = file_storage.get_all_rows(source_dir)
+        table = file_storage.get_all_rows()
     elif is_new_batch:
-        table = file_storage.get_new_rows(source_dir)
+        table = file_storage.get_new_rows()
         already_converted_count = 0
         files_to_convert_count = etl.nrows(table)
     else:
         # print the files in this directory that have already been converted
         files_to_convert_count, already_converted_count = print_converted_files(
-            written_row_count, file_storage, source_dir
+            written_row_count, file_storage
         )
         if files_to_convert_count == 0:
             return "All files converted previously.", "bold cyan"
 
-        table = file_storage.get_unconverted_rows(source_dir)
+        table = file_storage.get_unconverted_rows()
 
     # run conversion:
     convert_files(files_to_convert_count, source_dir, table, target_dir, file_storage, zipped, debug, orig_ext)
@@ -165,7 +165,7 @@ def convert_folder(
     print(str(round(time.time() - t0, 2)) + ' sek')
 
     # check conversion result
-    total_converted_count = etl.nrows(file_storage.get_converted_rows(source_dir))
+    total_converted_count = etl.nrows(file_storage.get_converted_rows())
     msg, color = get_conversion_result(already_converted_count, files_to_convert_count, total_converted_count)
 
     return msg, color
@@ -187,7 +187,7 @@ def convert_files(
         if source_file.is_symlink() or source_file.name == "Thumbs.db":
             remove_file(row["source_file_path"])
             row["result"] = Result.AUTOMATICALLY_DELETED
-            file_storage.update_row(row["source_file_path"], row["source_directory"], list(row.values()))
+            file_storage.update_row(row["source_file_path"], list(row.values()))
             file_count -= 1
             continue
 
@@ -241,7 +241,7 @@ def convert_file(
             row["moved_to_target"] = 1
             
 
-    file_storage.update_row(row["source_file_path"], row["source_directory"], list(row.values()))
+    file_storage.update_row(row["source_file_path"], list(row.values()))
 
 
 def write_id_file_to_storage(tsv_source_path: str, source_dir: str, file_storage: ConvertStorage) -> int:
@@ -266,7 +266,6 @@ def write_id_file_to_storage(tsv_source_path: str, source_dir: str, file_storage
     # Remove listing of files in zip
     table = etl.select(table, lambda rec: "#" not in rec.source_file_path)
     table = add_fields(table, "mime_type", "version", "norm_file_path", "result", "id")
-    table = etl.addfield(table, "source_directory", source_dir)
     # Remove Siegfried generated columns
     table = remove_fields(table, "namespace", "basis", "warning")
     # TODO: Ikke fullgod sjekk på embedded dokument i linje over da # faktisk kan forekomme i filnavn
@@ -285,15 +284,15 @@ def write_id_file_to_storage(tsv_source_path: str, source_dir: str, file_storage
     return row_count
 
 
-def print_converted_files(total_row_count: int, file_storage: ConvertStorage, source_dir: str) -> tuple[int, int]:
-    converted_files = file_storage.get_converted_rows(source_dir)
+def print_converted_files(total_row_count: int, file_storage: ConvertStorage) -> tuple[int, int]:
+    converted_files = file_storage.get_converted_rows()
     already_converted = etl.nrows(converted_files)
 
     before = total_row_count
     total_row_count -= already_converted
     if already_converted > 0:
         console.print(
-            f"({already_converted}/{before}) files have already been converted  in {source_dir}", style="bold cyan"
+            f"({already_converted}/{before}) files have already been converted", style="bold cyan"
         )
 
     return total_row_count, already_converted
