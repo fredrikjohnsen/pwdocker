@@ -66,13 +66,12 @@ def add_fields(table, *args):
     return table
 
 
-def convert(source: str, target: str, orig_ext: bool=True) -> None:
+def convert(source: str, target: str, orig_ext: bool=True, debug: bool=False) -> None:
     Path(target).mkdir(parents=True, exist_ok=True)
     defaults = get_property_defaults(properties, local_properties)
 
     first_run = False
     db_path = target + '.db'
-    debug = defaults["options"]["debug"] # TODO Trenger vi denne?
     identifier = defaults["options"]["file-type-identifier"] # TODO Fjern når jeg får omskrevet koden
     confirm = True # TODO Fjern når jeg får omskrevet koden
     if not os.path.isfile(db_path):
@@ -218,8 +217,8 @@ def convert_file(
         print(end='\x1b[2K') # clear line
         print(f"\r({str(table.row_count)}/{str(file_count)}): {row['source_file_path']} ({row['mime_type']})", end=" ", flush=True)
 
-    source_file = File(row, converters, pwconv_path, debug, file_storage, convert_folder)
-    normalized = source_file.convert(source_dir, target_dir, orig_ext)
+    source_file = File(row, converters, pwconv_path, file_storage, convert_folder)
+    normalized = source_file.convert(source_dir, target_dir, orig_ext, debug)
     row["result"] = normalized["result"]
     row["mime_type"] = normalized["mime_type"]
     moved_to_target_path = Path(target_dir, row["source_file_path"])

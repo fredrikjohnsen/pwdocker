@@ -18,13 +18,11 @@ class File:
         row: Dict[str, Any],
         converters: Any,
         pwconv_path: Path,
-        debug: bool,
         file_storage: ConvertStorage,
         convert_folder: Callable[[str, str, bool, ConvertStorage, bool], Union[Tuple[str, int], Tuple[str, int, bool]]],
     ):
         self.converters = converters
         self.pwconv_path = pwconv_path
-        self.debug = debug
         self.convert_folder = convert_folder
         self.row = row
         self.file_storage = file_storage
@@ -40,7 +38,7 @@ class File:
         self.ext = split_ext[1][1:]
         self.normalized = {"norm_file_path": Optional[str], "result": Optional[str], "mime_type": Optional[str]}
 
-    def convert(self, source_dir: str, target_dir: str, orig_ext: bool) -> dict[str, Type[str]]:
+    def convert(self, source_dir: str, target_dir: str, orig_ext: bool, debug: bool) -> dict[str, Type[str]]:
         """Convert file to archive format"""
 
         source_file_path = os.path.join(source_dir, self.path)
@@ -60,7 +58,7 @@ class File:
             self.normalized["norm_file_path"] = None
             return self.normalized
         #elif self.mime_type == "application/zip":
-            #self._zip_to_norm(target_dir)
+            #self._zip_to_norm(target_dir, debug)
             #return self.normalized
 
         if self.mime_type not in self.converters:
@@ -69,12 +67,18 @@ class File:
             return self.normalized
 
         converter = self.converters[self.mime_type]
-        self._run_conversion_command(converter, source_file_path, target_file_path, target_dir, orig_ext)
+        self._run_conversion_command(converter, source_file_path, target_file_path, target_dir, orig_ext, debug)
 
         return self.normalized
 
     def _run_conversion_command(
-        self, converter: Any, source_file_path: str, target_file_path: str, target_dir: str, orig_ext: bool
+            self,
+            converter: Any,
+            source_file_path: str,
+            target_file_path: str,
+            target_dir: str,
+            orig_ext: bool,
+            debug: bool
     ) -> tuple[int, list, list]:
         """
         Convert function
@@ -104,7 +108,7 @@ class File:
             self.normalized["result"] = Result.FAILED
             self.normalized["norm_file_path"] = None
 
-            if self.debug:
+            if debug:
                 print("\nCommand: " + cmd + f" ({returncode})", end="")
         else:
             self.normalized["result"] = Result.SUCCESSFUL
@@ -152,7 +156,7 @@ class File:
 
         return cmd, target_ext
 
-    def _zip_to_norm(self, target_dir: str) -> None:
+    def _zip_to_norm(self, target_dir: str, debug: bool) -> None:
         """
         Extract the zipped files, convert them and zip them again.
 
