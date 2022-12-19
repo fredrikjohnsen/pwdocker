@@ -183,14 +183,6 @@ def convert_files(
 ) -> None:
     table.row_count = 0
     for row in etl.dicts(table):
-        source_file = Path(os.path.basename(row["source_file_path"]))
-        if source_file.is_symlink() or source_file.name == "Thumbs.db":
-            remove_file(row["source_file_path"])
-            row["result"] = Result.AUTOMATICALLY_DELETED
-            file_storage.update_row(row["source_file_path"], list(row.values()))
-            file_count -= 1
-            continue
-
         table.row_count += 1
         convert_file(file_count, file_storage, row, source_dir, table, target_dir, zipped, debug, orig_ext)
 
@@ -209,10 +201,6 @@ def convert_file(
     if row['mime_type']:
         # TODO: Why is this necessary?
         row["mime_type"] = row["mime_type"].split(";")[0]
-    else:
-        # Siegfried sets mime type only to xml files with xml declaration
-        if os.path.splitext(row["source_file_path"])[1].lower() == ".xml":
-            row["mime_type"] = "application/xml"
     if not zipped:
         print(end='\x1b[2K') # clear line
         print(f"\r({str(table.row_count)}/{str(file_count)}): {row['source_file_path']} ({row['mime_type']})", end=" ", flush=True)
