@@ -160,7 +160,10 @@ def convert_folder(
         table = file_storage.get_unconverted_rows()
 
     # run conversion:
-    convert_files(files_to_convert_count, source_dir, table, target_dir, file_storage, zipped, debug, orig_ext)
+    table.row_count = 0
+    for row in etl.dicts(table):
+        table.row_count += 1
+        convert_file(files_to_convert_count, file_storage, row, source_dir, table, target_dir, zipped, debug, orig_ext)
 
     print(str(round(time.time() - t0, 2)) + ' sek')
 
@@ -169,22 +172,6 @@ def convert_folder(
     msg, color = get_conversion_result(already_converted_count, files_to_convert_count, total_converted_count)
 
     return msg, color
-
-
-def convert_files(
-    file_count: int,
-    source_dir: str,
-    table: DbView,
-    target_dir: str,
-    file_storage: ConvertStorage,
-    zipped: bool,
-    debug: bool,
-    orig_ext: bool
-) -> None:
-    table.row_count = 0
-    for row in etl.dicts(table):
-        table.row_count += 1
-        convert_file(file_count, file_storage, row, source_dir, table, target_dir, zipped, debug, orig_ext)
 
 
 def convert_file(
