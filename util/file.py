@@ -1,6 +1,8 @@
 from __future__ import annotations
 import os
 import shutil
+import json
+import subprocess
 from pathlib import Path
 from typing import Optional, Any, List, Callable, Type, Union, Tuple, Dict
 
@@ -47,6 +49,13 @@ class File:
         else:
             target_file_path = os.path.join(target_dir, self.relative_root)
         target_file_path = os.path.abspath(target_file_path)
+
+        if self.mime_type in ['', 'None', None]:
+            cmd = ['sf', '-json', source_file_path]
+            p = subprocess.Popen(cmd, cwd=source_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            out, err = p.communicate()
+            fileinfo = json.loads(out)
+            self.mime_type = fileinfo['files'][0]['matches'][0]['mime']
 
         if self.mime_type in ['', 'None', None]:
             self.mime_type = magic.from_file(source_file_path, mime=True)
