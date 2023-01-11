@@ -110,9 +110,9 @@ class StorageSqliteImpl(ConvertStorage):
             self._conn,
             """
             SELECT * FROM File 
-            WHERE  result IS NULL OR result NOT IN(?, ?, ?)
+            WHERE  result IS NULL OR result NOT IN(?)
             """,
-            [Result.SUCCESSFUL, Result.MANUAL, Result.AUTOMATICALLY_DELETED],
+            [Result.SUCCESSFUL],
         )
 
     def get_converted_rows(self):
@@ -120,9 +120,9 @@ class StorageSqliteImpl(ConvertStorage):
             self._conn,
             """ 
             SELECT source_file_path FROM File
-            WHERE  result IS NOT NULL AND result IN(?, ?, ?)
+            WHERE  result IS NOT NULL AND result IN(?)
             """,
-            [Result.SUCCESSFUL, Result.MANUAL, Result.AUTOMATICALLY_DELETED],
+            [Result.SUCCESSFUL],
         )
 
     def get_new_mime_types(self):
@@ -141,9 +141,9 @@ class StorageSqliteImpl(ConvertStorage):
             self._conn,
             """
             SELECT count(*) as no, mime_type FROM File
-            WHERE result is NULL OR result NOT IN(?, ?, ?)
+            WHERE result is NULL OR result NOT IN(?)
             GROUP BY mime_type
             ORDER BY count(*) desc
             """,
-            [Result.SUCCESSFUL, Result.MANUAL, Result.AUTOMATICALLY_DELETED]
+            [Result.SUCCESSFUL]
         )
