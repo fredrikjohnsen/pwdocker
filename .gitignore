@@ -17,6 +17,9 @@ __pycache__/
 *.py[co]
 
 
+# local application config
+application.local.yml
+
 # python cache
 __pycache__
 test
