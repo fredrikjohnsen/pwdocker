@@ -190,13 +190,16 @@ def convert_file(
         row["mime_type"] = row["mime_type"].split(";")[0]
     if not zipped:
         print(end='\x1b[2K') # clear line
-        print(f"\r({str(table.row_count)}/{str(file_count)}): {row['source_file_path']} ({row['mime_type']})", end=" ", flush=True)
+        print(f"\r({str(table.row_count)}/{str(file_count)}): {row['source_file_path']}", end=" ", flush=True)
 
     source_file = File(row, converters, pwconv_path, file_storage, convert_folder)
     normalized = source_file.convert(source_dir, target_dir, orig_ext, debug)
-    row["result"] = normalized["result"]
-    row["mime_type"] = normalized["mime_type"]
-    moved_to_target_path = Path(target_dir, row["source_file_path"])
+    row['result'] = normalized['result']
+    row['mime_type'] = source_file.mime_type
+    row['format'] = source_file.format
+    row['file_size'] = source_file.file_size
+    row['version'] = source_file.version
+    moved_to_target_path = Path(target_dir, row['source_file_path'])
 
     if normalized["norm_file_path"]:        
         if str(normalized["norm_file_path"]) != str(moved_to_target_path):

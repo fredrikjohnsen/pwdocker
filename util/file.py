@@ -38,7 +38,7 @@ class File:
         # relative path without extension
         self.relative_root = split_ext[0]
         self.ext = split_ext[1][1:]
-        self.normalized = {"norm_file_path": Optional[str], "result": Optional[str], "mime_type": Optional[str]}
+        self.normalized = {"norm_file_path": Optional[str], "result": Optional[str]}
 
     def convert(self, source_dir: str, target_dir: str, orig_ext: bool, debug: bool) -> dict[str, Type[str]]:
         """Convert file to archive format"""
@@ -56,6 +56,9 @@ class File:
             out, err = p.communicate()
             fileinfo = json.loads(out)
             self.mime_type = fileinfo['files'][0]['matches'][0]['mime']
+            self.format = fileinfo['files'][0]['matches'][0]['format']
+            self.version = fileinfo['files'][0]['matches'][0]['version']
+            self.file_size = fileinfo['files'][0]['filesize']
 
         if self.mime_type in ['', 'None', None]:
             self.mime_type = magic.from_file(source_file_path, mime=True)
