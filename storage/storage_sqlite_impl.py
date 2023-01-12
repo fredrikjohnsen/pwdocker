@@ -13,25 +13,22 @@ from util import Result
 class StorageSqliteImpl(ConvertStorage):
     _create_table_str = """
     CREATE TABLE File(
-        source_file_path TEXT NOT NULL,
+        source_path TEXT NOT NULL,
         file_size DECIMAL,
-        modified  TEXT,
-        errors TEXT,
-        id TEXT,
         format TEXT,
         version TEXT,
         mime_type TEXT,
-        norm_file_path TEXT,
+        norm_path TEXT,
         result TEXT,
         moved_to_target INTEGER DEFAULT 0,
-        PRIMARY KEY (source_file_path)
+        PRIMARY KEY (source_path)
     );"""
 
     _update_result_str = """
         UPDATE File 
-        SET file_size = ?, modified = ?,  errors = ?, id = ?, format = ?, version = ?, mime_type = ?, 
-        norm_file_path = ?, result = ?, moved_to_target = ?
-        WHERE source_file_path = ?
+        SET file_size = ?, format = ?, version = ?, mime_type = ?,
+        norm_path = ?, result = ?, moved_to_target = ?
+        WHERE source_path = ?
         """
 
     def __init__(self, path: str):
@@ -67,10 +64,10 @@ class StorageSqliteImpl(ConvertStorage):
     def append_rows(self, table):
         # select the first row (primary key) and filter away rows that already exist
         self._conn.row_factory = lambda cursor, row: row[0]
-        file_names = self._conn.execute("SELECT source_file_path FROM File").fetchall()
+        file_names = self._conn.execute("SELECT source_path FROM File").fetchall()
         table = petl.select(
             table,
-            lambda rec: (rec.source_file_path not in file_names)
+            lambda rec: (rec.source_path not in file_names)
         )
         # append new rows
         appenddb(table, self._conn, "File")
@@ -119,7 +116,7 @@ class StorageSqliteImpl(ConvertStorage):
         return fromdb(
             self._conn,
             """ 
-            SELECT source_file_path FROM File
+            SELECT source_path FROM File
             WHERE  result IS NOT NULL AND result IN(?)
             """,
             [Result.SUCCESSFUL],

@@ -28,22 +28,21 @@ class File:
         self.convert_folder = convert_folder
         self.row = row
         self.file_storage = file_storage
-        self.path = row["source_file_path"]
+        self.path = row["source_path"]
         self.mime_type = row["mime_type"]
         self.format = row["format"]
         self.version = row["version"]
         self.file_size = row["file_size"]
-        self.id = row["id"]
         split_ext = os.path.splitext(self.path)
         # relative path without extension
         self.relative_root = split_ext[0]
         self.ext = split_ext[1][1:]
-        self.normalized = {"norm_file_path": Optional[str], "result": Optional[str]}
+        self.normalized = {"norm_path": Optional[str], "result": Optional[str]}
 
     def convert(self, source_dir: str, target_dir: str, orig_ext: bool, debug: bool) -> dict[str, Type[str]]:
         """Convert file to archive format"""
 
-        source_file_path = os.path.join(source_dir, self.path)
+        source_path = os.path.join(source_dir, self.path)
         if orig_ext:
             target_file_path = os.path.join(target_dir, self.path)
         else:
@@ -51,7 +50,7 @@ class File:
         target_file_path = os.path.abspath(target_file_path)
 
         if self.mime_type in ['', 'None', None]:
-            cmd = ['sf', '-json', source_file_path]
+            cmd = ['sf', '-json', source_path]
             p = subprocess.Popen(cmd, cwd=source_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             out, err = p.communicate()
             fileinfo = json.loads(out)
@@ -61,7 +60,7 @@ class File:
             self.file_size = fileinfo['files'][0]['filesize']
 
         if self.mime_type in ['', 'None', None]:
-            self.mime_type = magic.from_file(source_file_path, mime=True)
+            self.mime_type = magic.from_file(source_path, mime=True)
 
         self.normalized["mime_type"] = self.mime_type
 
@@ -71,18 +70,18 @@ class File:
 
         if self.mime_type not in self.converters:
             self.normalized["result"] = Result.NOT_SUPPORTED
-            self.normalized["norm_file_path"] = None
+            self.normalized["norm_path"] = None
             return self.normalized
 
         converter = self.converters[self.mime_type]
-        self._run_conversion_command(converter, source_file_path, target_file_path, target_dir, orig_ext, debug)
+        self._run_conversion_command(converter, source_path, target_file_path, target_dir, orig_ext, debug)
 
         return self.normalized
 
     def _run_conversion_command(
             self,
             converter: Any,
-            source_file_path: str,
+            source_path: str,
             target_file_path: str,
             target_dir: str,
             orig_ext: bool,
@@ -93,7 +92,7 @@ class File:
 
         Args:
             converter: which converter to use
-            source_file_path: source file path for the file to be converted
+            source_path: source file path for the file to be converted
             target_file_path: target file path for where the converted file should be saved
             target_dir: path directory where the converted result should be saved
         """
@@ -101,7 +100,7 @@ class File:
         if not orig_ext or (target_ext and self.ext != target_ext):
             target_file_path = target_file_path + '.' + target_ext
 
-        cmd = cmd.replace("<source>", '"' + source_file_path + '"')
+        cmd = cmd.replace("<source>", '"' + source_path + '"')
         cmd = cmd.replace("<target>", '"' + target_file_path + '"')
         cmd = cmd.replace("<mime-type>", '"' + self.mime_type + '"')
         cmd = cmd.replace("<target-ext>", '"' + target_ext + '"')
@@ -114,13 +113,13 @@ class File:
         # if not os.path.exists(target_file_path):
         if returncode:
             self.normalized["result"] = Result.FAILED
-            self.normalized["norm_file_path"] = None
+            self.normalized["norm_path"] = None
 
             if debug:
                 print("\nCommand: " + cmd + f" ({returncode})", end="")
         else:
             self.normalized["result"] = Result.SUCCESSFUL
-            self.normalized["norm_file_path"] = target_file_path
+            self.normalized["norm_path"] = target_file_path
 
 
     def _get_target_ext_and_cmd(self, converter: Any) -> Tuple:
@@ -197,13 +196,13 @@ class File:
             try:
                 norm_zip = zip_dir(norm_base_path, norm_dir_path)
                 self.normalized["result"] = Result.SUCCESSFUL
-                self.normalized["norm_file_path"] = norm_zip
+                self.normalized["norm_path"] = norm_zip
             except Exception as e:
                 self.normalized["result"] = Result.FAILED
-                self.normalized["norm_file_path"] = None
+                self.normalized["norm_path"] = None
         else:
             self.normalized["result"] = Result.FAILED
-            self.normalized["norm_file_path"] = None
+            self.normalized["norm_path"] = None
 
         os.chdir(working_dir)
         rm_tmp(paths)

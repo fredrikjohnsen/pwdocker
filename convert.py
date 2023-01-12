@@ -190,7 +190,7 @@ def convert_file(
         row["mime_type"] = row["mime_type"].split(";")[0]
     if not zipped:
         print(end='\x1b[2K') # clear line
-        print(f"\r({str(table.row_count)}/{str(file_count)}): {row['source_file_path']}", end=" ", flush=True)
+        print(f"\r({str(table.row_count)}/{str(file_count)}): {row['source_path']}", end=" ", flush=True)
 
     source_file = File(row, converters, pwconv_path, file_storage, convert_folder)
     normalized = source_file.convert(source_dir, target_dir, orig_ext, debug)
@@ -199,27 +199,27 @@ def convert_file(
     row['format'] = source_file.format
     row['file_size'] = source_file.file_size
     row['version'] = source_file.version
-    moved_to_target_path = Path(target_dir, row['source_file_path'])
+    moved_to_target_path = Path(target_dir, row['source_path'])
 
-    if normalized["norm_file_path"]:        
-        if str(normalized["norm_file_path"]) != str(moved_to_target_path):
+    if normalized["norm_path"]:
+        if str(normalized["norm_path"]) != str(moved_to_target_path):
             if moved_to_target_path.is_file():
                 moved_to_target_path.unlink()
             
         row["moved_to_target"] = 0
-        row["norm_file_path"] = relpath(normalized["norm_file_path"], start=target_dir)
+        row["norm_path"] = relpath(normalized["norm_path"], start=target_dir)
     else:          
         console.print('  ' + row["result"], style="bold red")
         Path(moved_to_target_path.parent).mkdir(parents=True, exist_ok=True)
         try:
-            shutil.copyfile(Path(source_dir, row["source_file_path"]), moved_to_target_path)
+            shutil.copyfile(Path(source_dir, row["source_path"]), moved_to_target_path)
         except Exception as e:
             print(e)
         if moved_to_target_path.is_file():
             row["moved_to_target"] = 1
             
 
-    file_storage.update_row(row["source_file_path"], list(row.values()))
+    file_storage.update_row(row["source_path"], list(row.values()))
 
 
 def write_id_file_to_storage(tsv_source_path: str, source_dir: str, file_storage: ConvertStorage) -> int:
@@ -231,8 +231,7 @@ def write_id_file_to_storage(tsv_source_path: str, source_dir: str, file_storage
     table = etl.rename(
         table,
         {
-            "filename": "source_file_path",
-            "tika_batch_fs_relative_path": "source_file_path",
+            "filename": "source_path",
             "filesize": "file_size",
             "mime": "mime_type",
             "Content_Type": "mime_type",
@@ -240,10 +239,10 @@ def write_id_file_to_storage(tsv_source_path: str, source_dir: str, file_storage
         },
         strict=False,
     )
-    table = etl.select(table, lambda rec: rec.source_file_path != "")
+    table = etl.select(table, lambda rec: rec.source_path != "")
     # Remove listing of files in zip
-    table = etl.select(table, lambda rec: "#" not in rec.source_file_path)
-    table = add_fields(table, "mime_type", "version", "norm_file_path", "result", "id")
+    table = etl.select(table, lambda rec: "#" not in rec.source_path)
+    table = add_fields(table, "mime_type", "version", "norm_path", "result")
     # Remove Siegfried generated columns
     table = remove_fields(table, "namespace", "basis", "warning")
     # TODO: Ikke fullgod sjekk på embedded dokument i linje over da # faktisk kan forekomme i filnavn

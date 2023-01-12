@@ -17,7 +17,7 @@ class ConvertStorage:
         pass
 
     def get_converted_rows(self) -> DbView:
-        """Returns source_file_path for the files that have been converted"""
+        """Returns source_path for the files that have been converted"""
         pass
 
     def get_unconverted_rows(self) -> DbView:
