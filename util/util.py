@@ -7,7 +7,6 @@ import subprocess
 from subprocess import TimeoutExpired
 import os
 import zipfile
-import mimetypes
 from pathlib import Path
 
 
@@ -51,46 +50,6 @@ def make_filelist(source_dir: str, filelist_path: str) -> None:
     os.chdir(source_dir)
     subprocess.run('find -type f -not -path "./.*" > ' + filelist_path, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL, shell=True)
 
-
-def run_file_command(source_dir: str, target_dir: str, tsv_path: str, zipped=False) -> None:
-    filelist_path = os.path.join(target_dir, "filelist.txt")
-    csv_path = os.path.join(target_dir, "siegfried.csv")
-    os.chdir(source_dir)
-    if not os.path.isfile(filelist_path):
-        subprocess.run('find -type f -not -path "./.*" > ' + filelist_path, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL, shell=True)
-    subprocess.run("echo 'filename, mime' > " + csv_path, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL, shell=True)
-    subprocess.run('file -e compress -F , -N -P bytes=4096 --mime-type -f ' + filelist_path + ' >> ' + csv_path, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL, shell=True)
-    csv_to_tsv(csv_path, tsv_path)
-    remove_file(filelist_path)
-    remove_file(csv_path)
-
-
-def run_siegfried(source_dir: str, target_dir: str, tsv_path: str, zipped=False) -> None:
-    """
-    Generate tsv file with info about file types by running
-
-    Args:
-        source_dir: the directory containing the files to be checked
-        target_dir: The target directory where the csv file will be saved
-        tsv_path: The target path for tsv file
-        zipped: nothing...
-    """
-
-    csv_path = os.path.join(target_dir, "siegfried.csv")
-    if not os.path.isfile(csv_path):
-        os.chdir(source_dir)
-        subprocess.run("sf -multi 256 -csv * > " + csv_path, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL, shell=True)
-
-    csv_to_tsv(csv_path, tsv_path)
-
-    remove_file(csv_path)
-
-def csv_to_tsv(csv_path, tsv_path) -> None:
-    with open(csv_path, "r") as csvin, open(tsv_path, "w") as tsvout:
-        csvin = csv.reader((x.replace('\0', '') for x in csvin), skipinitialspace=True)
-        tsvout = csv.writer(tsvout, delimiter="\t")
-        for row in csvin:
-            tsvout.writerow(row)
 
 def remove_file(src_path: str) -> None:
     if os.path.exists(src_path):

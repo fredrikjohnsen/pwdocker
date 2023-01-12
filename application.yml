@@ -8,4 +8,3 @@ options:
   keep-ext: True
     # This avoids overwriting files with same name but different extension,
     # e.g. test.doc and test.xls both becoming test.pdf
-  file-type-identifier: ext

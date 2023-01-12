@@ -31,7 +31,7 @@ from ruamel.yaml import YAML
 
 # Load converters
 from storage import ConvertStorage, StorageSqliteImpl
-from util import run_siegfried, run_file_command, make_filelist, remove_file, File, Result
+from util import make_filelist, remove_file, File, Result
 from util.util import get_property_defaults, str_to_bool
 
 yaml = YAML()
@@ -71,17 +71,13 @@ def convert(source: str, target: str, orig_ext: bool=True, debug: bool=False) ->
     defaults = get_property_defaults(properties, local_properties)
 
     first_run = False
-    db_path = target + '.db'
-    identifier = defaults["options"]["file-type-identifier"] # TODO Fjern når jeg får omskrevet koden
-    confirm = True # TODO Fjern når jeg får omskrevet koden
     if not os.path.isfile(db_path):
         first_run = True
 
+    db_path = target + '.db'
     with StorageSqliteImpl(db_path) as file_storage:
-        result, color = convert_folder(source, target, debug,
-                                       orig_ext, identifier, confirm,
-                                       file_storage,
-                                       False, first_run)
+        result, color = convert_folder(source, target, debug, orig_ext,
+                                       file_storage, False, first_run)
         console.print(result, style=color)
 
 
@@ -90,8 +86,6 @@ def convert_folder(
     target_dir: str,
     debug: bool,
     orig_ext: bool,
-    identifier: str,
-    confirm: bool,
     file_storage: ConvertStorage,
     zipped: bool,
     first_run: bool
@@ -102,18 +96,9 @@ def convert_folder(
     filelist_path = os.path.join(target_dir, "filelist.txt")
     is_new_batch = os.path.isfile(filelist_path)
     if first_run or is_new_batch:
-        if not zipped:
-            console.print("Identifying file types...", style="bold cyan")
-
-        tsv_source_path = target_dir + ".tsv"
-        if identifier == 'sf':
-            run_siegfried(source_dir, target_dir, tsv_source_path, False)
-        elif identifier == 'file':
-            run_file_command(source_dir, target_dir, tsv_source_path, False)
-        else:
-            if not is_new_batch:
-                make_filelist(source_dir, filelist_path)
-            tsv_source_path = filelist_path
+        if not is_new_batch:
+            make_filelist(source_dir, filelist_path)
+        tsv_source_path = filelist_path
         write_id_file_to_storage(tsv_source_path, source_dir, file_storage)
 
     written_row_count = file_storage.get_row_count()
@@ -122,12 +107,6 @@ def convert_folder(
         unconv_mime_types = file_storage.get_new_mime_types()
     else:
         unconv_mime_types = file_storage.get_unconv_mime_types()
-    missing_mime_types = etl.select(unconv_mime_types, lambda rec: rec.mime_type not in converters)
-    if identifier and etl.nrows(missing_mime_types):
-        print("Following file types haven't got a converter:")
-        print(missing_mime_types)
-        if not confirm and input("Do you wish to continue [y/n]: ") != 'y':
-            return "User terminated", "bold red"
 
     files_on_disk_count = sum([len(files) for r, d, files in os.walk(source_dir)])
     if files_on_disk_count == 0:
