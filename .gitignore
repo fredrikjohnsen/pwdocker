@@ -19,6 +19,8 @@ __pycache__/
 
 # local application config
 application.local.yml
+# local converters
+converters.local.yml
 
 # python cache
 __pycache__

@@ -29,10 +29,8 @@ import petl as etl
 from petl.io.db import DbView
 from ruamel.yaml import YAML
 
-# Load converters
 from storage import ConvertStorage, StorageSqliteImpl
 from util import make_filelist, remove_file, File, Result
-from util.util import get_property_defaults, str_to_bool
 
 yaml = YAML()
 # csv.field_size_limit(sys.maxsize)
@@ -40,17 +38,24 @@ console = Console()
 pwconv_path = pathlib.Path(__file__).parent.resolve()
 os.chdir(pwconv_path)
 
-with open(Path(pwconv_path, "converters.yml"), "r") as yamlfile:
-    converters = yaml.load(yamlfile)
-with open(Path(pwconv_path, "application.yml"), "r") as properties:
-    properties = yaml.load(properties)
+with open(Path(pwconv_path, "converters.yml"), "r") as content:
+    converters = yaml.load(content)
+with open(Path(pwconv_path, "application.yml"), "r") as content:
+    config = yaml.load(content)
 
-# Properties set in the local file will overwrite those in application.yml
+local_converters = {}
+if os.path.exists(Path(pwconv_path, 'converters.local.yml')):
+    with open(path(pwconv_path, 'converters.local.yml'), 'r') as content:
+        local_converters = yaml.load(content)
+
+local_config = {}
 if os.path.exists(Path(pwconv_path, 'application.local.yml')):
-    with open(Path(pwconv_path, "application.local.yml"), "r") as local_properties:
-        local_properties = yaml.load(local_properties)
-else:
-    local_properties = None
+    with open(Path(pwconv_path, "application.local.yml"), "r") as content:
+        local_config = yaml.load(content)
+
+# Properties set in local files will overwrite those in tracked files
+converters.update(local_converters)
+config.update(local_config)
 
 
 def remove_fields(table, *args):
@@ -71,7 +76,6 @@ def add_fields(table, *args):
 
 def convert(source: str, target: str, orig_ext: bool=True, debug: bool=False) -> None:
     Path(target).mkdir(parents=True, exist_ok=True)
-    defaults = get_property_defaults(properties, local_properties)
 
     first_run = False
     db_path = target + '.db'
