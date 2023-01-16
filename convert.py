@@ -181,6 +181,7 @@ def convert_file(
     row['format'] = source_file.format
     row['file_size'] = source_file.file_size
     row['version'] = source_file.version
+    row['puid'] = source_file.puid
     moved_to_target_path = Path(target_dir, row['source_path'])
 
     if normalized["norm_path"]:
@@ -224,7 +225,7 @@ def write_id_file_to_storage(tsv_source_path: str, source_dir: str, file_storage
     table = etl.select(table, lambda rec: rec.source_path != "")
     # Remove listing of files in zip
     table = etl.select(table, lambda rec: "#" not in rec.source_path)
-    table = add_fields(table, "mime_type", "version", "norm_path", "result")
+    table = add_fields(table, "mime_type", "version", "norm_path", "result", "puid")
     # Remove Siegfried generated columns
     table = remove_fields(table, "namespace", "basis", "warning")
     # TODO: Ikke fullgod sjekk på embedded dokument i linje over da # faktisk kan forekomme i filnavn

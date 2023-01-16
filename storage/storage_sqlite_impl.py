@@ -15,6 +15,7 @@ class StorageSqliteImpl(ConvertStorage):
     CREATE TABLE File(
         source_path TEXT NOT NULL,
         file_size DECIMAL,
+        puid TEXT,
         format TEXT,
         version TEXT,
         mime_type TEXT,
@@ -26,7 +27,7 @@ class StorageSqliteImpl(ConvertStorage):
 
     _update_result_str = """
         UPDATE File 
-        SET file_size = ?, format = ?, version = ?, mime_type = ?,
+        SET file_size = ?, puid = ?, format = ?, version = ?, mime_type = ?,
         norm_path = ?, result = ?, moved_to_target = ?
         WHERE source_path = ?
         """

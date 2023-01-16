@@ -33,6 +33,7 @@ class File:
         self.format = row["format"]
         self.version = row["version"]
         self.file_size = row["file_size"]
+        self.puid = row['puid']
         split_ext = os.path.splitext(self.path)
         # relative path without extension
         self.relative_root = split_ext[0]
@@ -58,6 +59,7 @@ class File:
             self.format = fileinfo['files'][0]['matches'][0]['format']
             self.version = fileinfo['files'][0]['matches'][0]['version']
             self.file_size = fileinfo['files'][0]['filesize']
+            self.puid = fileinfo['files'][0]['matches'][0]['id']
 
         if self.mime_type in ['', 'None', None]:
             self.mime_type = magic.from_file(source_path, mime=True)
