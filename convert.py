@@ -41,21 +41,21 @@ os.chdir(pwconv_path)
 with open(Path(pwconv_path, "converters.yml"), "r") as content:
     converters = yaml.load(content)
 with open(Path(pwconv_path, "application.yml"), "r") as content:
-    config = yaml.load(content)
+    cfg = yaml.load(content)
 
 local_converters = {}
 if os.path.exists(Path(pwconv_path, 'converters.local.yml')):
     with open(path(pwconv_path, 'converters.local.yml'), 'r') as content:
         local_converters = yaml.load(content)
 
-local_config = {}
+local_cfg = {}
 if os.path.exists(Path(pwconv_path, 'application.local.yml')):
     with open(Path(pwconv_path, "application.local.yml"), "r") as content:
-        local_config = yaml.load(content)
+        local_cfg = yaml.load(content)
 
 # Properties set in local files will overwrite those in tracked files
 converters.update(local_converters)
-config.update(local_config)
+cfg.update(local_cfg)
 
 
 def remove_fields(table, *args):
@@ -74,7 +74,7 @@ def add_fields(table, *args):
     return table
 
 
-def convert(source: str, target: str, orig_ext: bool=True, debug: bool=False) -> None:
+def convert(source: str, target: str, orig_ext: bool=cfg['keep-ext'], debug: bool=cfg['debug']) -> None:
     Path(target).mkdir(parents=True, exist_ok=True)
 
     first_run = False
