@@ -71,10 +71,10 @@ def convert(source: str, target: str, orig_ext: bool=True, debug: bool=False) ->
     defaults = get_property_defaults(properties, local_properties)
 
     first_run = False
+    db_path = target + '.db'
     if not os.path.isfile(db_path):
         first_run = True
 
-    db_path = target + '.db'
     with StorageSqliteImpl(db_path) as file_storage:
         result, color = convert_folder(source, target, debug, orig_ext,
                                        file_storage, False, first_run)
