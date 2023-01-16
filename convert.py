@@ -46,8 +46,11 @@ with open(Path(pwconv_path, "application.yml"), "r") as properties:
     properties = yaml.load(properties)
 
 # Properties set in the local file will overwrite those in application.yml
-with open(Path(pwconv_path, "application.local.yml"), "r") as local_properties:
-    local_properties = yaml.load(local_properties)
+if os.path.exists(Path(pwconv_path, 'application.local.yml')):
+    with open(Path(pwconv_path, "application.local.yml"), "r") as local_properties:
+        local_properties = yaml.load(local_properties)
+else:
+    local_properties = None
 
 
 def remove_fields(table, *args):
