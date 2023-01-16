@@ -179,6 +179,8 @@ def convert_file(
         print(f"\r({str(table.row_count)}/{str(file_count)}): {row['source_path']}", end=" ", flush=True)
 
     source_file = File(row, converters, pwconv_path, file_storage, convert_folder)
+    moved_to_target_path = Path(target_dir, row['source_path'])
+    Path(moved_to_target_path.parent).mkdir(parents=True, exist_ok=True)
     normalized = source_file.convert(source_dir, target_dir, orig_ext, debug)
     row['result'] = normalized['result']
     row['mime_type'] = source_file.mime_type
@@ -186,7 +188,6 @@ def convert_file(
     row['file_size'] = source_file.file_size
     row['version'] = source_file.version
     row['puid'] = source_file.puid
-    moved_to_target_path = Path(target_dir, row['source_path'])
 
     if normalized["norm_path"]:
         if str(normalized["norm_path"]) != str(moved_to_target_path):
@@ -197,7 +198,6 @@ def convert_file(
         row["norm_path"] = relpath(normalized["norm_path"], start=target_dir)
     else:          
         console.print('  ' + row["result"], style="bold red")
-        Path(moved_to_target_path.parent).mkdir(parents=True, exist_ok=True)
         try:
             shutil.copyfile(Path(source_dir, row["source_path"]), moved_to_target_path)
         except Exception as e:
