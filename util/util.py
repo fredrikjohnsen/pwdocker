@@ -38,6 +38,7 @@ def run_shell_command(command, cwd=None, timeout=60, shell=False) -> int:
         _, errs = proc.communicate(timeout=timeout)
     except TimeoutExpired:
         proc.kill()
+        return 1
     except Exception as e:
         print(command)
         print(e)

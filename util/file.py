@@ -112,8 +112,7 @@ class File:
 
         returncode = run_shell_command(cmd, cwd=self.pwconv_path, shell=True)
 
-        # if not os.path.exists(target_file_path):
-        if returncode:
+        if returncode or not os.path.exists(target_file_path):
             self.normalized["result"] = Result.FAILED
             self.normalized["norm_path"] = None
 
