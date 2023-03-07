@@ -17,10 +17,12 @@ wkhtmltopdf:
   comment: |
     Convert html to pdf using QT Webkit rendering engine.
 mhtml2pdf.py:
+  # TODO: Test to see if working properly
   command: mhtml2pdf.py <source> <target>
   comment: |
     Convert archived web content to pdf.
 eml2pdf.py:
+  # TODO: Probably not working
   command: eml2pdf.py <source> <target>
   comment: |
     Convert email to pdf

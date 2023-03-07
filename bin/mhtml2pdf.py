@@ -17,10 +17,9 @@ def mhtml2pdf(source_file: str, target_file: str):
     Returns:
         Nothing
     """
-    java_path = os.environ['pwcode_java_path']  # Get Java home path
-    converter_jar = os.path.expanduser("~") + '/bin/emailconverter/emailconverter.jar'
+    converter_jar = os.path.expanduser("~") + '/bin/emailconvert/emailconverter.jar'
 
-    command = [java_path, '-jar', converter_jar, '-e', source_file, '-o', target_file]
+    command = ['java', '-jar', converter_jar, '-e', source_file, '-o', target_file]
     run_shell_command(command)
 
 
