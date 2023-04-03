@@ -135,6 +135,6 @@ fi
 
 cecho "CYAN" "Install or update python dependencies.."
 sudo -H -u $OWNER bash -c "pip3 install petl unoserver ruamel.yaml typer[all] cchardet pdfkit python-magic ocrmypdf \
---upgrade;";
+psutil --upgrade;";
 recho $?
 
