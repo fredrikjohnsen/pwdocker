@@ -1,39 +1,20 @@
 application/pdf:
-  comment: Tested without pdf2text.
   command: bin/pdf2pdfa.sh <source> <target>
   target-ext: pdf
 application/xml:
-  comment: Main command works but could be improved. Sub-cmds won't work as defined now and needs rethink. Use pronom id rather than extension?
   command: python3 -m bin.text2utf8 <source> <target>
-  target-ext: html|htm|xhtml|xml
-  #target-ext: xml # TODO: Feil når html i noen tilfeller
-  #sub-cmds:
-    #comment: instead-of-or-pre-commands for special cases
-    #sdo:
-      #comment: Extract embedded pdf signatures
-      #command: bin/convert_sdo.php <source> <target>
-      #target-mime: application/pdf
 text/html:
-  comment: Main command tested. Or-commando with pandoc not tested.
   command: python3 -m bin.html2pdf <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
-  #command: python3 -m bin.html2pdf <source> <target> || pandoc <source> -s -o <target> && python3 -m bin.pdf2text <target>
   target-ext: pdf
 application/xhtml+xml:
   comment: Command tested and produces pdf/a
   command: python3 -m bin.xhtml2pdf <source> <target>
   target-ext: pdf
 text/markdown:
-  comment: Command tested
   command: python3 -m bin.text2utf8 <source> <target>
   target-ext: md
 text/plain:
   command: python3 -m bin.text2utf8 <source> <target>
-  target-ext: txt|csv|tsv
-#message/rfc822:
-  #comment: Tested. Both have problems with embedded attachments? email2pdf have som encoding issues as well
-  #command: python3 -m bin.text2utf8 <source> <target> && python3 -m bin.email2pdf <target> <target>
-  #command: python3 -m bin.eml2pdf <source> <target>
-  #target-ext: pdf
 image/gif:
   #comment: Command tested and produces pdf/a
   #command: python3 -m bin.image2pdf <source> <target>
@@ -47,37 +28,24 @@ image/jpeg:
 image/png:
   command: convert <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
 application/vnd.ms-excel:
-  comment: Both commands tested. unoconv2x better at converting Excel-files. Target html only works with unoconv2x.  
-  command: python3 -m bin.unoconv2x <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
-  #command: python3 -m bin.office2pdf <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
-  target-ext: pdf
-  #target-ext: html
+  # Excel files are accepted by Library of Congress
+  command: cp <source> <target>
+application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+  # Excel files are accepted by Library of Congress
+  command: cp <source> <target>
 application/vnd.openxmlformats-officedocument.wordprocessingml.document:
-  comment: Both commands tested. Target html only works with unoconv2x.  
   command: python3 -m bin.unoconv2x <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
-  #command: python3 -m bin.office2pdf <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
   target-ext: pdf
-  #target-ext: html  
 application/msword:
-  comment: Both commands tested. Target html only works with unoconv2x.  
   command: python3 -m bin.unoconv2x <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
-  #command: python3 -m bin.office2pdf <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
   target-ext: pdf
-  #target-ext: html    
 application/vnd.ms-powerpoint:
-  comment: Both commands tested. Target html only works with unoconv2x.  
   command: python3 -m bin.unoconv2x <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
-  #command: python3 -m bin.office2pdf <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
   target-ext: pdf
-  #target-ext: html    
 application/rtf:
-  comment: Both commands tested. Target html only works with unoconv2x.  
   command: python3 -m bin.unoconv2x <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
-  #command: python3 -m bin.office2pdf <source> <target>  
   target-ext: pdf
-  #target-ext: html    
 image/tiff:
-  comment: Command tested and produces pdf/a
   command: tiff2pdf -o /tmp/file.pdf <source>  && bin/pdf2pdfa.sh /tmp/file.pdf <target>
   target-ext: pdf
 application/vnd.wordperfect:
