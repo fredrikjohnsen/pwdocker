@@ -135,13 +135,7 @@ class File:
 
         cmd = converter["command"]
 
-        target_ext = self.ext
-        if "target-ext" in converter:
-            target_extensions = converter["target-ext"].split("|")
-            for ext in converter["target-ext"].split("|"):
-                if ext == self.ext or ext == target_extensions[-1]:
-                    target_ext = ext
-                    break
+        target_ext = self.ext if not 'target-ext' in converter else converter['target-ext']
 
         # special case for subtypes. For an example see: sdo in converters.yml
         # TODO: This won't work and need rethink or scrapping
