@@ -51,3 +51,6 @@ image/tiff:
 application/vnd.wordperfect:
   command: python3 -m bin.unoconv2x <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
   target-ext: pdf
+application/vnd.ms-outlook:
+  # Library of Congress has no preferred format, but accepts both .msg and .pst
+  command: cp <source> <target>
