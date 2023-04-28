@@ -54,3 +54,6 @@ application/vnd.wordperfect:
 application/vnd.ms-outlook:
   # Library of Congress has no preferred format, but accepts both .msg and .pst
   command: cp <source> <target>
+multipart/related:
+  # Web archive format supported in Chrome
+  command: cp <source> <target>
