@@ -9,7 +9,8 @@ from typing import Optional, Any, List, Callable, Type, Union, Tuple, Dict
 import magic
 
 from storage import ConvertStorage
-from util import run_shell_command, delete_file_or_dir, extract_nested_zip, Result
+from util import (run_shell_command, delete_file_or_dir, extract_nested_zip,
+                  Result)
 
 
 class File:
@@ -21,7 +22,8 @@ class File:
         converters: Any,
         pwconv_path: Path,
         file_storage: ConvertStorage,
-        convert_folder: Callable[[str, str, bool, ConvertStorage, bool], Union[Tuple[str, int], Tuple[str, int, bool]]],
+        convert_folder: Callable[[str, str, bool, ConvertStorage, bool],
+                                 Union[Tuple[str, int], Tuple[str, int, bool]]]
     ):
         self.converters = converters
         self.pwconv_path = pwconv_path
@@ -40,7 +42,8 @@ class File:
         self.ext = split_ext[1][1:]
         self.normalized = {"norm_path": Optional[str], "result": Optional[str]}
 
-    def convert(self, source_dir: str, target_dir: str, orig_ext: bool, debug: bool) -> dict[str, Type[str]]:
+    def convert(self, source_dir: str, target_dir: str, orig_ext: bool,
+                debug: bool) -> dict[str, Type[str]]:
         """Convert file to archive format"""
 
         source_path = os.path.join(source_dir, self.path)
@@ -52,7 +55,8 @@ class File:
 
         if self.mime_type in ['', 'None', None]:
             cmd = ['sf', '-json', source_path]
-            p = subprocess.Popen(cmd, cwd=source_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            p = subprocess.Popen(cmd, cwd=source_dir, stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE)
             out, err = p.communicate()
             fileinfo = json.loads(out)
             self.mime_type = fileinfo['files'][0]['matches'][0]['mime']
@@ -66,9 +70,9 @@ class File:
 
         self.normalized["mime_type"] = self.mime_type
 
-        #elif self.mime_type == "application/zip":
-            #self._zip_to_norm(target_dir, debug)
-            #return self.normalized
+        # elif self.mime_type == "application/zip":
+        #    self._zip_to_norm(target_dir, debug)
+        #    return self.normalized
 
         if self.mime_type not in self.converters:
             self.normalized["result"] = Result.NOT_SUPPORTED
@@ -76,7 +80,8 @@ class File:
             return self.normalized
 
         converter = self.converters[self.mime_type]
-        self._run_conversion_command(converter, source_path, target_file_path, target_dir, orig_ext, debug)
+        self._run_conversion_command(converter, source_path, target_file_path,
+                                     target_dir, orig_ext, debug)
 
         return self.normalized
 
@@ -93,10 +98,12 @@ class File:
         Convert function
 
         Args:
-            converter: which converter to use
-            source_path: source file path for the file to be converted
-            target_file_path: target file path for where the converted file should be saved
-            target_dir: path directory where the converted result should be saved
+            converter:        which converter to use
+            source_path:      source file path for the file to be converted
+            target_file_path: target file path for where the converted file
+                              should be saved
+            target_dir:       path directory where the converted result
+                              should be saved
         """
         cmd, target_ext = self._get_target_ext_and_cmd(converter)
         if not orig_ext or (target_ext and self.ext != target_ext):
@@ -122,7 +129,6 @@ class File:
             self.normalized["result"] = Result.SUCCESSFUL
             self.normalized["norm_path"] = target_file_path
 
-
     def _get_target_ext_and_cmd(self, converter: Any) -> Tuple:
         """
         Extract the target extension and the conversion command
@@ -135,7 +141,10 @@ class File:
 
         cmd = converter["command"]
 
-        target_ext = self.ext if not 'target-ext' in converter else converter['target-ext']
+        if 'target-ext' not in converter:
+            target_ext = self.ext
+        else:
+            target_ext = converter['target-ext']
 
         # special case for subtypes. For an example see: sdo in converters.yml
         # TODO: This won't work and need rethink or scrapping
@@ -152,7 +161,8 @@ class File:
 
                 sub_cmd = converter["sub-cmds"][sub]["command"]
                 if target_mime == self.mime_type:
-                    cmd = sub_cmd + " && " + cmd.replace("<source>", "<target>")
+                    cmd = sub_cmd + " && " + cmd.replace("<source>",
+                                                         "<target>")
                 # else:
                 # cmd = sub_cmd
 
@@ -167,9 +177,10 @@ class File:
         """
 
         def zip_dir(norm_dir_path_param: str, norm_base_path_param: str):
-            return shutil.make_archive(
-                base_name=norm_dir_path_param, format="zip", root_dir=norm_base_path_param, base_dir="."
-            )
+            return shutil.make_archive(base_name=norm_dir_path_param,
+                                       format="zip",
+                                       root_dir=norm_base_path_param,
+                                       base_dir=".")
 
         def rm_tmp(rm_paths: List[str]):
             for path in rm_paths:

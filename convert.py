@@ -15,7 +15,6 @@
 
 from __future__ import annotations
 import os
-import sys
 import pathlib
 import shutil
 import time
@@ -30,10 +29,9 @@ from petl.io.db import DbView
 from ruamel.yaml import YAML
 
 from storage import ConvertStorage, StorageSqliteImpl
-from util import make_filelist, remove_file, File, Result
+from util import make_filelist, remove_file, File
 
 yaml = YAML()
-# csv.field_size_limit(sys.maxsize)
 console = Console()
 pwconv_path = pathlib.Path(__file__).parent.resolve()
 os.chdir(pwconv_path)
@@ -45,7 +43,7 @@ with open(Path(pwconv_path, "application.yml"), "r") as content:
 
 local_converters = {}
 if os.path.exists(Path(pwconv_path, 'converters.local.yml')):
-    with open(path(pwconv_path, 'converters.local.yml'), 'r') as content:
+    with open(Path(pwconv_path, 'converters.local.yml'), 'r') as content:
         local_converters = yaml.load(content)
 
 local_cfg = {}
@@ -74,7 +72,8 @@ def add_fields(table, *args):
     return table
 
 
-def convert(source: str, target: str, orig_ext: bool=cfg['keep-ext'], debug: bool=cfg['debug']) -> None:
+def convert(source: str, target: str, orig_ext: bool = cfg['keep-ext'],
+            debug: bool = cfg['debug']) -> None:
     Path(target).mkdir(parents=True, exist_ok=True)
 
     first_run = False
@@ -110,18 +109,14 @@ def convert_folder(
 
     written_row_count = file_storage.get_row_count()
 
-    if is_new_batch:
-        unconv_mime_types = file_storage.get_new_mime_types()
-    else:
-        unconv_mime_types = file_storage.get_unconv_mime_types()
-
-    files_on_disk_count = sum([len(files) for r, d, files in os.walk(source_dir)])
-    if files_on_disk_count == 0:
+    files_count = sum([len(files) for r, d, files in os.walk(source_dir)])
+    if files_count == 0:
         return "No files to convert. Exiting.", "bold red"
-    if files_on_disk_count != written_row_count:
+    if files_count != written_row_count:
         console.print(f"Row count: {str(written_row_count)}", style="red")
-        console.print(f"File count: {str(files_on_disk_count)}", style="red")
-        if input(f"Files listed in {file_storage.path} doesn't match files on disk. Continue? [y/n] ") != 'y':
+        console.print(f"File count: {str(files_count)}", style="red")
+        if input(f"Files listed in {file_storage.path} doesn't match "
+                 "files on disk. Continue? [y/n] ") != 'y':
             return "User terminated", "bold red"
 
     if not zipped:
@@ -129,15 +124,15 @@ def convert_folder(
 
     if first_run:
         files_to_convert_count = written_row_count
-        already_converted_count = 0
+        files_converted_count = 0
         table = file_storage.get_all_rows()
     elif is_new_batch:
         table = file_storage.get_new_rows()
-        already_converted_count = 0
+        files_converted_count = 0
         files_to_convert_count = etl.nrows(table)
     else:
         # print the files in this directory that have already been converted
-        files_to_convert_count, already_converted_count = print_converted_files(
+        files_to_convert_count, files_converted_count = print_converted_files(
             written_row_count, file_storage
         )
         if files_to_convert_count == 0:
@@ -149,13 +144,16 @@ def convert_folder(
     table.row_count = 0
     for row in etl.dicts(table):
         table.row_count += 1
-        convert_file(files_to_convert_count, file_storage, row, source_dir, table, target_dir, zipped, debug, orig_ext)
+        convert_file(files_to_convert_count, file_storage, row, source_dir,
+                     table, target_dir, zipped, debug, orig_ext)
 
     print(str(round(time.time() - t0, 2)) + ' sek')
 
     # check conversion result
     total_converted_count = etl.nrows(file_storage.get_converted_rows())
-    msg, color = get_conversion_result(already_converted_count, files_to_convert_count, total_converted_count)
+    msg, color = get_conversion_result(files_converted_count,
+                                       files_to_convert_count,
+                                       total_converted_count)
 
     return msg, color
 
@@ -175,10 +173,12 @@ def convert_file(
         # TODO: Why is this necessary?
         row["mime_type"] = row["mime_type"].split(";")[0]
     if not zipped:
-        print(end='\x1b[2K') # clear line
-        print(f"\r({str(table.row_count)}/{str(file_count)}): {row['source_path']}", end=" ", flush=True)
+        print(end='\x1b[2K')  # clear line
+        print(f"\r({str(table.row_count)}/{str(file_count)}): "
+              f"{row['source_path']}", end=" ", flush=True)
 
-    source_file = File(row, converters, pwconv_path, file_storage, convert_folder)
+    source_file = File(row, converters, pwconv_path, file_storage,
+                       convert_folder)
     moved_to_target_path = Path(target_dir, row['source_path'])
     Path(moved_to_target_path.parent).mkdir(parents=True, exist_ok=True)
     normalized = source_file.convert(source_dir, target_dir, orig_ext, debug)
@@ -193,23 +193,24 @@ def convert_file(
         if str(normalized["norm_path"]) != str(moved_to_target_path):
             if moved_to_target_path.is_file():
                 moved_to_target_path.unlink()
-            
+
         row["moved_to_target"] = 0
         row["norm_path"] = relpath(normalized["norm_path"], start=target_dir)
-    else:          
+    else:
         console.print('  ' + row["result"], style="bold red")
         try:
-            shutil.copyfile(Path(source_dir, row["source_path"]), moved_to_target_path)
+            shutil.copyfile(Path(source_dir, row["source_path"]),
+                            moved_to_target_path)
         except Exception as e:
             print(e)
         if moved_to_target_path.is_file():
             row["moved_to_target"] = 1
-            
 
     file_storage.update_row(row["source_path"], list(row.values()))
 
 
-def write_id_file_to_storage(tsv_source_path: str, source_dir: str, file_storage: ConvertStorage) -> int:
+def write_id_file_to_storage(tsv_source_path: str, source_dir: str,
+                             file_storage: ConvertStorage) -> int:
     ext = os.path.splitext(tsv_source_path)[1]
     if ext == '.tsv':
         table = etl.fromtsv(tsv_source_path)
@@ -229,18 +230,22 @@ def write_id_file_to_storage(tsv_source_path: str, source_dir: str, file_storage
     table = etl.select(table, lambda rec: rec.source_path != "")
     # Remove listing of files in zip
     table = etl.select(table, lambda rec: "#" not in rec.source_path)
-    table = add_fields(table, "mime_type", "version", "norm_path", "result", "puid")
+    table = add_fields(table, "mime_type", "version", "norm_path", "result",
+                       "puid")
     # Remove Siegfried generated columns
     table = remove_fields(table, "namespace", "basis", "warning")
-    # TODO: Ikke fullgod sjekk på embedded dokument i linje over da # faktisk kan forekomme i filnavn
+    # TODO: Ikke fullgod sjekk på embedded dokument i linje over da # faktisk
+    # kan forekomme i filnavn
 
     # Treat csv (detected from extension only) as plain text:
-    table = etl.convert(table, "mime_type", lambda v, _row: "text/plain" if _row.id == "x-fmt/18" else v, pass_row=True)
+    table = etl.convert(table, "mime_type", lambda v,
+                        _row: "text/plain" if _row.id == "x-fmt/18" else v,
+                        pass_row=True)
 
     # Update for missing mime types where id is known:
-    table = etl.convert(
-        table, "mime_type", lambda v, _row: "application/xml" if _row.id == "fmt/979" else v, pass_row=True
-    )
+    table = etl.convert(table, "mime_type", lambda v,
+                        _row: "application/xml" if _row.id == "fmt/979" else v,
+                        pass_row=True)
 
     file_storage.append_rows(table)
     row_count = etl.nrows(table)
@@ -248,25 +253,27 @@ def write_id_file_to_storage(tsv_source_path: str, source_dir: str, file_storage
     return row_count
 
 
-def print_converted_files(total_row_count: int, file_storage: ConvertStorage) -> tuple[int, int]:
+def print_converted_files(total_row_count: int,
+                          file_storage: ConvertStorage) -> tuple[int, int]:
     converted_files = file_storage.get_converted_rows()
     already_converted = etl.nrows(converted_files)
 
     before = total_row_count
     total_row_count -= already_converted
     if already_converted > 0:
-        console.print(
-            f"({already_converted}/{before}) files have already been converted", style="bold cyan"
-        )
+        console.print(f"({already_converted}/{before}) files have already "
+                      "been converted", style="bold cyan")
 
     return total_row_count, already_converted
 
 
-def get_conversion_result(before: int, to_convert: int, total: int) -> tuple[str, str]:
+def get_conversion_result(before: int, to_convert: int,
+                          total: int) -> tuple[str, str]:
     if total - before == to_convert:
         return "All files converted successfully.", "bold green"
     else:
-        return "Not all files were converted. See the db table for details.", "bold cyan"
+        return ("Not all files were converted. See the db table for details.",
+                "bold cyan")
 
 
 if __name__ == "__main__":

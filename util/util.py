@@ -1,13 +1,10 @@
 from __future__ import annotations
-import csv
 import re
 import shutil
-import signal
 import subprocess
 from subprocess import TimeoutExpired
 import os
 import zipfile
-from pathlib import Path
 
 
 def run_shell_command(command, cwd=None, timeout=60, shell=False) -> int:
@@ -43,13 +40,15 @@ def run_shell_command(command, cwd=None, timeout=60, shell=False) -> int:
         print(command)
         print(e)
 
-
     return proc.returncode
 
 
 def make_filelist(source_dir: str, filelist_path: str) -> None:
     os.chdir(source_dir)
-    subprocess.run('find -type f -not -path "./.*" > ' + filelist_path, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL, shell=True)
+    subprocess.run('find -type f -not -path "./.*" > ' + filelist_path,
+                   stderr=subprocess.DEVNULL,
+                   stdout=subprocess.DEVNULL,
+                   shell=True)
 
 
 def remove_file(src_path: str) -> None:
@@ -76,5 +75,3 @@ def extract_nested_zip(zipped_file: str, to_folder: str) -> None:
             if re.search(r"\.zip$", filename):
                 filespec = os.path.join(root, filename)
                 extract_nested_zip(filespec, root)
-
-
