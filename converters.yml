@@ -34,16 +34,16 @@ application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
   # Excel files are accepted by Library of Congress
   command: cp <source> <target>
 application/vnd.openxmlformats-officedocument.wordprocessingml.document:
-  command: python3 -m bin.unoconv2x <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
+  command: python3 -m bin.office2pdf <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
   target-ext: pdf
 application/msword:
-  command: python3 -m bin.unoconv2x <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
+  command: python3 -m bin.office2pdf <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
   target-ext: pdf
 application/vnd.ms-powerpoint:
-  command: python3 -m bin.unoconv2x <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
+  command: python3 -m bin.office2pdf <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
   target-ext: pdf
 application/rtf:
-  command: python3 -m bin.unoconv2x <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
+  command: python3 -m bin.office2pdf <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
   target-ext: pdf
 image/tiff:
   command: tiff2pdf -o /tmp/file.pdf <source>  && bin/pdf2pdfa.sh /tmp/file.pdf <target>

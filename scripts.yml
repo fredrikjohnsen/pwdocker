@@ -7,7 +7,19 @@ text2utf8.py:
 office2pdf.py:
   command: office2pdf.py <source> <target>
   comment: |
-    Converts office files to pdf
+    Converts office files to pdf with OnlyOffice.
+
+    Better compatibilty with with MS Office than LibreOffice,
+    so the resulting pdf often looks better than conversion using
+    unoconv2x. But the conversion is much slower than with unoconv2x.
+unoconv2x.py:
+  command: unoconv2x.py <source> <target>
+  comment: | #todo might not be relevant anymore?
+    Converts office files to pdf with LibreOffice.
+
+    Much faster than office2pdf.py, which uses OnlyOffice,
+    but compatibility with MS Office formats is not very good,
+    so the resulting pdf is sometimes badly formatted.
 abiword:
   command: abiword --to=pdf --import-extension=rtf <source> -o <target>
   comment: |
@@ -48,10 +60,6 @@ html2pdf.py:
   command: html2pdf.py <source> <target>
   comment: |
     Converts html to pdf, using Chrome printing functionality.
-unoconv2x.py:
-  command: unoconv2x.py <source> <target> <target_ext> <mime_type>
-  comment: | #todo might not be relevant anymore?
-    Converts spreadsheets to html or pdf. Converts word and rtf to pdf.
 pandoc:
   command: pandoc <source> -s -o <target>
   comment: |
