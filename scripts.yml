@@ -52,6 +52,11 @@ pdf2pdfa.py:
     tekstfil med samme navn som konvertert fil, som
     lagres sammen med pdf-filen. Denne kan brukes i
     fulltekstsøk.
+pdf2pdfa.sh:
+  command: bin/pdf2pdfa.sh <source> <target>
+  comment: |
+    Konverterer pdf til pdf/a med ghostscript.
+    Produserer versjon PDF/A-2.
 pdf2text:
   command: pdf2text.py <source>
   comment: |
