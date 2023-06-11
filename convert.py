@@ -72,8 +72,13 @@ def add_fields(table, *args):
     return table
 
 
-def convert(source: str, target: str, orig_ext: bool = cfg['keep-ext'],
-            debug: bool = cfg['debug']) -> None:
+def convert(
+    source: str,
+    target: str,
+    orig_ext: bool = cfg['keep-ext'],
+    debug: bool = cfg['debug'],
+    mime_type: str = None
+) -> None:
     Path(target).mkdir(parents=True, exist_ok=True)
 
     first_run = False
@@ -83,7 +88,8 @@ def convert(source: str, target: str, orig_ext: bool = cfg['keep-ext'],
 
     with StorageSqliteImpl(db_path) as file_storage:
         result, color = convert_folder(source, target, debug, orig_ext,
-                                       file_storage, False, first_run)
+                                       mime_type, file_storage, False,
+                                       first_run)
         console.print(result, style=color)
 
 
@@ -92,6 +98,7 @@ def convert_folder(
     target_dir: str,
     debug: bool,
     orig_ext: bool,
+    mime_type: str,
     file_storage: ConvertStorage,
     zipped: bool,
     first_run: bool
@@ -107,13 +114,14 @@ def convert_folder(
         tsv_source_path = filelist_path
         write_id_file_to_storage(tsv_source_path, source_dir, file_storage)
 
-    written_row_count = file_storage.get_row_count()
+    written_row_count = file_storage.get_row_count(mime_type)
+    total_row_count = file_storage.get_row_count(None)
 
     files_count = sum([len(files) for r, d, files in os.walk(source_dir)])
     if files_count == 0:
         return "No files to convert. Exiting.", "bold red"
-    if files_count != written_row_count:
-        console.print(f"Row count: {str(written_row_count)}", style="red")
+    if files_count != total_row_count:
+        console.print(f"Row count: {str(total_row_count)}", style="red")
         console.print(f"File count: {str(files_count)}", style="red")
         if input(f"Files listed in {file_storage.path} doesn't match "
                  "files on disk. Continue? [y/n] ") != 'y':
@@ -133,12 +141,12 @@ def convert_folder(
     else:
         # print the files in this directory that have already been converted
         files_to_convert_count, files_converted_count = print_converted_files(
-            written_row_count, file_storage
+            written_row_count, file_storage, mime_type
         )
         if files_to_convert_count == 0:
             return "All files converted previously.", "bold cyan"
 
-        table = file_storage.get_unconverted_rows()
+        table = file_storage.get_unconverted_rows(mime_type)
 
     # run conversion:
     table.row_count = 0
@@ -150,10 +158,10 @@ def convert_folder(
     print(str(round(time.time() - t0, 2)) + ' sek')
 
     # check conversion result
-    total_converted_count = etl.nrows(file_storage.get_converted_rows())
+    converted_count = etl.nrows(file_storage.get_converted_rows(mime_type))
     msg, color = get_conversion_result(files_converted_count,
                                        files_to_convert_count,
-                                       total_converted_count)
+                                       converted_count)
 
     return msg, color
 
@@ -253,18 +261,19 @@ def write_id_file_to_storage(tsv_source_path: str, source_dir: str,
     return row_count
 
 
-def print_converted_files(total_row_count: int,
-                          file_storage: ConvertStorage) -> tuple[int, int]:
-    converted_files = file_storage.get_converted_rows()
+def print_converted_files(row_count: int,
+                          file_storage: ConvertStorage,
+                          mime_type: str) -> tuple[int, int]:
+    converted_files = file_storage.get_converted_rows(mime_type)
     already_converted = etl.nrows(converted_files)
 
-    before = total_row_count
-    total_row_count -= already_converted
+    before = row_count
+    row_count -= already_converted
     if already_converted > 0:
         console.print(f"({already_converted}/{before}) files have already "
                       "been converted", style="bold cyan")
 
-    return total_row_count, already_converted
+    return row_count, already_converted
 
 
 def get_conversion_result(before: int, to_convert: int,

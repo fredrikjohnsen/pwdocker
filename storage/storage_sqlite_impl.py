@@ -80,9 +80,17 @@ class StorageSqliteImpl(ConvertStorage):
         self._conn.execute(self._update_result_str, data)
         self._conn.commit()
 
-    def get_row_count(self):
+    def get_row_count(self, mime_type):
         cursor = self._conn.cursor()
-        cursor.execute("SELECT COUNT(*) FROM File")
+        query = "SELECT COUNT(*) FROM File"
+        params = []
+
+        if mime_type:
+            query += " WHERE mime_type = ?"
+            params.append(mime_type)
+
+        cursor.execute(query, params)
+
         return cursor.fetchone()[0]
 
     def get_all_rows(self):
@@ -103,25 +111,31 @@ class StorageSqliteImpl(ConvertStorage):
             [source_dir]
         )
 
-    def get_unconverted_rows(self):
-        return fromdb(
-            self._conn,
-            """
-            SELECT * FROM File 
+    def get_unconverted_rows(self, mime_type: str):
+        select = """
+            SELECT * FROM File
             WHERE  result IS NULL OR result NOT IN(?)
-            """,
-            [Result.SUCCESSFUL],
-        )
+        """
+        params = [Result.SUCCESSFUL]
 
-    def get_converted_rows(self):
-        return fromdb(
-            self._conn,
-            """ 
+        if mime_type:
+            select += " AND mime_type = ?"
+            params.append(mime_type)
+
+        return fromdb(self._conn, select, params)
+
+    def get_converted_rows(self, mime_type: str):
+        select = """
             SELECT source_path FROM File
             WHERE  result IS NOT NULL AND result IN(?)
-            """,
-            [Result.SUCCESSFUL],
-        )
+        """
+        params = [Result.SUCCESSFUL]
+
+        if mime_type:
+            select += " AND mime_type = ?"
+            params.append(mime_type)
+
+        return fromdb(self._conn, select, params)
 
     def get_new_mime_types(self):
         return fromdb(
