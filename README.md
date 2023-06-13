@@ -9,10 +9,10 @@ in this link https://www.digdir.no/standarder/arkivstandarder/1482
 * Make sure you have sqlite installed and the required python libraries
 * Run convert.py
   * A database will now have been created in the directory specified in the configuration file
-    * The File table contains an entry per file in the source directory and the conversion result
+    * The file table contains an entry per file in the source directory and the conversion result
   * The converted files will now be located in the target directory
 * The result will be printed to the console
-  * More detailed results can be found in the File table
+  * More detailed results can be found in the file table
 
 # Allowed standards
 

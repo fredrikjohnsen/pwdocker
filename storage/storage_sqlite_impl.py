@@ -12,7 +12,7 @@ from util import Result
 
 class StorageSqliteImpl(ConvertStorage):
     _create_table_str = """
-    CREATE TABLE File(
+    CREATE TABLE file(
         source_path TEXT NOT NULL,
         file_size DECIMAL,
         puid TEXT,
@@ -26,7 +26,7 @@ class StorageSqliteImpl(ConvertStorage):
     );"""
 
     _update_result_str = """
-        UPDATE File 
+        UPDATE file 
         SET file_size = ?, puid = ?, format = ?, version = ?, mime_type = ?,
         norm_path = ?, result = ?, moved_to_target = ?
         WHERE source_path = ?
@@ -49,7 +49,7 @@ class StorageSqliteImpl(ConvertStorage):
             os.makedirs(storage_dir)
 
         self._conn = sqlite3.connect(self.path)
-        table = self._conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='File'")
+        table = self._conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='file'")
         if len(table.fetchall()) <= 0:
             self._conn.execute(self._create_table_str)
             self._conn.commit()
@@ -60,18 +60,18 @@ class StorageSqliteImpl(ConvertStorage):
 
     def import_rows(self, table):
         # import rows
-        todb(table, self._conn, "File")
+        todb(table, self._conn, "file")
 
     def append_rows(self, table):
         # select the first row (primary key) and filter away rows that already exist
         self._conn.row_factory = lambda cursor, row: row[0]
-        file_names = self._conn.execute("SELECT source_path FROM File").fetchall()
+        file_names = self._conn.execute("SELECT source_path FROM file").fetchall()
         table = petl.select(
             table,
             lambda rec: (rec.source_path not in file_names)
         )
         # append new rows
-        appenddb(table, self._conn, "File")
+        appenddb(table, self._conn, "file")
         self._conn.row_factory = None
 
     def update_row(self, src_path: str, data: List[Any]):
@@ -82,13 +82,15 @@ class StorageSqliteImpl(ConvertStorage):
 
     def get_row_count(self, mime_type):
         cursor = self._conn.cursor()
-        query = "SELECT COUNT(*) FROM File"
+        query = "SELECT COUNT(*) FROM file"
         params = []
 
         if mime_type:
             query += " WHERE mime_type = ?"
             params.append(mime_type)
 
+        print('query', query)
+        print('params', params)
         cursor.execute(query, params)
 
         return cursor.fetchone()[0]
@@ -97,7 +99,7 @@ class StorageSqliteImpl(ConvertStorage):
         return fromdb(
             self._conn,
             """
-            SELECT * FROM File 
+            SELECT * FROM file 
             """,
         )
 
@@ -105,7 +107,7 @@ class StorageSqliteImpl(ConvertStorage):
         return fromdb(
             self._conn,
             """
-            SELECT * FROM File
+            SELECT * FROM file
             WHERE  result IS NULL
             """,
             [source_dir]
@@ -113,7 +115,7 @@ class StorageSqliteImpl(ConvertStorage):
 
     def get_unconverted_rows(self, mime_type: str):
         select = """
-            SELECT * FROM File
+            SELECT * FROM file
             WHERE  result IS NULL OR result NOT IN(?)
         """
         params = [Result.SUCCESSFUL]
@@ -126,7 +128,7 @@ class StorageSqliteImpl(ConvertStorage):
 
     def get_converted_rows(self, mime_type: str):
         select = """
-            SELECT source_path FROM File
+            SELECT source_path FROM file
             WHERE  result IS NOT NULL AND result IN(?)
         """
         params = [Result.SUCCESSFUL]
@@ -141,7 +143,7 @@ class StorageSqliteImpl(ConvertStorage):
         return fromdb(
             self._conn,
             """
-            SELECT count(*) as no, mime_type FROM File
+            SELECT count(*) as no, mime_type FROM file
             WHERE result is NULL
             GROUP BY mime_type
             ORDER BY count(*) desc
@@ -152,7 +154,7 @@ class StorageSqliteImpl(ConvertStorage):
         return fromdb(
             self._conn,
             """
-            SELECT count(*) as no, mime_type FROM File
+            SELECT count(*) as no, mime_type FROM file
             WHERE result is NULL OR result NOT IN(?)
             GROUP BY mime_type
             ORDER BY count(*) desc
