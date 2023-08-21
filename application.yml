@@ -3,3 +3,5 @@ keep-ext: False
   # This avoids overwriting files with same name but different extension,
   # e.g. test.doc and test.xls both becoming test.pdf
 debug: False
+# set timeout in seconds for file converters
+timeout: 60

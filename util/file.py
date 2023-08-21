@@ -8,7 +8,7 @@ from typing import Optional, Any, List, Callable, Type, Union, Tuple, Dict
 
 import magic
 
-from config import converters
+from config import cfg, converters
 from storage import ConvertStorage
 from util import (run_shell_command, delete_file_or_dir, extract_nested_zip,
                   Result)
@@ -116,7 +116,8 @@ class File:
         # with option --mime-type
         # cmd = cmd.replace("<version>", '"' + self.version + '"')
 
-        returncode = run_shell_command(cmd, cwd=self.pwconv_path, shell=True)
+        returncode = run_shell_command(cmd, cwd=self.pwconv_path, shell=True,
+                                       timeout=cfg['timeout'])
 
         if returncode or not os.path.exists(target_file_path):
             self.normalized["result"] = Result.FAILED
