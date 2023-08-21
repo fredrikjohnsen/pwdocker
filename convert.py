@@ -15,7 +15,6 @@
 
 from __future__ import annotations
 import os
-import pathlib
 import shutil
 import time
 from os.path import relpath
@@ -26,34 +25,14 @@ import typer
 from rich.console import Console
 import petl as etl
 from petl.io.db import DbView
-from ruamel.yaml import YAML
 
 from storage import ConvertStorage, StorageSqliteImpl
 from util import make_filelist, remove_file, File
+from config import cfg
 
-yaml = YAML()
 console = Console()
-pwconv_path = pathlib.Path(__file__).parent.resolve()
+pwconv_path = Path(__file__).parent.resolve()
 os.chdir(pwconv_path)
-
-with open(Path(pwconv_path, "converters.yml"), "r") as content:
-    converters = yaml.load(content)
-with open(Path(pwconv_path, "application.yml"), "r") as content:
-    cfg = yaml.load(content)
-
-local_converters = {}
-if os.path.exists(Path(pwconv_path, 'converters.local.yml')):
-    with open(Path(pwconv_path, 'converters.local.yml'), 'r') as content:
-        local_converters = yaml.load(content)
-
-local_cfg = {}
-if os.path.exists(Path(pwconv_path, 'application.local.yml')):
-    with open(Path(pwconv_path, "application.local.yml"), "r") as content:
-        local_cfg = yaml.load(content)
-
-# Properties set in local files will overwrite those in tracked files
-converters.update(local_converters)
-cfg.update(local_cfg)
 
 
 def remove_fields(table, *args):
@@ -191,8 +170,7 @@ def convert_file(
         print(f"\r({str(table.row_count)}/{str(file_count)}): "
               f"{row['source_path']}", end=" ", flush=True)
 
-    source_file = File(row, converters, pwconv_path, file_storage,
-                       convert_folder)
+    source_file = File(row,pwconv_path, file_storage, convert_folder)
     moved_to_target_path = Path(target_dir, row['source_path'])
     Path(moved_to_target_path.parent).mkdir(parents=True, exist_ok=True)
     normalized = source_file.convert(source_dir, target_dir, orig_ext, debug)

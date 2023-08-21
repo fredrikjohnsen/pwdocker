@@ -8,6 +8,7 @@ from typing import Optional, Any, List, Callable, Type, Union, Tuple, Dict
 
 import magic
 
+from config import converters
 from storage import ConvertStorage
 from util import (run_shell_command, delete_file_or_dir, extract_nested_zip,
                   Result)
@@ -19,13 +20,11 @@ class File:
     def __init__(
         self,
         row: Dict[str, Any],
-        converters: Any,
         pwconv_path: Path,
         file_storage: ConvertStorage,
         convert_folder: Callable[[str, str, bool, ConvertStorage, bool],
                                  Union[Tuple[str, int], Tuple[str, int, bool]]]
     ):
-        self.converters = converters
         self.pwconv_path = pwconv_path
         self.convert_folder = convert_folder
         self.row = row
@@ -74,12 +73,12 @@ class File:
         #    self._zip_to_norm(target_dir, debug)
         #    return self.normalized
 
-        if self.mime_type not in self.converters:
+        if self.mime_type not in converters:
             self.normalized["result"] = Result.NOT_SUPPORTED
             self.normalized["norm_path"] = None
             return self.normalized
 
-        converter = self.converters[self.mime_type]
+        converter = converters[self.mime_type]
         self._run_conversion_command(converter, source_path, target_file_path,
                                      target_dir, orig_ext, debug)
 
