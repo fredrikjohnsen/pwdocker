@@ -27,7 +27,7 @@ import petl as etl
 from petl.io.db import DbView
 
 from storage import ConvertStorage, StorageSqliteImpl
-from util import make_filelist, remove_file, File
+from util import make_filelist, remove_file, File, Result
 from config import cfg
 
 console = Console()
@@ -122,7 +122,7 @@ def convert_folder(
     else:
         # print the files in this directory that have already been converted
         files_to_convert_count, files_converted_count = print_converted_files(
-            written_row_count, file_storage, mime_type
+            written_row_count, file_storage, mime_type, result
         )
         if files_to_convert_count == 0:
             return "All files converted previously.", "bold cyan"
@@ -247,8 +247,9 @@ def write_id_file_to_storage(tsv_source_path: str, source_dir: str,
 
 def print_converted_files(row_count: int,
                           file_storage: ConvertStorage,
-                          mime_type: str) -> tuple[int, int]:
-    converted_files = file_storage.get_converted_rows(mime_type)
+                          mime_type: str,
+                          result: str) -> tuple[int, int]:
+    converted_files = [] if result != Result.SUCCESSFUL else file_storage.get_converted_rows(mime_type)
     already_converted = etl.nrows(converted_files)
 
     before = row_count
