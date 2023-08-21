@@ -77,7 +77,8 @@ def convert(
     target: str,
     orig_ext: bool = cfg['keep-ext'],
     debug: bool = cfg['debug'],
-    mime_type: str = None
+    mime_type: str = None,
+    result: str = None
 ) -> None:
     Path(target).mkdir(parents=True, exist_ok=True)
 
@@ -88,7 +89,7 @@ def convert(
 
     with StorageSqliteImpl(db_path) as file_storage:
         result, color = convert_folder(source, target, debug, orig_ext,
-                                       mime_type, file_storage, False,
+                                       mime_type, result, file_storage, False,
                                        first_run)
         console.print(result, style=color)
 
@@ -99,6 +100,7 @@ def convert_folder(
     debug: bool,
     orig_ext: bool,
     mime_type: str,
+    result: str,
     file_storage: ConvertStorage,
     zipped: bool,
     first_run: bool
@@ -114,7 +116,7 @@ def convert_folder(
         tsv_source_path = filelist_path
         write_id_file_to_storage(tsv_source_path, source_dir, file_storage)
 
-    written_row_count = file_storage.get_row_count(mime_type)
+    written_row_count = file_storage.get_row_count(mime_type, result)
     total_row_count = file_storage.get_row_count(None)
 
     files_count = sum([len(files) for r, d, files in os.walk(source_dir)])
@@ -146,7 +148,11 @@ def convert_folder(
         if files_to_convert_count == 0:
             return "All files converted previously.", "bold cyan"
 
-        table = file_storage.get_unconverted_rows(mime_type)
+        table = file_storage.get_unconverted_rows(mime_type, result)
+
+    if input(f"Konverterer {etl.nrows(table)} filer. "
+             "Vil du fortsette? [y/n] ") != 'y':
+        return "User terminated", "bold red"
 
     # run conversion:
     table.row_count = 0

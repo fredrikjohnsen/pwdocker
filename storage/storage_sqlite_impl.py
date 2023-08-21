@@ -49,7 +49,11 @@ class StorageSqliteImpl(ConvertStorage):
             os.makedirs(storage_dir)
 
         self._conn = sqlite3.connect(self.path)
-        table = self._conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='file'")
+        query = """
+            SELECT name FROM sqlite_master 
+            WHERE type='table' AND name='file'        
+        """
+        table = self._conn.execute(query)
         if len(table.fetchall()) <= 0:
             self._conn.execute(self._create_table_str)
             self._conn.commit()
@@ -80,14 +84,22 @@ class StorageSqliteImpl(ConvertStorage):
         self._conn.execute(self._update_result_str, data)
         self._conn.commit()
 
-    def get_row_count(self, mime_type):
+    def get_row_count(self, mime_type=None, result=None):
         cursor = self._conn.cursor()
         query = "SELECT COUNT(*) FROM file"
+        conds = []
         params = []
 
         if mime_type:
-            query += " WHERE mime_type = ?"
+            conds.append("mime_type = ?")
             params.append(mime_type)
+
+        if result:
+            conds.append("result = ?")
+            params.append(result)
+
+        if len(conds):
+            query += "\nWHERE " + ' AND '.join(conds)
 
         print('query', query)
         print('params', params)
@@ -99,7 +111,7 @@ class StorageSqliteImpl(ConvertStorage):
         return fromdb(
             self._conn,
             """
-            SELECT * FROM file 
+            SELECT * FROM file
             """,
         )
 
@@ -113,7 +125,7 @@ class StorageSqliteImpl(ConvertStorage):
             [source_dir]
         )
 
-    def get_unconverted_rows(self, mime_type: str):
+    def get_unconverted_rows(self, mime_type: str = None, result: str = None):
         select = """
             SELECT * FROM file
             WHERE  result IS NULL OR result NOT IN(?)
@@ -124,9 +136,13 @@ class StorageSqliteImpl(ConvertStorage):
             select += " AND mime_type = ?"
             params.append(mime_type)
 
+        if result:
+            select += " AND result = ?"
+            params.append(result)
+
         return fromdb(self._conn, select, params)
 
-    def get_converted_rows(self, mime_type: str):
+    def get_converted_rows(self, mime_type: str = None):
         select = """
             SELECT source_path FROM file
             WHERE  result IS NOT NULL AND result IN(?)
