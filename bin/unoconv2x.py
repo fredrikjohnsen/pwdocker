@@ -17,7 +17,7 @@ def start_uno_server():
         return
 
     subprocess.Popen(
-        Path(Path.home(), ".local/bin/unoserver"),
+        'unoserver',
         start_new_session=True,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.STDOUT,
