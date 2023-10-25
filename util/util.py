@@ -2,8 +2,8 @@ from __future__ import annotations
 import re
 import shutil
 import subprocess
-from subprocess import TimeoutExpired
 import os
+import signal
 import zipfile
 
 
@@ -21,20 +21,22 @@ def run_shell_command(command, cwd=None, timeout=60, shell=False) -> int:
     """
     os.environ["PYTHONUNBUFFERED"] = "1"
 
-    proc = subprocess.Popen(
-        command,
-        cwd=cwd,
-        shell=shell,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        env=os.environ,
-        universal_newlines=True,
-    )
+
 
     try:
-        _, errs = proc.communicate(timeout=timeout)
-    except TimeoutExpired:
-        proc.kill()
+        proc = subprocess.Popen(
+            command,
+            cwd=cwd,
+            shell=shell,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=os.environ,
+            universal_newlines=True,
+            start_new_session=True,
+        )
+        proc.wait(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
         return 1
     except Exception as e:
         print(command)
