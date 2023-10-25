@@ -5,9 +5,10 @@ import subprocess
 import os
 import signal
 import zipfile
+from config import cfg
 
 
-def run_shell_command(command, cwd=None, timeout=60, shell=False) -> int:
+def run_shell_command(command, cwd=None, timeout=None, shell=False) -> int:
     """
     Run the given command as a subprocess
 
@@ -21,7 +22,9 @@ def run_shell_command(command, cwd=None, timeout=60, shell=False) -> int:
     """
     os.environ["PYTHONUNBUFFERED"] = "1"
 
-
+    # Make calls from subprocess timeout before main subprocess
+    if not timeout:
+        timeout = cfg['timeout'] - 1
 
     try:
         proc = subprocess.Popen(
