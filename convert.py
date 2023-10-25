@@ -170,7 +170,7 @@ def convert_file(
         print(f"\r({str(table.row_count)}/{str(file_count)}): "
               f"{row['source_path']}", end=" ", flush=True)
 
-    source_file = File(row,pwconv_path, file_storage, convert_folder)
+    source_file = File(row, pwconv_path, file_storage, convert_folder)
     moved_to_target_path = Path(target_dir, row['source_path'])
     Path(moved_to_target_path.parent).mkdir(parents=True, exist_ok=True)
     normalized = source_file.convert(source_dir, target_dir, orig_ext, debug)
@@ -249,7 +249,10 @@ def print_converted_files(row_count: int,
                           file_storage: ConvertStorage,
                           mime_type: str,
                           result: str) -> tuple[int, int]:
-    converted_files = [] if result != Result.SUCCESSFUL else file_storage.get_converted_rows(mime_type)
+    if result and result != Result.SUCCESSFUL:
+        converted_files = []
+    else:
+        converted_files = file_storage.get_converted_rows(mime_type)
     already_converted = etl.nrows(converted_files)
 
     before = row_count
