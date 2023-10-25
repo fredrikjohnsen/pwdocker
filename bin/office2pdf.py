@@ -6,6 +6,7 @@ from pathlib import Path
 import typer
 
 from util import run_shell_command, remove_file
+from config import cfg
 
 
 def office2pdf(source_file: str, target_file: str):
@@ -32,7 +33,10 @@ def office2pdf(source_file: str, target_file: str):
         file.write('\n'.join(docbuilder))
 
     command = ['documentbuilder', docbuilder_file]
-    run_shell_command(command)
+    result = run_shell_command(command, timeout=cfg['timeout']-1)
+
+    if result:
+        raise Exception("Conversion failed")
 
 if __name__ == '__main__':
     typer.run(office2pdf)
