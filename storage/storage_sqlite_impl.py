@@ -101,8 +101,6 @@ class StorageSqliteImpl(ConvertStorage):
         if len(conds):
             query += "\nWHERE " + ' AND '.join(conds)
 
-        print('query', query)
-        print('params', params)
         cursor.execute(query, params)
 
         return cursor.fetchone()[0]
