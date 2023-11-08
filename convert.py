@@ -162,9 +162,9 @@ def convert_file(
     debug: bool,
     orig_ext: bool,
 ) -> None:
-    if row['mime_type']:
+    if row['source_mime_type']:
         # TODO: Why is this necessary?
-        row["mime_type"] = row["mime_type"].split(";")[0]
+        row["source_mime_type"] = row["source_mime_type"].split(";")[0]
     if not zipped:
         print(end='\x1b[2K')  # clear line
         print(f"\r({str(table.row_count)}/{str(file_count)}): "
@@ -175,19 +175,20 @@ def convert_file(
     Path(moved_to_target_path.parent).mkdir(parents=True, exist_ok=True)
     normalized = source_file.convert(source_dir, target_dir, orig_ext, debug)
     row['result'] = normalized['result']
-    row['mime_type'] = source_file.mime_type
+    row['source_mime_type'] = source_file.mime_type
     row['format'] = source_file.format
-    row['file_size'] = source_file.file_size
+    row['source_file_size'] = source_file.file_size
     row['version'] = source_file.version
     row['puid'] = source_file.puid
 
-    if normalized["norm_path"]:
-        if str(normalized["norm_path"]) != str(moved_to_target_path):
+    if normalized["dest_path"]:
+        if str(normalized["dest_path"]) != str(moved_to_target_path):
             if moved_to_target_path.is_file():
                 moved_to_target_path.unlink()
 
         row["moved_to_target"] = 0
-        row["norm_path"] = relpath(normalized["norm_path"], start=target_dir)
+        row["dest_path"] = relpath(normalized["dest_path"], start=target_dir)
+        row["dest_mime_type"] = normalized['mime_type']
     else:
         console.print('  ' + row["result"], style="bold red")
         try:
@@ -197,6 +198,7 @@ def convert_file(
             print(e)
         if moved_to_target_path.is_file():
             row["moved_to_target"] = 1
+            row["dest_mime_type"] = source_file.mime_type
 
     file_storage.update_row(row["source_path"], list(row.values()))
 
@@ -212,9 +214,9 @@ def write_id_file_to_storage(tsv_source_path: str, source_dir: str,
         table,
         {
             "filename": "source_path",
-            "filesize": "file_size",
-            "mime": "mime_type",
-            "Content_Type": "mime_type",
+            "filesize": "source_file_size",
+            "mime": "source_mime_type",
+            "Content_Type": "source_mime_type",
             "Version": "version",
         },
         strict=False,
@@ -222,20 +224,20 @@ def write_id_file_to_storage(tsv_source_path: str, source_dir: str,
     table = etl.select(table, lambda rec: rec.source_path != "")
     # Remove listing of files in zip
     table = etl.select(table, lambda rec: "#" not in rec.source_path)
-    table = add_fields(table, "mime_type", "version", "norm_path", "result",
-                       "puid")
+    table = add_fields(table, "source_mime_type", "version", "dest_path", "result",
+                       "dest_mime_type", "puid")
     # Remove Siegfried generated columns
     table = remove_fields(table, "namespace", "basis", "warning")
     # TODO: Ikke fullgod sjekk på embedded dokument i linje over da # faktisk
     # kan forekomme i filnavn
 
     # Treat csv (detected from extension only) as plain text:
-    table = etl.convert(table, "mime_type", lambda v,
+    table = etl.convert(table, "source_mime_type", lambda v,
                         _row: "text/plain" if _row.id == "x-fmt/18" else v,
                         pass_row=True)
 
     # Update for missing mime types where id is known:
-    table = etl.convert(table, "mime_type", lambda v,
+    table = etl.convert(table, "source_mime_type", lambda v,
                         _row: "application/xml" if _row.id == "fmt/979" else v,
                         pass_row=True)
 

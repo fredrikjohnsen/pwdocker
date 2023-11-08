@@ -14,21 +14,22 @@ class StorageSqliteImpl(ConvertStorage):
     _create_table_str = """
     CREATE TABLE file(
         source_path TEXT NOT NULL,
-        file_size DECIMAL,
+        source_file_size DECIMAL,
         puid TEXT,
         format TEXT,
         version TEXT,
-        mime_type TEXT,
-        norm_path TEXT,
+        source_mime_type TEXT,
+        dest_path TEXT,
         result TEXT,
+        dest_mime_type TEXT,
         moved_to_target INTEGER DEFAULT 0,
         PRIMARY KEY (source_path)
     );"""
 
     _update_result_str = """
         UPDATE file 
-        SET file_size = ?, puid = ?, format = ?, version = ?, mime_type = ?,
-        norm_path = ?, result = ?, moved_to_target = ?
+        SET source_file_size = ?, puid = ?, format = ?, version = ?, source_mime_type = ?,
+        dest_path = ?, result = ?, dest_mime_type = ?, moved_to_target = ?
         WHERE source_path = ?
         """
 
@@ -78,8 +79,8 @@ class StorageSqliteImpl(ConvertStorage):
         appenddb(table, self._conn, "file")
         self._conn.row_factory = None
 
-    def update_row(self, src_path: str, data: List[Any]):
-        data.append(src_path)
+    def update_row(self, source_path: str, data: List[Any]):
+        data.append(source_path)
         data.pop(0)
         self._conn.execute(self._update_result_str, data)
         self._conn.commit()
@@ -91,7 +92,7 @@ class StorageSqliteImpl(ConvertStorage):
         params = []
 
         if mime_type:
-            conds.append("mime_type = ?")
+            conds.append("source_mime_type = ?")
             params.append(mime_type)
 
         if result:
@@ -120,7 +121,6 @@ class StorageSqliteImpl(ConvertStorage):
             SELECT * FROM file
             WHERE  result IS NULL
             """,
-            [source_dir]
         )
 
     def get_unconverted_rows(self, mime_type: str = None, result: str = None):
@@ -131,7 +131,7 @@ class StorageSqliteImpl(ConvertStorage):
         params = [Result.SUCCESSFUL]
 
         if mime_type:
-            select += " AND mime_type = ?"
+            select += " AND source_mime_type = ?"
             params.append(mime_type)
 
         if result:
@@ -148,7 +148,7 @@ class StorageSqliteImpl(ConvertStorage):
         params = [Result.SUCCESSFUL]
 
         if mime_type:
-            select += " AND mime_type = ?"
+            select += " AND source_mime_type = ?"
             params.append(mime_type)
 
         return fromdb(self._conn, select, params)
@@ -157,9 +157,9 @@ class StorageSqliteImpl(ConvertStorage):
         return fromdb(
             self._conn,
             """
-            SELECT count(*) as no, mime_type FROM file
+            SELECT count(*) as no, source_mime_type FROM file
             WHERE result is NULL
-            GROUP BY mime_type
+            GROUP BY source_mime_type
             ORDER BY count(*) desc
             """
         )
@@ -168,9 +168,9 @@ class StorageSqliteImpl(ConvertStorage):
         return fromdb(
             self._conn,
             """
-            SELECT count(*) as no, mime_type FROM file
+            SELECT count(*) as no, source_mime_type FROM file
             WHERE result is NULL OR result NOT IN(?)
-            GROUP BY mime_type
+            GROUP BY source_mime_type
             ORDER BY count(*) desc
             """,
             [Result.SUCCESSFUL]
