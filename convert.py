@@ -57,12 +57,25 @@ def convert(
     orig_ext: bool = cfg['keep-original-ext'],
     debug: bool = cfg['debug'],
     mime_type: str = None,
-    result: str = None
+    result: str = None,
+    db_path: str = None
 ) -> None:
+    """
+    Convert all files in SOURCE folder
+
+    If --db-path is not set, it uses default `TARGET + '.db'`
+    """
+
+   
     Path(target).mkdir(parents=True, exist_ok=True)
 
     first_run = False
-    db_path = target + '.db'
+
+    if db_path and os.path.dirname(db_path) == '':
+        console.print("Error: --db-path must refer to an absolute path", style='red')
+        return
+    if not db_path:
+        db_path = target + '.db'
     if not os.path.isfile(db_path):
         first_run = True
 
