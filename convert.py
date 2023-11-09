@@ -54,7 +54,7 @@ def add_fields(table, *args):
 def convert(
     source: str,
     target: str,
-    orig_ext: bool = cfg['keep-ext'],
+    orig_ext: bool = cfg['keep-original-ext'],
     debug: bool = cfg['debug'],
     mime_type: str = None,
     result: str = None
