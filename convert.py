@@ -197,6 +197,7 @@ def convert_file(
         except Exception as e:
             print(e)
         if moved_to_target_path.is_file():
+            row["dest_path"] = source_file.path
             row["moved_to_target"] = 1
             row["dest_mime_type"] = source_file.mime_type
 
