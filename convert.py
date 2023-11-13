@@ -53,7 +53,7 @@ def add_fields(table, *args):
 
 def convert(
     source: str,
-    target: str,
+    dest: str,
     orig_ext: bool = cfg['keep-original-ext'],
     debug: bool = cfg['debug'],
     mime_type: str = None,
@@ -63,11 +63,10 @@ def convert(
     """
     Convert all files in SOURCE folder
 
-    If --db-path is not set, it uses default `TARGET + '.db'`
+    --db-path: Database path. If not set, it uses default DEST + .db
     """
 
-   
-    Path(target).mkdir(parents=True, exist_ok=True)
+    Path(dest).mkdir(parents=True, exist_ok=True)
 
     first_run = False
 
@@ -75,20 +74,20 @@ def convert(
         console.print("Error: --db-path must refer to an absolute path", style='red')
         return
     if not db_path:
-        db_path = target + '.db'
+        db_path = dest + '.db'
     if not os.path.isfile(db_path):
         first_run = True
 
     with StorageSqliteImpl(db_path) as file_storage:
-        result, color = convert_folder(source, target, debug, orig_ext,
                                        mime_type, result, file_storage, False,
+        result, color = convert_folder(source, dest, debug, orig_ext,
                                        first_run)
         console.print(result, style=color)
 
 
 def convert_folder(
     source_dir: str,
-    target_dir: str,
+    dest_dir: str,
     debug: bool,
     orig_ext: bool,
     mime_type: str,
@@ -100,7 +99,7 @@ def convert_folder(
     """Convert all files in folder"""
 
     t0 = time.time()
-    filelist_path = os.path.join(target_dir, "filelist.txt")
+    filelist_path = os.path.join(dest_dir, "filelist.txt")
     is_new_batch = os.path.isfile(filelist_path)
     if first_run or is_new_batch:
         if not is_new_batch:
@@ -151,7 +150,7 @@ def convert_folder(
     for row in etl.dicts(table):
         table.row_count += 1
         convert_file(files_to_convert_count, file_storage, row, source_dir,
-                     table, target_dir, zipped, debug, orig_ext)
+                     table, dest_dir, zipped, debug, orig_ext)
 
     print(str(round(time.time() - t0, 2)) + ' sek')
 
@@ -170,8 +169,8 @@ def convert_file(
     row: Dict[str, any],
     source_dir: str,
     table: DbView,
-    target_dir: str,
     zipped: bool,
+    dest_dir: str,
     debug: bool,
     orig_ext: bool,
 ) -> None:
@@ -184,9 +183,9 @@ def convert_file(
               f"{row['source_path']}", end=" ", flush=True)
 
     source_file = File(row, pwconv_path, file_storage, convert_folder)
-    moved_to_target_path = Path(target_dir, row['source_path'])
-    Path(moved_to_target_path.parent).mkdir(parents=True, exist_ok=True)
-    normalized = source_file.convert(source_dir, target_dir, orig_ext, debug)
+    moved_to_dest_path = Path(dest_dir, row['source_path'])
+    Path(moved_to_dest_path.parent).mkdir(parents=True, exist_ok=True)
+    normalized = source_file.convert(source_dir, dest_dir, orig_ext, debug)
     row['result'] = normalized['result']
     row['source_mime_type'] = source_file.mime_type
     row['format'] = source_file.format
@@ -195,21 +194,21 @@ def convert_file(
     row['puid'] = source_file.puid
 
     if normalized["dest_path"]:
-        if str(normalized["dest_path"]) != str(moved_to_target_path):
-            if moved_to_target_path.is_file():
-                moved_to_target_path.unlink()
+        if str(normalized["dest_path"]) != str(moved_to_dest_path):
+            if moved_to_dest_path.is_file():
+                moved_to_dest_path.unlink()
 
         row["moved_to_target"] = 0
-        row["dest_path"] = relpath(normalized["dest_path"], start=target_dir)
+        row["dest_path"] = relpath(normalized["dest_path"], start=dest_dir)
         row["dest_mime_type"] = normalized['mime_type']
     else:
         console.print('  ' + row["result"], style="bold red")
         try:
             shutil.copyfile(Path(source_dir, row["source_path"]),
-                            moved_to_target_path)
+                            moved_to_dest_path)
         except Exception as e:
             print(e)
-        if moved_to_target_path.is_file():
+        if moved_to_dest_path.is_file():
             row["dest_path"] = source_file.path
             row["moved_to_target"] = 1
             row["dest_mime_type"] = source_file.mime_type

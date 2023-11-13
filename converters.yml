@@ -1,59 +1,59 @@
 application/pdf:
-  command: bin/pdf2pdfa.sh <source> <target>
-  target-ext: pdf
+  command: bin/pdf2pdfa.sh <source> <dest>
+  dest-ext: pdf
 application/xml:
-  command: python3 -m bin.text2utf8 <source> <target>
+  command: python3 -m bin.text2utf8 <source> <dest>
 text/html:
-  command: python3 -m bin.html2pdf <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
-  target-ext: pdf
+  command: python3 -m bin.html2pdf <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <dest>
+  dest-ext: pdf
 application/xhtml+xml:
   comment: Command tested and produces pdf/a
-  command: python3 -m bin.xhtml2pdf <source> <target>
-  target-ext: pdf
+  command: python3 -m bin.xhtml2pdf <source> <dest>
+  dest-ext: pdf
 text/markdown:
-  command: python3 -m bin.text2utf8 <source> <target>
-  target-ext: md
+  command: python3 -m bin.text2utf8 <source> <dest>
+  dest-ext: md
 text/plain:
-  command: python3 -m bin.text2utf8 <source> <target>
+  command: python3 -m bin.text2utf8 <source> <dest>
 image/gif:
   #comment: Command tested and produces pdf/a
-  #command: python3 -m bin.image2pdf <source> <target>
-  command: convert <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
-  #target-ext: pdf
+  #command: python3 -m bin.image2pdf <source> <dest>
+  command: convert <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <dest>
+  #dest-ext: pdf
 image/jpeg:
   #comment: Command tested and produces pdf/a
-  #command: python3 -m bin.image2pdf <source> <target>
-  command: convert <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
-  #target-ext: pdf
+  #command: python3 -m bin.image2pdf <source> <dest>
+  command: convert <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <dest>
+  #dest-ext: pdf
 image/png:
-  command: convert <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
+  command: convert <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <dest>
 application/vnd.ms-excel:
   # Excel files are accepted by Library of Congress
-  command: cp <source> <target>
+  command: cp <source> <dest>
 application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
   # Excel files are accepted by Library of Congress
-  command: cp <source> <target>
+  command: cp <source> <dest>
 application/vnd.openxmlformats-officedocument.wordprocessingml.document:
-  command: python3 -m bin.office2pdf <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
-  target-ext: pdf
+  command: python3 -m bin.office2pdf <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <dest>
+  dest-ext: pdf
 application/msword:
-  command: python3 -m bin.office2pdf <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
-  target-ext: pdf
+  command: python3 -m bin.office2pdf <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <dest>
+  dest-ext: pdf
 application/vnd.ms-powerpoint:
-  command: python3 -m bin.office2pdf <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
-  target-ext: pdf
+  command: python3 -m bin.office2pdf <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <dest>
+  dest-ext: pdf
 application/rtf:
-  command: python3 -m bin.office2pdf <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
-  target-ext: pdf
+  command: python3 -m bin.office2pdf <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <dest>
+  dest-ext: pdf
 image/tiff:
-  command: tiff2pdf -o /tmp/file.pdf <source>  && bin/pdf2pdfa.sh /tmp/file.pdf <target>
-  target-ext: pdf
+  command: tiff2pdf -o /tmp/file.pdf <source>  && bin/pdf2pdfa.sh /tmp/file.pdf <dest>
+  dest-ext: pdf
 application/vnd.wordperfect:
-  command: python3 -m bin.unoconv2x <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <target>
-  target-ext: pdf
+  command: python3 -m bin.unoconv2x <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <dest>
+  dest-ext: pdf
 application/vnd.ms-outlook:
   # Library of Congress has no preferred format, but accepts both .msg and .pst
-  command: cp <source> <target>
+  command: cp <source> <dest>
 multipart/related:
   # Web archive format supported in Chrome
-  command: cp <source> <target>
+  command: cp <source> <dest>

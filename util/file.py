@@ -104,19 +104,19 @@ class File:
         Args:
             converter:        which converter to use
             source_path:      source file path for the file to be converted
-            dest_path: target file path for where the converted file
+            dest_path:        destination file path for where the converted file
                               should be saved
             dest_dir:         path directory where the converted result
                               should be saved
         """
-        cmd, target_ext = self._get_target_ext_and_cmd(converter)
-        if not orig_ext or (target_ext and self.ext != target_ext):
-            dest_path = dest_path + '.' + target_ext
+        cmd, dest_ext = self._get_dest_ext_and_cmd(converter)
+        if not orig_ext or (dest_ext and self.ext != dest_ext):
+            dest_path = dest_path + '.' + dest_ext
 
         cmd = cmd.replace("<source>", '"' + source_path + '"')
-        cmd = cmd.replace("<target>", '"' + dest_path + '"')
+        cmd = cmd.replace("<dest>", '"' + dest_path + '"')
         cmd = cmd.replace("<mime-type>", '"' + self.mime_type + '"')
-        cmd = cmd.replace("<target-ext>", '"' + target_ext + '"')
+        cmd = cmd.replace("<dest-ext>", '"' + dest_ext + '"')
         # Disabled because not in use, and file command doesn't have version
         # with option --mime-type
         # cmd = cmd.replace("<version>", '"' + self.version + '"')
@@ -141,22 +141,22 @@ class File:
                 self.normalized["mime_type"] = magic.from_file(dest_path, mime=True)
 
 
-    def _get_target_ext_and_cmd(self, converter: Any) -> Tuple:
+    def _get_dest_ext_and_cmd(self, converter: Any) -> Tuple:
         """
-        Extract the target extension and the conversion command
+        Extract the destination extension and the conversion command
 
         Args:
             converter: The converter to use
         Returns:
-            A Tuple containing the command and target extension
+            A Tuple containing the command and destination extension
         """
 
         cmd = converter["command"]
 
-        if 'target-ext' not in converter:
-            target_ext = self.ext
+        if 'dest-ext' not in converter:
+            dest_ext = self.ext
         else:
-            target_ext = converter['target-ext']
+            dest_ext = converter['dest-ext']
 
         # special case for subtypes. For an example see: sdo in converters.yml
         # TODO: This won't work and need rethink or scrapping
@@ -165,16 +165,16 @@ class File:
                 if sub == "comment":
                     continue
 
-                target_mime = (
+                dest_mime = (
                     self.mime_type
-                    if "target-mime" not in converter["sub-cmds"][sub]
-                    else converter["sub-cmds"][sub]["target-mime"]
+                    if "dest-mime" not in converter["sub-cmds"][sub]
+                    else converter["sub-cmds"][sub]["dest-mime"]
                 )
 
                 sub_cmd = converter["sub-cmds"][sub]["command"]
-                if target_mime == self.mime_type:
+                if dest_mime == self.mime_type:
                     cmd = sub_cmd + " && " + cmd.replace("<source>",
-                                                         "<target>")
+                                                         "<dest>")
                 # else:
                 # cmd = sub_cmd
 
