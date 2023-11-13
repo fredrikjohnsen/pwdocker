@@ -50,7 +50,8 @@ def run_shell_command(command, cwd=None, timeout=None, shell=False) -> int:
 
 def make_filelist(source_dir: str, filelist_path: str) -> None:
     os.chdir(source_dir)
-    subprocess.run('find -type f -not -path "./.*" > ' + filelist_path,
+    cmd = 'find -type f -not -path "./.*" | cut -c 3- > ' + filelist_path
+    subprocess.run( cmd,
                    stderr=subprocess.DEVNULL,
                    stdout=subprocess.DEVNULL,
                    shell=True)
