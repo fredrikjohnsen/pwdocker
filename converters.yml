@@ -57,3 +57,6 @@ application/vnd.ms-outlook:
 multipart/related:
   # Web archive format supported in Chrome
   command: cp <source> <dest>
+application/zip:
+  command: unzip <source> -d <unpack_path>
+  dest-ext: null

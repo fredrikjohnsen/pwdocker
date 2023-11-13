@@ -106,11 +106,16 @@ class StorageSqliteImpl(ConvertStorage):
 
         return cursor.fetchone()[0]
 
-    def get_all_rows(self):
+    def get_all_rows(self, unpacked_path):
+
+        if unpacked_path:
+            unpacked_path = os.path.join(unpacked_path, '')
+
         return fromdb(
             self._conn,
-            """
+            f"""
             SELECT * FROM file
+            where source_path like '{str(unpacked_path)}%'
             """,
         )
 

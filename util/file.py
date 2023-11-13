@@ -74,10 +74,6 @@ class File:
 
         self.normalized["mime_type"] = self.mime_type
 
-        # elif self.mime_type == "application/zip":
-        #    self._zip_to_norm(dest_dir, debug)
-        #    return self.normalized
-
         if self.mime_type not in converters:
             self.normalized["result"] = Result.NOT_SUPPORTED
             self.normalized["dest_path"] = None
@@ -110,13 +106,17 @@ class File:
                               should be saved
         """
         cmd, dest_ext = self._get_dest_ext_and_cmd(converter)
-        if not orig_ext or (dest_ext and self.ext != dest_ext):
+        if dest_ext and (self.ext != dest_ext or not orig_ext):
             dest_path = dest_path + '.' + dest_ext
+        if '<unpack_path>' in cmd:
+            Path(Path(dest_path)).mkdir(parents=True, exist_ok=True)
 
         cmd = cmd.replace("<source>", '"' + source_path + '"')
         cmd = cmd.replace("<dest>", '"' + dest_path + '"')
         cmd = cmd.replace("<mime-type>", '"' + self.mime_type + '"')
-        cmd = cmd.replace("<dest-ext>", '"' + dest_ext + '"')
+        cmd = cmd.replace("<dest-ext>", '"' + str(dest_ext) + '"')
+        unpack_path = os.path.splitext(source_path)[0]
+        cmd = cmd.replace("<unpack_path>", '"' + unpack_path + '"')
         # Disabled because not in use, and file command doesn't have version
         # with option --mime-type
         # cmd = cmd.replace("<version>", '"' + self.version + '"')
@@ -137,6 +137,8 @@ class File:
             ext = '.' + dest_path.split('.')[-1]
             if ext in mimetypes.types_map:
                 self.normalized["mime_type"] = mimetypes.types_map[ext]
+            elif os.path.isdir(dest_path):
+                self.normalized["mime_type"] = 'inode/directory'
             else:
                 self.normalized["mime_type"] = magic.from_file(dest_path, mime=True)
 
@@ -178,49 +180,5 @@ class File:
                 # else:
                 # cmd = sub_cmd
 
-        return cmd, target_ext
+        return cmd, dest_ext
 
-    def _zip_to_norm(self, dest_dir: str, debug: bool) -> None:
-        """
-        Extract the zipped files, convert them and zip them again.
-
-        Args:
-            dest_dir: Directory for the resulting zip
-        """
-
-        def zip_dir(norm_dir_path_param: str, norm_base_path_param: str):
-            return shutil.make_archive(base_name=norm_dir_path_param,
-                                       format="zip",
-                                       root_dir=norm_base_path_param,
-                                       base_dir=".")
-
-        def rm_tmp(rm_paths: List[str]):
-            for path in rm_paths:
-                delete_file_or_dir(path)
-
-        path_to_use = self.path if self.ext != "zip" else self.relative_root
-
-        working_dir = os.getcwd()
-        norm_base_path = os.path.join(dest_dir, path_to_use)
-        norm_zip_path = norm_base_path + "_zip"
-        norm_dir_path = norm_zip_path + "_norm"
-        paths = [norm_dir_path + ".tsv", norm_dir_path, norm_zip_path]
-
-        extract_nested_zip(self.path, norm_zip_path)
-
-        result = self.convert_folder(norm_zip_path, norm_dir_path, self.debug, self.file_storage, True, True)
-
-        if "successfully" in result:
-            try:
-                norm_zip = zip_dir(norm_base_path, norm_dir_path)
-                self.normalized["result"] = Result.SUCCESSFUL
-                self.normalized["dest_path"] = norm_zip
-            except Exception as e:
-                self.normalized["result"] = Result.FAILED
-                self.normalized["dest_path"] = None
-        else:
-            self.normalized["result"] = Result.FAILED
-            self.normalized["dest_path"] = None
-
-        os.chdir(working_dir)
-        rm_tmp(paths)
