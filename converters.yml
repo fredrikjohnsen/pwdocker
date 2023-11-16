@@ -4,7 +4,7 @@ application/pdf:
 application/xml:
   command: python3 -m bin.text2utf8 <source> <dest>
 text/html:
-  command: python3 -m bin.html2pdf <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <dest>
+  command: python3 -m bin.html2pdf <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
 application/xhtml+xml:
   comment: Command tested and produces pdf/a
@@ -18,15 +18,15 @@ text/plain:
 image/gif:
   #comment: Command tested and produces pdf/a
   #command: python3 -m bin.image2pdf <source> <dest>
-  command: convert <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <dest>
+  command: convert <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
   #dest-ext: pdf
 image/jpeg:
   #comment: Command tested and produces pdf/a
   #command: python3 -m bin.image2pdf <source> <dest>
-  command: convert <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <dest>
+  command: convert <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
   #dest-ext: pdf
 image/png:
-  command: convert <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <dest>
+  command: convert <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
 application/vnd.ms-excel:
   # Excel files are accepted by Library of Congress
   command: cp <source> <dest>
@@ -34,22 +34,22 @@ application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
   # Excel files are accepted by Library of Congress
   command: cp <source> <dest>
 application/vnd.openxmlformats-officedocument.wordprocessingml.document:
-  command: python3 -m bin.office2pdf <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <dest>
+  command: python3 -m bin.office2pdf <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
 application/msword:
-  command: python3 -m bin.office2pdf <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <dest>
+  command: python3 -m bin.office2pdf <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
 application/vnd.ms-powerpoint:
-  command: python3 -m bin.office2pdf <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <dest>
+  command: python3 -m bin.office2pdf <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
 application/rtf:
-  command: python3 -m bin.office2pdf <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <dest>
+  command: python3 -m bin.office2pdf <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
 image/tiff:
-  command: tiff2pdf -o /tmp/file.pdf <source>  && bin/pdf2pdfa.sh /tmp/file.pdf <dest>
+  command: tiff2pdf -o <temp> <source>  && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
 application/vnd.wordperfect:
-  command: python3 -m bin.unoconv2x <source> /tmp/file.pdf && bin/pdf2pdfa.sh /tmp/file.pdf <dest>
+  command: python3 -m bin.unoconv2x <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
 application/vnd.ms-outlook:
   # Library of Congress has no preferred format, but accepts both .msg and .pst

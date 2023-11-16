@@ -68,6 +68,9 @@ def convert(
 
     Path(dest).mkdir(parents=True, exist_ok=True)
 
+    if os.path.isdir('/tmp/convert'):
+        shutil.rmtree('/tmp/convert')
+
     first_run = False
 
     if db_path and os.path.dirname(db_path) == '':
@@ -191,7 +194,7 @@ def convert_file(
     source_file = File(row, pwconv_path, file_storage, convert_folder)
     moved_to_dest_path = Path(dest_dir, row['source_path'])
     Path(moved_to_dest_path.parent).mkdir(parents=True, exist_ok=True)
-    normalized = source_file.convert(source_dir, dest_dir, orig_ext, debug)
+    normalized, temp_path = source_file.convert(source_dir, dest_dir, orig_ext, debug)
     row['result'] = normalized['result']
     row['source_mime_type'] = source_file.mime_type
     row['format'] = source_file.format
@@ -200,6 +203,9 @@ def convert_file(
     row['puid'] = source_file.puid
 
     dir = os.path.join(source_dir, source_file.relative_root)
+
+    if os.path.isfile(temp_path):
+        os.remove(temp_path)
 
     if normalized["dest_path"] and normalized['mime_type'] != 'inode/directory':
         if str(normalized["dest_path"]) != str(moved_to_dest_path):

@@ -51,10 +51,13 @@ class File:
         """Convert file to archive format"""
 
         source_path = os.path.join(source_dir, self.path)
+
         if orig_ext:
             dest_path = os.path.join(dest_dir, self.path)
+            temp_path = os.path.join('/tmp/convert', self.path)
         else:
             dest_path = os.path.join(dest_dir, self.relative_root)
+            temp_path = os.path.join('/tmp/convert', self.relative_root)
         dest_path = os.path.abspath(dest_path)
 
         if self.mime_type in ['', 'None', None]:
@@ -77,20 +80,20 @@ class File:
         if self.mime_type not in converters:
             self.normalized["result"] = Result.NOT_SUPPORTED
             self.normalized["dest_path"] = None
-            return self.normalized
+            return self.normalized, temp_path
 
         converter = converters[self.mime_type]
-        self._run_conversion_command(converter, source_path, dest_path,
-                                     dest_dir, orig_ext, debug)
+        temp_path = self._run_conversion_command(converter, source_path, dest_path,
+                                                 temp_path, orig_ext, debug)
 
-        return self.normalized
+        return self.normalized, temp_path
 
     def _run_conversion_command(
             self,
             converter: Any,
             source_path: str,
             dest_path: str,
-            dest_dir: str,
+            temp_path: str,
             orig_ext: bool,
             debug: bool
     ) -> tuple[int, list, list]:
@@ -102,17 +105,20 @@ class File:
             source_path:      source file path for the file to be converted
             dest_path:        destination file path for where the converted file
                               should be saved
-            dest_dir:         path directory where the converted result
-                              should be saved
         """
         cmd, dest_ext = self._get_dest_ext_and_cmd(converter)
         if dest_ext and (self.ext != dest_ext or not orig_ext):
             dest_path = dest_path + '.' + dest_ext
+            temp_path = temp_path + '.' + dest_ext
+
+        if '<temp>' in cmd:
+            Path(Path(temp_path).parent).mkdir(parents=True, exist_ok=True)
         if '<unpack_path>' in cmd:
             Path(Path(dest_path)).mkdir(parents=True, exist_ok=True)
 
         cmd = cmd.replace("<source>", '"' + source_path + '"')
         cmd = cmd.replace("<dest>", '"' + dest_path + '"')
+        cmd = cmd.replace("<temp>", '"' + temp_path + '"')
         cmd = cmd.replace("<mime-type>", '"' + self.mime_type + '"')
         cmd = cmd.replace("<dest-ext>", '"' + str(dest_ext) + '"')
         unpack_path = os.path.splitext(source_path)[0]
@@ -141,6 +147,8 @@ class File:
                 self.normalized["mime_type"] = 'inode/directory'
             else:
                 self.normalized["mime_type"] = magic.from_file(dest_path, mime=True)
+
+        return temp_path
 
 
     def _get_dest_ext_and_cmd(self, converter: Any) -> Tuple:
