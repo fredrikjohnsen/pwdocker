@@ -113,7 +113,7 @@ class File:
 
         if '<temp>' in cmd:
             Path(Path(temp_path).parent).mkdir(parents=True, exist_ok=True)
-        if '<unpack_path>' in cmd:
+        if '<unpack-path>' in cmd:
             Path(Path(dest_path)).mkdir(parents=True, exist_ok=True)
 
         cmd = cmd.replace("<source>", '"' + source_path + '"')
@@ -122,7 +122,7 @@ class File:
         cmd = cmd.replace("<mime-type>", '"' + self.mime_type + '"')
         cmd = cmd.replace("<dest-ext>", '"' + str(dest_ext) + '"')
         unpack_path = os.path.splitext(source_path)[0]
-        cmd = cmd.replace("<unpack_path>", '"' + unpack_path + '"')
+        cmd = cmd.replace("<unpack-path>", '"' + unpack_path + '"')
         # Disabled because not in use, and file command doesn't have version
         # with option --mime-type
         # cmd = cmd.replace("<version>", '"' + self.version + '"')

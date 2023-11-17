@@ -61,5 +61,5 @@ multipart/related:
   # Web archive format supported in Chrome
   command: cp <source> <dest>
 application/zip:
-  command: unzip <source> -d <unpack_path>
+  command: unzip <source> -d <unpack-path>
   dest-ext: null
