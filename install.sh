@@ -116,6 +116,14 @@ if [ ! -f $EMAILCONVERTPATH/emailconverter.jar ]; then
     recho $?;  
 fi
 
+cecho "CYAN" "Installing ODAFileConverter..";
+if [ ! -f /home/$OWNER/bin/ODAFileConverter ]; then
+    sudo -H -u $OWNER bash -c "curl -o /home/$OWNER/bin/ODAFileConverter -L \
+    https://download.opendesign.com/guestfiles/Demo/ODAFileConverter_QT5_lnxX64_8.3dll_24.10.AppImage"
+    chmod a+x /home/$OWNER/bin/ODAFileConverter
+    recho $?
+fi
+
 cecho "CYAN" "Fix fuse permissions..";
 sed -i -e 's/#user_allow_other/user_allow_other/' /etc/fuse.conf;
 recho $?;
@@ -135,6 +143,6 @@ fi
 
 cecho "CYAN" "Install or update python dependencies.."
 sudo -H -u $OWNER bash -c "pip3 install petl unoserver ruamel.yaml typer[all] cchardet pdfkit python-magic ocrmypdf \
-psutil --upgrade;";
+psutil ezdxf[draw] xvfb --upgrade;";
 recho $?
 
