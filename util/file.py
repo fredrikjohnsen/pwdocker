@@ -41,9 +41,10 @@ class File:
         self.relative_root = split_ext[0]
         self.ext = split_ext[1][1:]
         self.normalized = {
-            "dest_path": Optional[str],
-            "result": Optional[str],
-            "mime_type": Optional[str]
+            'dest_path': Optional[str],
+            'result': Optional[str],
+            'mime_type': Optional[str],
+            'moved_to_target': 0
         }
 
     def convert(self, source_dir: str, dest_dir: str, orig_ext: bool,
@@ -85,6 +86,13 @@ class File:
         converter = converters[self.mime_type]
         temp_path = self._run_conversion_command(converter, source_path, dest_path,
                                                  temp_path, orig_ext, debug)
+
+        if converter.get('keep-original', False):
+            try:
+                shutil.copyfile(Path(source_dir, self.path), Path(dest_dir, self.path))
+                self.normalized['moved_to_target'] = 1
+            except Exception as e:
+                print(e)
 
         return self.normalized, temp_path
 

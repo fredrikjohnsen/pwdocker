@@ -210,11 +210,14 @@ def convert_file(
         os.remove(temp_path)
 
     if normalized["dest_path"] and normalized['mime_type'] != 'inode/directory':
-        if str(normalized["dest_path"]) != str(moved_to_dest_path):
+        if (
+            str(normalized["dest_path"]) != str(moved_to_dest_path) and
+            normalized['moved_to_target'] == 0
+        ):
             if moved_to_dest_path.is_file():
                 moved_to_dest_path.unlink()
 
-        row["moved_to_target"] = 0
+        row['moved_to_target'] = normalized['moved_to_target']
         row["dest_path"] = relpath(normalized["dest_path"], start=dest_dir)
         row["dest_mime_type"] = normalized['mime_type']
     elif os.path.exists(dir):
