@@ -142,7 +142,7 @@ class StorageSqliteImpl(ConvertStorage):
     def get_unconverted_rows(self, mime_type: str, result: str, limit: int):
         select = """
             SELECT * FROM file
-            WHERE  result IS NULL OR result NOT IN(?)
+            WHERE  (result IS NULL OR result NOT IN(?))
         """
         params = [Result.SUCCESSFUL]
 

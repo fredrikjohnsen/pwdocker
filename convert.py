@@ -108,12 +108,13 @@ def convert_folder(
     file_storage: ConvertStorage,
     unpacked_path: str,
     first_run: bool,
-    limit: int
+    limit: int = None
 ) -> tuple[str, str]:
     """Convert all files in folder"""
 
     t0 = time.time()
-    filelist_path = os.path.join(dest_dir, unpacked_path + '-filelist.txt')
+    filelist_dir = os.path.join(dest_dir, unpacked_path)
+    filelist_path = filelist_dir.rstrip('/') + '-filelist.txt'
     is_new_batch = os.path.isfile(filelist_path)
     if first_run or is_new_batch:
         if not is_new_batch:
@@ -133,7 +134,7 @@ def convert_folder(
         console.print(f"File count: {str(files_count)}", style="red")
         if input(f"Files listed in {file_storage.path} doesn't match "
                  "files on disk. Continue? [y/n] ") != 'y':
-            return "User terminated", "bold red"
+            return 0, 0, False
 
     if not unpacked_path:
         console.print("Converting files..", style="bold cyan")
@@ -220,7 +221,7 @@ def convert_file(
         row['moved_to_target'] = normalized['moved_to_target']
         row["dest_path"] = relpath(normalized["dest_path"], start=dest_dir)
         row["dest_mime_type"] = normalized['mime_type']
-    elif os.path.exists(dir):
+    elif os.path.isdir(dir):
         # if file has been extracted to directory
         row['result'] = Result.SUCCESSFUL
         row['dest_path'] = source_file.relative_root
@@ -272,8 +273,6 @@ def write_id_file_to_storage(tsv_source_path: str, source_dir: str,
         strict=False,
     )
     table = etl.select(table, lambda rec: rec.source_path != "")
-    # Remove listing of files in zip
-    table = etl.select(table, lambda rec: "#" not in rec.source_path)
     table = add_fields(table, "source_mime_type", "version", "dest_path", "result",
                        "dest_mime_type", "puid")
     # Remove Siegfried generated columns

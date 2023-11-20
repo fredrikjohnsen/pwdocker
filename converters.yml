@@ -24,7 +24,7 @@ image/jpeg:
   #comment: Command tested and produces pdf/a
   #command: python3 -m bin.image2pdf <source> <dest>
   command: convert <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
-  #dest-ext: pdf
+  dest-ext: pdf
 image/png:
   command: convert <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
 image/vnd.dwg:
