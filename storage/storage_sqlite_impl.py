@@ -106,29 +106,40 @@ class StorageSqliteImpl(ConvertStorage):
 
         return cursor.fetchone()[0]
 
-    def get_all_rows(self, unpacked_path):
+    def get_all_rows(self, unpacked_path, limit):
 
         if unpacked_path:
             unpacked_path = os.path.join(unpacked_path, '')
 
+        sql= f"""
+        SELECT * FROM file
+        where source_path like '{str(unpacked_path)}%'
+        """
+
+        if limit:
+            sql += f"\nlimit {limit}"
+
         return fromdb(
             self._conn,
-            f"""
-            SELECT * FROM file
-            where source_path like '{str(unpacked_path)}%'
-            """,
+            sql,
         )
 
-    def get_new_rows(self):
+    def get_new_rows(self, limit):
+
+        sql = """
+        SELECT * FROM file
+        WHERE  result IS NULL
+        """
+
+        if limit:
+            sql += f"\nlimit {limit}"
+        
         return fromdb(
             self._conn,
-            """
-            SELECT * FROM file
-            WHERE  result IS NULL
-            """,
+            sql,
         )
 
-    def get_unconverted_rows(self, mime_type: str = None, result: str = None):
+    def get_unconverted_rows(self, mime_type: str, result: str, limit: int):
         select = """
             SELECT * FROM file
             WHERE  result IS NULL OR result NOT IN(?)
@@ -142,6 +153,9 @@ class StorageSqliteImpl(ConvertStorage):
         if result:
             select += " AND result = ?"
             params.append(result)
+
+        if limit:
+            select += f" limit {limit}"
 
         return fromdb(self._conn, select, params)
 

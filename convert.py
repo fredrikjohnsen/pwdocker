@@ -58,7 +58,8 @@ def convert(
     debug: bool = cfg['debug'],
     mime_type: str = None,
     result: str = None,
-    db_path: str = None
+    db_path: str = None,
+    limit: int = None
 ) -> None:
     """
     Convert all files in SOURCE folder
@@ -85,7 +86,7 @@ def convert(
         conv_before, conv_now, total = \
             convert_folder(source, dest, debug, orig_ext,
                            mime_type, result, file_storage, '',
-                           first_run)
+                           first_run, limit)
 
         if total is False:
             msg = "User terminated"
@@ -106,7 +107,8 @@ def convert_folder(
     result: str,
     file_storage: ConvertStorage,
     unpacked_path: str,
-    first_run: bool
+    first_run: bool,
+    limit: int
 ) -> tuple[str, str]:
     """Convert all files in folder"""
 
@@ -138,12 +140,12 @@ def convert_folder(
 
     if first_run:
         files_converted_count = 0
-        table = file_storage.get_all_rows(unpacked_path)
+        table = file_storage.get_all_rows(unpacked_path, limit)
     elif is_new_batch:
-        table = file_storage.get_new_rows()
+        table = file_storage.get_new_rows(limit)
         files_converted_count = 0
     else:
-        table = file_storage.get_unconverted_rows(mime_type, result)
+        table = file_storage.get_unconverted_rows(mime_type, result, limit)
         files_converted_count = written_row_count - etl.nrows(table)
         if files_converted_count > 0:
             console.print(f"({files_converted_count}/{written_row_count}) files have already "
