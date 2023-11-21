@@ -31,6 +31,7 @@ image/vnd.dwg:
   command: python3 -m bin.dwg2pdf <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
   keep-original: true
+  timeout: 240
 application/vnd.ms-excel:
   # Excel files are accepted by Library of Congress
   command: cp <source> <dest>

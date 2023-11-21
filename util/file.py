@@ -134,9 +134,10 @@ class File:
         # Disabled because not in use, and file command doesn't have version
         # with option --mime-type
         # cmd = cmd.replace("<version>", '"' + self.version + '"')
+        timeout = converter['timeout'] if 'timeout' in converter else cfg['timeout']
 
         returncode = run_shell_command(cmd, cwd=self.pwconv_path, shell=True,
-                                       timeout=cfg['timeout'])
+                                       timeout=timeout)
 
         if returncode or not os.path.exists(dest_path):
             self.normalized["result"] = Result.FAILED
