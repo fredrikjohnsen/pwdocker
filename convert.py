@@ -132,6 +132,19 @@ def convert_folder(
     if not unpacked_path and files_count != total_row_count:
         console.print(f"Row count: {str(total_row_count)}", style="red")
         console.print(f"File count: {str(files_count)}", style="red")
+        db_files = []
+        table = file_storage.get_all_rows('', None)
+        for row in etl.dicts(table):
+            db_files.append(row['source_path'])
+        print("Following files don't exist in database:")
+        for r, d, files in os.walk(source_dir):
+            for file_ in files:
+                path = Path(r, file_)
+                commonprefix = os.path.commonprefix([source_dir, path])
+                relpath = os.path.relpath(path, commonprefix)
+                if relpath not in db_files:
+                    print('- ' + relpath)
+
         if input(f"Files listed in {file_storage.path} doesn't match "
                  "files on disk. Continue? [y/n] ") != 'y':
             return 0, 0, False
