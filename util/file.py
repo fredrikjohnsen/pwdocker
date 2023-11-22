@@ -136,11 +136,14 @@ class File:
         # cmd = cmd.replace("<version>", '"' + self.version + '"')
         timeout = converter['timeout'] if 'timeout' in converter else cfg['timeout']
 
-        returncode = run_shell_command(cmd, cwd=self.pwconv_path, shell=True,
+        returncode, out, err = run_shell_command(cmd, cwd=self.pwconv_path, shell=True,
                                        timeout=timeout)
 
         if returncode or not os.path.exists(dest_path):
-            self.normalized["result"] = Result.FAILED
+            if 'file requires a password for access' in out:
+                self.normalized['result'] = Result.PASSWORD_PROTECTED
+            else:
+                self.normalized["result"] = Result.FAILED
             self.normalized["dest_path"] = None
             self.normalized["mime_type"] = None #TODO Sjekk
 

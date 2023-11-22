@@ -32,7 +32,7 @@ def office2pdf(source_file: str, target_file: str):
         file.write('\n'.join(docbuilder))
 
     command = ['documentbuilder', docbuilder_file]
-    result = run_shell_command(command)
+    result, out, err = run_shell_command(command)
 
     if result:
         raise Exception("Conversion failed")

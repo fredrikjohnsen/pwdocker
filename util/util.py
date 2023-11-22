@@ -8,7 +8,7 @@ import zipfile
 from config import cfg
 
 
-def run_shell_command(command, cwd=None, timeout=None, shell=False) -> int:
+def run_shell_command(command, cwd=None, timeout=None, shell=False) -> tuple[int, str, str]:
     """
     Run the given command as a subprocess
 
@@ -38,14 +38,15 @@ def run_shell_command(command, cwd=None, timeout=None, shell=False) -> int:
             start_new_session=True,
         )
         proc.wait(timeout=timeout)
+        out, err = proc.communicate()
     except subprocess.TimeoutExpired:
         os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
-        return 1
+        return 1, 'timeout', None
     except Exception as e:
         print(command)
         print(e)
 
-    return proc.returncode
+    return proc.returncode, out, err
 
 
 def make_filelist(source_dir: str, filelist_path: str) -> None:
