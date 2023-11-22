@@ -34,7 +34,7 @@ application/xhtml+xml:
   command: python3 -m bin.xhtml2pdf <source> <dest>
   dest-ext: pdf
 application/zip:
-  command: unzip <source> -d <unpack-path>
+  command: unzip <source> -d <unpack-path> -x __MACOSX/* .DS_Store
   dest-ext: null
 image/gif:
   #comment: Command tested and produces pdf/a
