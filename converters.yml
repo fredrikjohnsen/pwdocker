@@ -1,25 +1,44 @@
+application/msword:
+  command: python3 -m bin.office2pdf <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
+  dest-ext: pdf
+application/rtf:
+  command: python3 -m bin.office2pdf <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
+  dest-ext: pdf
 application/pdf:
   command: bin/pdf2pdfa.sh <source> <dest>
   dest-ext: pdf
+application/vnd.ms-excel:
+  # Excel files are accepted by Library of Congress
+  command: cp <source> <dest>
+application/vnd.ms-outlook:
+  # Library of Congress has no preferred format, but accepts both .msg and .pst
+  command: cp <source> <dest>
+application/vnd.ms-powerpoint:
+  command: python3 -m bin.office2pdf <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
+  dest-ext: pdf
+application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+  # Excel files are accepted by Library of Congress
+  command: cp <source> <dest>
+application/vnd.openxmlformats-officedocument.wordprocessingml.document:
+  command: python3 -m bin.office2pdf <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
+  dest-ext: pdf
+application/vnd.wordperfect:
+  command: python3 -m bin.unoconv2x <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
+  dest-ext: pdf
 application/xml:
   command: python3 -m bin.text2utf8 <source> <dest>
-text/html:
-  command: python3 -m bin.html2pdf <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
-  dest-ext: pdf
 application/xhtml+xml:
   comment: Command tested and produces pdf/a
   command: python3 -m bin.xhtml2pdf <source> <dest>
   dest-ext: pdf
-text/markdown:
-  command: python3 -m bin.text2utf8 <source> <dest>
-  dest-ext: md
-text/plain:
-  command: python3 -m bin.text2utf8 <source> <dest>
+application/zip:
+  command: unzip <source> -d <unpack-path>
+  dest-ext: null
 image/gif:
   #comment: Command tested and produces pdf/a
   #command: python3 -m bin.image2pdf <source> <dest>
   command: convert <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
-  #dest-ext: pdf
+  dest-ext: pdf
 image/jpeg:
   #comment: Command tested and produces pdf/a
   #command: python3 -m bin.image2pdf <source> <dest>
@@ -27,41 +46,23 @@ image/jpeg:
   dest-ext: pdf
 image/png:
   command: convert <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
+  dest-ext: pdf
+image/tiff:
+  command: tiff2pdf -o <temp> <source>  && bin/pdf2pdfa.sh <temp> <dest>
+  dest-ext: pdf
 image/vnd.dwg:
   command: python3 -m bin.dwg2pdf <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
   keep-original: true
   timeout: 240
-application/vnd.ms-excel:
-  # Excel files are accepted by Library of Congress
-  command: cp <source> <dest>
-application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
-  # Excel files are accepted by Library of Congress
-  command: cp <source> <dest>
-application/vnd.openxmlformats-officedocument.wordprocessingml.document:
-  command: python3 -m bin.office2pdf <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
-  dest-ext: pdf
-application/msword:
-  command: python3 -m bin.office2pdf <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
-  dest-ext: pdf
-application/vnd.ms-powerpoint:
-  command: python3 -m bin.office2pdf <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
-  dest-ext: pdf
-application/rtf:
-  command: python3 -m bin.office2pdf <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
-  dest-ext: pdf
-image/tiff:
-  command: tiff2pdf -o <temp> <source>  && bin/pdf2pdfa.sh <temp> <dest>
-  dest-ext: pdf
-application/vnd.wordperfect:
-  command: python3 -m bin.unoconv2x <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
-  dest-ext: pdf
-application/vnd.ms-outlook:
-  # Library of Congress has no preferred format, but accepts both .msg and .pst
-  command: cp <source> <dest>
 multipart/related:
   # Web archive format supported in Chrome
   command: cp <source> <dest>
-application/zip:
-  command: unzip <source> -d <unpack-path>
-  dest-ext: null
+text/html:
+  command: python3 -m bin.html2pdf <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
+  dest-ext: pdf
+text/markdown:
+  command: python3 -m bin.text2utf8 <source> <dest>
+  dest-ext: md
+text/plain:
+  command: python3 -m bin.text2utf8 <source> <dest>
