@@ -110,6 +110,7 @@ class StorageSqliteImpl(ConvertStorage):
 
         if unpacked_path:
             unpacked_path = os.path.join(unpacked_path, '')
+            unpacked_path = unpacked_path.replace("'", "''")
 
         sql= f"""
         SELECT * FROM file
