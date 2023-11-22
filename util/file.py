@@ -142,6 +142,8 @@ class File:
         if returncode or not os.path.exists(dest_path):
             if 'file requires a password for access' in out:
                 self.normalized['result'] = Result.PASSWORD_PROTECTED
+            elif out == 'timeout':
+                self.normalized['result'] = Result.TIMEOUT
             else:
                 self.normalized["result"] = Result.FAILED
             self.normalized["dest_path"] = None

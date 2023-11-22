@@ -37,8 +37,7 @@ def run_shell_command(command, cwd=None, timeout=None, shell=False) -> tuple[int
             universal_newlines=True,
             start_new_session=True,
         )
-        proc.wait(timeout=timeout)
-        out, err = proc.communicate()
+        out, err = proc.communicate(timeout=timeout)
     except subprocess.TimeoutExpired:
         os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
         return 1, 'timeout', None
