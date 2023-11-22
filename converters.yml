@@ -18,6 +18,9 @@ application/vnd.ms-outlook:
 application/vnd.ms-powerpoint:
   command: python3 -m bin.office2pdf <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
+application/vnd.openxmlformats-officedocument.presentationml.presentation:
+  command: python3 -m bin.unoconv2x <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
+  dest-ext: pdf
 application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
   # Excel files are accepted by Library of Congress
   command: cp <source> <dest>
