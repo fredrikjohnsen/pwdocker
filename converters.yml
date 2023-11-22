@@ -1,3 +1,5 @@
+audio/mpeg:
+  command: cp <source> <dest>
 application/msword:
   command: python3 -m bin.office2pdf <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
