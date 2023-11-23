@@ -140,12 +140,16 @@ class StorageSqliteImpl(ConvertStorage):
             sql,
         )
 
-    def get_unconverted_rows(self, mime_type: str, result: str, limit: int):
-        select = """
-            SELECT * FROM file
-            WHERE  (result IS NULL OR result NOT IN(?))
-        """
-        params = [Result.SUCCESSFUL]
+    def get_rows(self, mime_type: str, result: str, limit: int, reconvert: bool):
+        params = []
+        if reconvert:
+            select = "SELECT * from file WHERE result IS NOT NULL"
+        else:
+            select = """
+                SELECT * FROM file
+                WHERE  (result IS NULL OR result NOT IN(?))
+            """
+            params.append(Result.SUCCESSFUL)
 
         if mime_type:
             select += " AND source_mime_type = ?"

@@ -59,7 +59,8 @@ def convert(
     mime_type: str = None,
     result: str = None,
     db_path: str = None,
-    limit: int = None
+    limit: int = None,
+    reconvert: bool = False
 ) -> None:
     """
     Convert all files in SOURCE folder
@@ -86,7 +87,7 @@ def convert(
         conv_before, conv_now, total = \
             convert_folder(source, dest, debug, orig_ext,
                            mime_type, result, file_storage, '',
-                           first_run, limit)
+                           first_run, limit, reconvert)
 
         if total is False:
             msg = "User terminated"
@@ -108,7 +109,8 @@ def convert_folder(
     file_storage: ConvertStorage,
     unpacked_path: str,
     first_run: bool,
-    limit: int = None
+    limit: int = None,
+    reconvert: bool = False
 ) -> tuple[str, str]:
     """Convert all files in folder"""
 
@@ -159,7 +161,7 @@ def convert_folder(
         table = file_storage.get_new_rows(limit)
         files_converted_count = 0
     else:
-        table = file_storage.get_unconverted_rows(mime_type, result, limit)
+        table = file_storage.get_rows(mime_type, result, limit, reconvert)
         files_converted_count = written_row_count - etl.nrows(table)
         if files_converted_count > 0:
             console.print(f"({files_converted_count}/{written_row_count}) files have already "
@@ -180,6 +182,9 @@ def convert_folder(
         table.row_count = 0
         for row in etl.dicts(table):
             table.row_count += 1
+            if reconvert:
+                Path(dest_dir, row['dest_path']).unlink()
+
             file_count = convert_file(file_count, file_storage, row, source_dir,
                                       table, dest_dir, debug, orig_ext)
 
