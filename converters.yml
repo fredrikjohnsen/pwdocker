@@ -42,6 +42,9 @@ application/xhtml+xml:
 application/zip:
   command: unzip <source> -d <unpack-path> -x __MACOSX/* .DS_Store Thumbs.db
   dest-ext: null
+image/bmp:
+  command: convert <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
+  dest-ext: pdf
 image/gif:
   #comment: Command tested and produces pdf/a
   #command: python3 -m bin.image2pdf <source> <dest>
