@@ -182,25 +182,10 @@ class File:
         else:
             dest_ext = converter['dest-ext']
 
-        # special case for subtypes. For an example see: sdo in converters.yml
-        # TODO: This won't work and need rethink or scrapping
-        if "sub-cmds" in converter.keys():
-            for sub in converter["sub-cmds"]:
-                if sub == "comment":
-                    continue
-
-                dest_mime = (
-                    self.mime_type
-                    if "dest-mime" not in converter["sub-cmds"][sub]
-                    else converter["sub-cmds"][sub]["dest-mime"]
-                )
-
-                sub_cmd = converter["sub-cmds"][sub]["command"]
-                if dest_mime == self.mime_type:
-                    cmd = sub_cmd + " && " + cmd.replace("<source>",
-                                                         "<dest>")
-                # else:
-                # cmd = sub_cmd
+        if ('source-ext' in converter and self.ext in converter['source-ext']):
+            cmd = converter['source-ext'][self.ext]['command']
+            if 'dest-ext' in converter['source-ext'][self.ext]:
+                dest_ext = converter['source-ext'][self.ext]['dest-ext']
 
         return cmd, dest_ext
 
