@@ -37,7 +37,7 @@ application/vnd.wordperfect:
   command: python3 -m bin.unoconv2x <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
 application/xml:
-  command: python3 -m bin.text2utf8 <source> <dest>
+  command: cp <source> <dest>
 application/xhtml+xml:
   comment: Command tested and produces pdf/a
   command: python3 -m bin.xhtml2pdf <source> <dest>
@@ -80,3 +80,5 @@ text/markdown:
   dest-ext: md
 text/plain:
   command: python3 -m bin.text2utf8 <source> <dest>
+text/xml:
+  command: cp <source> <dest>
