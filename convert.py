@@ -94,7 +94,7 @@ def convert(
             color = "bold red"
         else:
             # check conversion result
-            msg, color = get_conversion_result(conv_before, total, conv_now)
+            msg, color = get_conversion_result(conv_before, conv_now, total)
 
         console.print(msg, style=color)
 
@@ -168,7 +168,7 @@ def convert_folder(
                           "been converted", style="bold cyan")
         # print the files in this directory that have already been converted
         if etl.nrows(table) == 0:
-            return "All files converted previously.", "bold cyan"
+            return files_converted_count, 0, written_row_count
 
     file_count = etl.nrows(table)
 
@@ -320,6 +320,8 @@ def write_id_file_to_storage(tsv_source_path: str, source_dir: str,
 
 def get_conversion_result(before: int, to_convert: int,
                           total: int) -> tuple[str, str]:
+    if before == total:
+        return "All files converted previously.", "bold cyan"
     if total - before == to_convert:
         return "All files converted successfully.", "bold green"
     else:
