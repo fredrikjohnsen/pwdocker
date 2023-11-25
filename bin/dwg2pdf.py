@@ -16,8 +16,6 @@ def dwg2pdf(src_path: str, dest_path: str, dark_bg: bool=False):
 
     doc = ezdxf.readfile(tmp_path)
     msp = doc.modelspace()
-    backend = pymupdf.PyMuPdfBackend()
-    Frontend(RenderContext(doc), backend).draw_layout(msp)
 
     # 1. create the render context
     context = RenderContext(doc)
