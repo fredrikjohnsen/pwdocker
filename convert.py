@@ -114,7 +114,6 @@ def convert_folder(
 ) -> tuple[str, str]:
     """Convert all files in folder"""
 
-    t0 = time.time()
     filelist_dir = os.path.join(dest_dir, unpacked_path)
     filelist_path = filelist_dir.rstrip('/') + '-filelist.txt'
     is_new_batch = os.path.isfile(filelist_path)
@@ -177,6 +176,7 @@ def convert_folder(
         return 0, 0, False
 
     # run conversion:
+    t0 = time.time()
     # unpacked files are added to and converted in main loop
     if not unpacked_path:
         table.row_count = 0
