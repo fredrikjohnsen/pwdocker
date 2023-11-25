@@ -223,7 +223,7 @@ def convert_file(
     row['version'] = source_file.version
     row['puid'] = source_file.puid
 
-    dir = os.path.join(source_dir, source_file.relative_root)
+    dir = os.path.join(source_dir, source_file.parent, source_file.stem)
 
     if os.path.isfile(temp_path):
         os.remove(temp_path)

@@ -36,10 +36,9 @@ class File:
         self.version = row["version"]
         self.file_size = row["source_file_size"]
         self.puid = row['puid']
-        split_ext = os.path.splitext(self.path)
-        # relative path without extension
-        self.relative_root = split_ext[0]
-        self.ext = split_ext[1][1:]
+        self.parent = Path(self.path).parent
+        self.stem = Path(self.path).stem
+        self.ext = Path(self.path).suffix
         self.normalized = {
             'dest_path': Optional[str],
             'result': Optional[str],
@@ -52,13 +51,8 @@ class File:
         """Convert file to archive format"""
 
         source_path = os.path.join(source_dir, self.path)
-
-        if orig_ext:
-            dest_path = os.path.join(dest_dir, self.path)
-            temp_path = os.path.join('/tmp/convert', self.path)
-        else:
-            dest_path = os.path.join(dest_dir, self.relative_root)
-            temp_path = os.path.join('/tmp/convert', self.relative_root)
+        dest_path = os.path.join(dest_dir, self.parent, self.stem)
+        temp_path = os.path.join('/tmp/convert', self.parent, self.stem)
         dest_path = os.path.abspath(dest_path)
 
         if self.mime_type in ['', 'None', None]:
@@ -84,8 +78,9 @@ class File:
             return self.normalized, temp_path
 
         converter = converters[self.mime_type]
+
         temp_path = self._run_conversion_command(converter, source_path, dest_path,
-                                                 temp_path, orig_ext, debug)
+                                                 temp_path, orig_ext, dest_dir, debug)
 
         if converter.get('keep-original', False):
             try:
@@ -103,6 +98,7 @@ class File:
             dest_path: str,
             temp_path: str,
             orig_ext: bool,
+            dest_dir: str,
             debug: bool
     ) -> tuple[int, list, list]:
         """
@@ -115,9 +111,12 @@ class File:
                               should be saved
         """
         cmd, dest_ext = self._get_dest_ext_and_cmd(converter)
-        if dest_ext and (self.ext != dest_ext or not orig_ext):
-            dest_path = dest_path + '.' + dest_ext
-            temp_path = temp_path + '.' + dest_ext
+        if dest_ext:
+            dest_path = dest_path + dest_ext
+            temp_path = temp_path + dest_ext
+        else:
+            dest_path = dest_path + self.ext
+            temp_path = temp_path + self.ext
 
         if '<temp>' in cmd:
             Path(Path(temp_path).parent).mkdir(parents=True, exist_ok=True)
@@ -128,7 +127,11 @@ class File:
         cmd = cmd.replace("<dest>", '"' + dest_path + '"')
         cmd = cmd.replace("<temp>", '"' + temp_path + '"')
         cmd = cmd.replace("<mime-type>", '"' + self.mime_type + '"')
-        cmd = cmd.replace("<dest-ext>", '"' + str(dest_ext) + '"')
+        cmd = cmd.replace("<dest-ext>", str(dest_ext))
+        cmd = cmd.replace("<source-ext>", Path(source_path).suffix)
+        cmd = cmd.replace("<source-parent>", '"' + str(Path(source_path).parent) + '"')
+        cmd = cmd.replace("<dest-parent>", '"' + str(Path(dest_path).parent) + '"')
+        cmd = cmd.replace("<temp-parent>", '"' + str(Path(temp_path).parent) + '"')
         unpack_path = os.path.splitext(source_path)[0]
         cmd = cmd.replace("<unpack-path>", '"' + unpack_path + '"')
         # Disabled because not in use, and file command doesn't have version
@@ -136,10 +139,19 @@ class File:
         # cmd = cmd.replace("<version>", '"' + self.version + '"')
         timeout = converter['timeout'] if 'timeout' in converter else cfg['timeout']
 
-        returncode, out, err = run_shell_command(cmd, cwd=self.pwconv_path, shell=True,
-                                       timeout=timeout)
+        returncode = 0
+        if not os.path.exists(dest_path):
+
+            returncode, out, err = run_shell_command(cmd, cwd=self.pwconv_path,
+                                                     shell=True, timeout=timeout)
 
         if returncode or not os.path.exists(dest_path):
+            if out != 'timeout':
+                print('out', out)
+                print('err', err)
+            if os.path.exists(dest_path):
+                # Remove possibel corrupted file
+                os.remove(dest_path)
             if 'file requires a password for access' in out:
                 self.normalized['result'] = Result.PASSWORD_PROTECTED
             elif out == 'timeout':
@@ -152,6 +164,18 @@ class File:
             if debug:
                 print("\nCommand: " + cmd + f" ({returncode})", end="")
         else:
+            if orig_ext:
+                new_path = os.path.join(dest_dir, self.path)
+
+                if dest_ext:
+                    new_path = new_path + dest_ext
+                else:
+                    new_path = new_path + self.ext
+
+                if new_path != dest_path:
+                    os.rename(dest_path, new_path)
+                    dest_path = new_path
+
             self.normalized["result"] = Result.SUCCESSFUL
             self.normalized["dest_path"] = dest_path
             ext = '.' + dest_path.split('.')[-1]
@@ -180,7 +204,7 @@ class File:
         if 'dest-ext' not in converter:
             dest_ext = self.ext
         else:
-            dest_ext = converter['dest-ext']
+            dest_ext = '.' + converter['dest-ext'].strip('.')
 
         if ('source-ext' in converter and self.ext in converter['source-ext']):
             cmd = converter['source-ext'][self.ext]['command']
