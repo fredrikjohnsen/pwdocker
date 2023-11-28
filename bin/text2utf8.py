@@ -44,8 +44,10 @@ def text2utf8(input_file: str, output_file: str):
                 return ''
 
             windows_line_ending = b'\r\n'
+            mac_line_ending = b'\r'
             unix_line_ending = b'\n'
             content = content.replace(windows_line_ending, unix_line_ending)
+            content = content.replace(mac_line_ending, unix_line_ending)
 
             char_enc = chardet.detect(content)['encoding']
 
