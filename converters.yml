@@ -88,5 +88,7 @@ text/markdown:
   dest-ext: md
 text/plain:
   command: python3 -m bin.text2utf8 <source> <dest>
+text/vnd.sosi:
+  command: cp <source> <dest>
 text/xml:
   command: cp <source> <dest>
