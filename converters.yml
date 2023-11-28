@@ -13,11 +13,11 @@ application/pdf:
   dest-ext: pdf
 application/vnd.ms-excel:
   # Excel files are accepted by Library of Congress
-  command: soffice --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <temp-parent> <source> && bin/pdf2pdfa.sh <temp> <dest>
+  command: soffice --headless  --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <temp-parent> <source> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
   keep-original: true
 application/vnd.ms-excel.sheet.macroEnabled.12:
-  command: soffice --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <temp-parent> <source> && bin/pdf2pdfa.sh <temp> <dest>
+  command: soffice --headless --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <temp-parent> <source> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
   keep-original: true
 application/vnd.ms-outlook:
