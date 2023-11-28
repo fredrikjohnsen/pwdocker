@@ -204,7 +204,8 @@ class File:
         if 'dest-ext' not in converter:
             dest_ext = self.ext
         else:
-            dest_ext = '.' + converter['dest-ext'].strip('.')
+            dest_ext = (None if converter['dest-ext'] is None
+                        else '.' + converter['dest-ext'].strip('.'))
 
         if ('source-ext' in converter and self.ext in converter['source-ext']):
             cmd = converter['source-ext'][self.ext]['command']
