@@ -94,3 +94,6 @@ text/vnd.sosi:
   command: cp <source> <dest>
 text/xml:
   command: cp <source> <dest>
+video/quicktime:
+  command: vlc -I dummy <source> --sout=#std{access=file,mux=mp4,dst=<dest>} vlc://quit
+  dest-ext: mp4
