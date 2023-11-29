@@ -295,8 +295,6 @@ def write_id_file_to_storage(tsv_source_path: str, source_dir: str,
                        "dest_mime_type", "puid")
     # Remove Siegfried generated columns
     table = remove_fields(table, "namespace", "basis", "warning")
-    # TODO: Ikke fullgod sjekk på embedded dokument i linje over da # faktisk
-    # kan forekomme i filnavn
 
     # Treat csv (detected from extension only) as plain text:
     table = etl.convert(table, "source_mime_type", lambda v,
