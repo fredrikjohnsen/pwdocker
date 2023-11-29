@@ -1,5 +1,6 @@
 import os
 import sqlite3
+import datetime
 from sqlite3 import Connection
 from typing import Optional, Any, List
 
@@ -7,31 +8,52 @@ import petl
 from petl import appenddb, fromdb, todb
 
 from storage import ConvertStorage
-from util import Result
 
 
 class StorageSqliteImpl(ConvertStorage):
     _create_table_str = """
     CREATE TABLE file(
-        source_path TEXT NOT NULL,
-        source_file_size DECIMAL,
-        puid TEXT,
-        format TEXT,
-        version TEXT,
-        source_mime_type TEXT,
-        dest_path TEXT,
-        result TEXT,
-        dest_mime_type TEXT,
-        moved_to_target INTEGER DEFAULT 0,
-        PRIMARY KEY (source_path)
+        id integer primary key,
+        path varchar(255) not null,
+        size decimal,
+        puid varchar(10),
+        format varchar(100),
+        version varchar(32),
+        mime varchar(100),
+        ext varchar(10),
+        status varchar(10),
+        status_ts datetime default current_timestamp,
+        source_id int
     );"""
 
-    _update_result_str = """
+    _create_view_file_root = """
+    create view file_root as
+    with cte as (
+        select id, path, source_id, NULL as root_id
+        from file
+        where source_id is null
+        union
+        select f.id, f.path, f.source_id, h.root_id as root_id
+        from file f
+        join cte h
+        on h.id = f.source_id
+        where f.id != f.source_id
+    )
+    select * from cte
+    order by path;
+    """
+
+    _update_str = """
         UPDATE file 
-        SET source_file_size = ?, puid = ?, format = ?, version = ?, source_mime_type = ?,
-        dest_path = ?, result = ?, dest_mime_type = ?, moved_to_target = ?
-        WHERE source_path = ?
+        SET size = :size, puid = :puid, format = :format, version = :version,
+            mime = :mime, ext = :ext, status = :status, status_ts = :status_ts
+        WHERE id = :id
         """
+
+    _add_converted_file_str = """
+    insert into file (path, size, puid, format, version, mime, ext, status, source_id)
+    values (:path, :size, :puid, :format, :version, :mime, :ext, :status, :source_id)
+    """
 
     def __init__(self, path: str):
         self._conn = Optional[Connection]
@@ -57,6 +79,7 @@ class StorageSqliteImpl(ConvertStorage):
         table = self._conn.execute(query)
         if len(table.fetchall()) <= 0:
             self._conn.execute(self._create_table_str)
+            self._conn.execute(self._create_view_file_root)
             self._conn.commit()
 
     def close_data_source(self):
@@ -70,43 +93,48 @@ class StorageSqliteImpl(ConvertStorage):
     def append_rows(self, table):
         # select the first row (primary key) and filter away rows that already exist
         self._conn.row_factory = lambda cursor, row: row[0]
-        file_names = self._conn.execute("SELECT source_path FROM file").fetchall()
+        file_names = self._conn.execute("SELECT path FROM file").fetchall()
         table = petl.select(
             table,
-            lambda rec: (rec.source_path not in file_names)
+            lambda rec: (rec.path not in file_names)
         )
         # append new rows
         appenddb(table, self._conn, "file")
         self._conn.row_factory = None
 
-    def update_row(self, source_path: str, data: List[Any]):
-        data.append(source_path)
-        data.pop(0)
-        self._conn.execute(self._update_result_str, data)
+    def update_row(self, data: dict):
+        self._conn.execute(self._update_str, data)
         self._conn.commit()
 
-    def get_row_count(self, mime_type=None, result=None):
+    def add_row(self, data: dict):
+        self._conn.execute(self._add_converted_file_str, data)
+        self._conn.commit()
+
+    def get_row_count(self, mime=None, status=None):
         cursor = self._conn.cursor()
-        query = "SELECT COUNT(*) FROM file"
+        query = """
+        SELECT COUNT(*) FROM file
+        WHERE status != 'converted'
+        """
         conds = []
         params = []
 
-        if mime_type:
-            conds.append("source_mime_type = ?")
-            params.append(mime_type)
+        if mime:
+            conds.append("mime = ?")
+            params.append(mime)
 
-        if result:
-            conds.append("result = ?")
-            params.append(result)
+        if status:
+            conds.append("status = ?")
+            params.append(status)
 
         if len(conds):
-            query += "\nWHERE " + ' AND '.join(conds)
+            query += "\nAND " + ' AND '.join(conds)
 
         cursor.execute(query, params)
 
         return cursor.fetchone()[0]
 
-    def get_all_rows(self, unpacked_path, limit):
+    def get_all_rows(self, unpacked_path, limit, timestamp):
 
         if unpacked_path:
             unpacked_path = os.path.join(unpacked_path, '')
@@ -114,8 +142,15 @@ class StorageSqliteImpl(ConvertStorage):
 
         sql= f"""
         SELECT * FROM file
-        where source_path like '{str(unpacked_path)}%'
+        where path like '{str(unpacked_path)}%'
+          and  (status IS NULL OR status NOT IN(?, ?, ?))
         """
+        params = []
+        params.append('converted')
+        params.append('accepted')
+        params.append('removed')
+
+        sql += " AND status = 'new'"
 
         if limit:
             sql += f"\nlimit {limit}"
@@ -123,13 +158,14 @@ class StorageSqliteImpl(ConvertStorage):
         return fromdb(
             self._conn,
             sql,
+            params
         )
 
     def get_new_rows(self, limit):
 
         sql = """
         SELECT * FROM file
-        WHERE  result IS NULL
+        WHERE  status IS NULL
         """
 
         if limit:
@@ -140,46 +176,50 @@ class StorageSqliteImpl(ConvertStorage):
             sql,
         )
 
-    def get_rows(self, mime_type: str, puid: str, result: str,
-                 limit: int, reconvert: bool):
+    def get_rows(self, mime: str, puid: str, status: str,
+                 limit: int, reconvert: bool, timestamp: datetime.datetime):
         params = []
         if reconvert:
-            select = "SELECT * from file WHERE 1 = 1"
+            select = "SELECT * from file WHERE status != 'new'"
         else:
             select = """
                 SELECT * FROM file
-                WHERE  (result = 'new' OR result NOT IN(?, ?))
+                WHERE  (status IS NULL OR status NOT IN(?, ?, ?))
             """
-            params.append(Result.SUCCESSFUL)
-            params.append(Result.REMOVED)
+            params.append('converted')
+            params.append('accepted')
+            params.append('removed')
 
-        if mime_type:
-            select += " AND source_mime_type = ?"
-            params.append(mime_type)
+        if mime:
+            select += " AND mime = ?"
+            params.append(mime)
 
         if puid:
             select += " AND puid = ?"
             params.append(puid)
 
-        if result:
-            select += " AND result = ?"
-            params.append(result)
+        if status:
+            select += " AND status = ?"
+            params.append(status)
+
+        select += " AND status_ts < ?"
+        params.append(timestamp)
 
         if limit:
             select += f" limit {limit}"
 
         return fromdb(self._conn, select, params)
 
-    def get_converted_rows(self, mime_type: str = None):
+    def get_converted_rows(self, mime: str = None):
         select = """
-            SELECT source_path FROM file
-            WHERE  result IS NOT NULL AND result IN(?)
+            SELECT path FROM file
+            WHERE  status IS NOT NULL AND status IN(?)
         """
-        params = [Result.SUCCESSFUL]
+        params = ['converted']
 
-        if mime_type:
-            select += " AND source_mime_type = ?"
-            params.append(mime_type)
+        if mime:
+            select += " AND mime = ?"
+            params.append(mime)
 
         return fromdb(self._conn, select, params)
 
@@ -187,9 +227,9 @@ class StorageSqliteImpl(ConvertStorage):
         return fromdb(
             self._conn,
             """
-            SELECT count(*) as no, source_mime_type FROM file
-            WHERE result is NULL
-            GROUP BY source_mime_type
+            SELECT count(*) as no, mime FROM file
+            WHERE status is NULL
+            GROUP BY mime
             ORDER BY count(*) desc
             """
         )
@@ -198,10 +238,27 @@ class StorageSqliteImpl(ConvertStorage):
         return fromdb(
             self._conn,
             """
-            SELECT count(*) as no, source_mime_type FROM file
-            WHERE result is NULL OR result NOT IN(?)
-            GROUP BY source_mime_type
+            SELECT count(*) as no, mime FROM file
+            WHERE status is NULL OR status NOT IN(?)
+            GROUP BY mime
             ORDER BY count(*) desc
             """,
-            [Result.SUCCESSFUL]
+            ['converted']
         )
+
+    def delete_descendants(self, id):
+        sql = """
+        with recur as (
+        select a.id, a.id as orig, a.source_id from file a
+        where a.id = ?
+        union all
+        select b.id, c.orig as orig, b.source_id from file b
+        inner join recur c on c.id = b.source_id
+        )
+        delete from file
+        where id in (select id from recur where source_id is not null)
+        """
+
+        params = [id]
+        self._conn.execute(sql, params)
+        self._conn.commit()

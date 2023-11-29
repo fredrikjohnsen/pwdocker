@@ -12,8 +12,7 @@ import magic
 
 from config import cfg, converters
 from storage import ConvertStorage
-from util import (run_shell_command, delete_file_or_dir, extract_nested_zip,
-                  Result)
+from util import run_shell_command, delete_file_or_dir, extract_nested_zip
 
 
 class File:
@@ -29,19 +28,18 @@ class File:
         self.pwconv_path = pwconv_path
         self.row = row
         self.file_storage = file_storage
-        self.path = row["source_path"]
-        self.mime_type = None if unidentify else row["source_mime_type"]
-        self.format = None if unidentify else  row["format"]
-        self.version = None if unidentify else  row["version"]
-        self.file_size = row["source_file_size"]
+        self.id = row['id']
+        self.path = row['path']
+        self.mime = None if unidentify else row['mime']
+        self.format = None if unidentify else row['format']
+        self.version = None if unidentify else  row['version']
+        self.size = row['size']
         self.puid = None if unidentify else row['puid']
+        self.source_id = row['source_id']
         self.parent = Path(self.path).parent
         self.stem = Path(self.path).stem
         self.ext = Path(self.path).suffix
-        self.normalized = {
-            'dest_path': None,
-            'result': None,
-            'mime_type': None,
+        self.norm = {
             'moved_to_target': 0
         }
 
@@ -49,12 +47,15 @@ class File:
                 debug: bool, identify_only: bool) -> dict[str, Type[str]]:
         """Convert file to archive format"""
 
-        source_path = os.path.join(source_dir, self.path)
+        if self.source_id:
+            source_path = os.path.join(dest_dir, self.path)
+        else:
+            source_path = os.path.join(source_dir, self.path)
         dest_path = os.path.join(dest_dir, self.parent, self.stem)
         temp_path = os.path.join('/tmp/convert', self.parent, self.stem)
         dest_path = os.path.abspath(dest_path)
 
-        if self.mime_type in ['', 'None', None]:
+        if self.mime in ['', 'None', None]:
             cmd = ['sf', '-json', source_path]
             p = subprocess.Popen(cmd, cwd=source_dir, stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE)
@@ -62,48 +63,56 @@ class File:
 
             if not err:
                 fileinfo = json.loads(out)
-                self.mime_type = fileinfo['files'][0]['matches'][0]['mime']
+                self.mime = fileinfo['files'][0]['matches'][0]['mime']
                 self.format = fileinfo['files'][0]['matches'][0]['format']
                 self.version = fileinfo['files'][0]['matches'][0]['version']
-                self.file_size = fileinfo['files'][0]['filesize']
+                self.size = fileinfo['files'][0]['filesize']
                 self.puid = fileinfo['files'][0]['matches'][0]['id']
 
-        if self.mime_type in ['', 'None', None]:
-            self.mime_type = magic.from_file(source_path, mime=True)
+        if self.mime in ['', 'None', None]:
+            self.mime = magic.from_file(source_path, mime=True)
 
         if identify_only:
             return self.normalized, temp_path
 
-        self.normalized["mime_type"] = self.mime_type
+        self.norm['mime'] = self.mime
 
-        if self.mime_type not in converters:
-            self.normalized["result"] = Result.NOT_SUPPORTED
-            self.normalized["dest_path"] = None
-            return self.normalized, temp_path
+        if self.mime not in converters:
+            self.status = 'skipped'
+            return self.norm, temp_path
 
-        converter = converters[self.mime_type]
+        converter = converters[self.mime]
 
         if 'puid' in converter and self.puid in converter['puid']:
             converter.update(converter['puid'][self.puid])
         elif 'source-ext' in converter and self.ext in converter['source-ext']:
             converter.update(converter['source-ext'][self.ext])
 
-        if converter.get('remove', False):
-            self.normalized['result'] = Result.REMOVED
-        elif self.mime_type == 'application/encrypted':
-            self.normalized['result'] = Result.PASSWORD_PROTECTED
+        accept = False
+        if 'accept' in converter:
+            if converter['accept'] == True:
+                accept = True
+            elif 'version' in converter['accept']:
+                accept = self.version in converter['accept']['version']
+
+        if accept:
+            self.status = 'accepted'
+            self.norm['path'] = os.path.join(dest_dir, self.path)
+        elif converter.get('remove', False):
+            self.status = 'removed'
+        elif self.mime == 'application/encrypted':
+            self.status = 'protected'
         else:
             temp_path = self._run_conversion_command(converter, source_path, dest_path,
                                                      temp_path, orig_ext, dest_dir, debug)
-
-        if converter.get('keep-original', False):
+        if converter.get('keep-original', False) or (self.source_id == None and accept):
             try:
                 shutil.copyfile(Path(source_dir, self.path), Path(dest_dir, self.path))
-                self.normalized['moved_to_target'] = 1
+                self.norm['moved_to_target'] = 1
             except Exception as e:
-                print(e)
+                print('error', e)
 
-        return self.normalized, temp_path
+        return self.norm, temp_path
 
     def _run_conversion_command(
             self,
@@ -132,13 +141,8 @@ class File:
             dest_ext = (None if converter['dest-ext'] is None
                         else '.' + converter['dest-ext'].strip('.'))
 
-        xtract = False
-        if cmd and '<unpack-path>' in cmd:
-            xtract = True
-
-        if dest_ext and not xtract:
-            dest_path = dest_path + dest_ext
-            temp_path = temp_path + dest_ext
+        dest_path = dest_path + dest_ext
+        temp_path = temp_path + dest_ext
 
         if cmd:
             if '<temp>' in cmd:
@@ -147,18 +151,12 @@ class File:
             cmd = cmd.replace("<source>", quote(source_path))
             cmd = cmd.replace("<dest>", quote(dest_path))
             cmd = cmd.replace("<temp>", quote(temp_path))
-            cmd = cmd.replace("<mime-type>", self.mime_type)
+            cmd = cmd.replace("<mime-type>", self.mime)
             cmd = cmd.replace("<dest-ext>", str(dest_ext))
             cmd = cmd.replace("<source-ext>", Path(source_path).suffix)
             cmd = cmd.replace("<source-parent>", quote(str(Path(source_path).parent)))
             cmd = cmd.replace("<dest-parent>", quote(str(Path(dest_path).parent)))
             cmd = cmd.replace("<temp-parent>", quote(str(Path(temp_path).parent)))
-            if xtract:
-                unpack_path = os.path.splitext(source_path)[0]
-                if unpack_path == source_path:
-                    unpack_path = source_path + '_extracted'
-                dest_path = unpack_path
-                cmd = cmd.replace("<unpack-path>", quote(unpack_path))
 
         # Disabled because not in use, and file command doesn't have version
         # with option --mime-type
@@ -166,20 +164,10 @@ class File:
         timeout = converter['timeout'] if 'timeout' in converter else cfg['timeout']
 
         returncode = 0
-        if not os.path.exists(dest_path) and cmd:
+        if (not os.path.exists(dest_path) or source_path == dest_path) and cmd:
 
             returncode, out, err = run_shell_command(cmd, cwd=self.pwconv_path,
                                                      shell=True, timeout=timeout)
-        elif cmd is None and not os.path.exists(dest_path):
-            self.normalized["result"] = Result.NOT_SUPPORTED
-            self.normalized["dest_path"] = None
-            return temp_path
-
-        if xtract and os.path.exists(unpack_path):
-            self.normalized['result'] = Result.SUCCESSFUL
-            self.normalized['dest_path'] = unpack_path
-            self.normalized['mime_type'] = 'inode/directory'
-            return temp_path
 
         if cmd and (returncode or not os.path.exists(dest_path)):
             if out != 'timeout':
@@ -189,13 +177,13 @@ class File:
                 # Remove possibel corrupted file
                 os.remove(dest_path)
             if 'file requires a password for access' in out:
-                self.normalized['result'] = Result.PASSWORD_PROTECTED
+                self.status = 'protected'
             elif out == 'timeout':
-                self.normalized['result'] = Result.TIMEOUT
+                self.status = 'timeout'
             else:
-                self.normalized["result"] = Result.FAILED
-            self.normalized["dest_path"] = None
-            self.normalized["mime_type"] = None #TODO Sjekk
+                self.status = 'failed'
+            self.norm['path'] = None
+            self.norm['mime'] = None #TODO Sjekk
 
             if debug:
                 print("\nCommand: " + cmd + f" ({returncode})", end="")
@@ -212,15 +200,41 @@ class File:
                     os.rename(dest_path, new_path)
                     dest_path = new_path
 
-            self.normalized["result"] = Result.SUCCESSFUL
-            self.normalized["dest_path"] = dest_path
+            self.status = 'converted'
+            self.norm['source_id'] = self.id
+            self.norm['path'] = dest_path
             ext = '.' + dest_path.split('.')[-1]
-            if ext in mimetypes.types_map:
-                self.normalized["mime_type"] = mimetypes.types_map[ext]
-            elif os.path.isdir(dest_path):
-                self.normalized["mime_type"] = 'inode/directory'
+            if os.path.isdir(dest_path):
+                self.norm['mime'] = 'inode/directory'
+            elif ext in mimetypes.types_map:
+                self.norm['mime'] = mimetypes.types_map[ext]
             else:
-                self.normalized["mime_type"] = magic.from_file(dest_path, mime=True)
+                self.norm['mime'] = magic.from_file(dest_path, mime=True)
+
+            if self.norm['mime'] != 'inode/directory':
+                cmd = ['sf', '-json', dest_path]
+                p = subprocess.Popen(cmd, cwd=dest_dir, stdout=subprocess.PIPE,
+                                     stderr=subprocess.PIPE)
+                out, err = p.communicate()
+                fileinfo = json.loads(out)
+                if len(fileinfo['files']):
+                    self.norm['mime'] = fileinfo['files'][0]['matches'][0]['mime']
+                    self.norm['format'] = fileinfo['files'][0]['matches'][0]['format']
+                    self.norm['version'] = fileinfo['files'][0]['matches'][0]['version']
+                    self.norm['size'] = fileinfo['files'][0]['filesize']
+                    self.norm['puid'] = fileinfo['files'][0]['matches'][0]['id']
+                    # self.norm['mime_ext'] = mimetypes.guess_extension(self.norm['mime'])
+                    self.norm['ext'] = Path(self.norm['path']).suffix
+
+            if self.norm['path'] == source_path:
+                self.norm['status'] = 'accepted'
+                self.size = self.norm['size']
+                self.puid = self.norm['puid']
+                self.format = self.norm['format']
+                self.version = self.norm['version']
+                self.status = self.norm['status']
+            elif self.norm['mime'] != 'inode/directory':
+                self.norm['status'] = 'new'
 
         return temp_path
 

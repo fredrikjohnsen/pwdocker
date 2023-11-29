@@ -15,13 +15,13 @@ application/gzip:
       command: soffice --convert-to png --outdir <dest-parent> <source>
       dest-ext: png
 application/javascript:
-  command: cp <source> <dest>
+  accept: true
 application/json:
   command: python3 -m bin.text2utf8 <source> <dest>
 application/mp4:
-  command: cp <source> <dest>
+  acccept: true
 application/msword:
-  command: python3 -m bin.office2pdf <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
+  command: python3 -m bin.office2pdf <source> <dest>
   dest-ext: pdf
 application/octet-stream:
   puid:
@@ -38,8 +38,10 @@ application/rtf:
   command: python3 -m bin.office2pdf <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
 application/pdf:
-  command: bin/pdf2pdfa.sh <source> <dest>
+  command: mv <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
+  accept:
+    version: [1a, 1b, 2a, 2b]
 application/vnd.microsoft.windows.thumbnail-cache:
   # Thumbs.db files
   remove: true
@@ -57,7 +59,7 @@ application/vnd.ms-excel.sheet.macroEnabled.12:
   keep-original: true
 application/vnd.ms-outlook:
   # Library of Congress has no preferred format, but accepts both .msg and .pst
-  command: cp <source> <dest>
+  accept: true
 application/vnd.ms-powerpoint:
   command: python3 -m bin.office2pdf <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
@@ -96,12 +98,12 @@ application/vnd.openxmlformats-officedocument.wordprocessingml.template:
   command: python3 -m bin.office2pdf <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
 application/vnd.rar:
-  command: unar -k skip -D <source> -o <unpack-path>
+  command: unar -k skip -D <source> -o <dest>
 application/vnd.wordperfect:
   command: soffice --headless --convert-to pdf --outdir <temp-parent> <source> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
 application/x-7z-compressed:
-  command: unar -k skip -D <source> -o <unpack-path>
+  command: unar -k skip -D <source> -o <dest>
 application/x-cdf:
   # .cda files that tells where a CD track starts and stops
   remove: true
@@ -111,31 +113,31 @@ application/x-dbf:
   dest-ext: pdf
 application/x-msaccess:
   # No acceptable converter for such files yet
-  command: cp <source> <dest>
+  accept: true
 application/x-sqlite3:
-  command: cp <source> <dest>
+  accept: true
 application/x-wine-extension-ini:
   # file-command often identifies .ini-files with this mime-type
-  command: cp <source> <dest>
+  accept: true
 application/xml:
-  command: cp <source> <dest>
+  accept: true
 application/xhtml+xml:
   command: pandoc --resource-path <source-parent> -V geometry:margin=1in,landscape --pdf-engine=xelatex <source> -f html -t pdf -o <temp> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
 application/zip:
-  command: unar -k skip -D <source> -o <unpack-path>
+  command: unar -k skip -D <source> -o <dest>
   puid:
     fmt1441: # iWork files
       # iWork files have a preview file, so we remove other data
-      command: unzip <source> -d <unpack-path> -x Index/* Metadata/* Data/*
+      command: unzip <source> -d <dest> -x Index/* Metadata/* Data/*
 audio/3gpp:
   # 3gpp is recognized as audio in Siegfried, but it's a video format
   command: vlc -I dummy <source> --sout=#std{access=file,mux=mp4,dst=<dest>} vlc://quit
   dest-ext: mp4
 audio/aac:
-  command: cp <source> <dest>
+  accept: true
 audio/mpeg:
-  command: cp <source> <dest>
+  accept: true
 audio/x-aiff:
   command: vlc -I dummy <source> :sout=#transcode{acodec=mpga,ab=192}:std{dst=<dest>,access=file} vlc://quit
   dest-ext: mp3
@@ -146,7 +148,7 @@ audio/x-wav:
   command: vlc -I dummy <source> :sout=#transcode{acodec=mpga,ab=192}:std{dst=<dest>,access=file} vlc://quit
   dest-ext: mp3
 font/ttf:
-  command: cp <source> <dest>
+  accept: true
 image/bmp:
   command: convert <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
@@ -154,17 +156,17 @@ image/emf:
   command: soffice --headless --convert-to png --outdir <dest-parent> <source>
   dest-ext: png
 image/gif:
-  command: cp <source> <dest>
+  accept: true
 image/heif:
   command: convert <source> <dest>
   dest-ext: png
 image/jpeg:
-  command: cp <source> <dest>
+  accept: true
 image/jxr:
   command: convert <source> <dest>
   dest-ext: webp
 image/png:
-  command: cp <source> <dest>
+  accept: true
 image/tiff:
   command: tiff2pdf -o <temp> <source>  && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
@@ -179,7 +181,7 @@ image/vnd.dxf:
   keep-original: true
   timeout: 90
 image/vnd.microsoft.icon:
-  command: cp <source> <dest>
+  accept: true
   dest-ext: ico
 image/vnd.ms-modi:
   # Can be manually converted with mdi2tif
@@ -189,7 +191,7 @@ image/vnd.adobe.photoshop:
   command: convert <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
 image/webp:
-  command: cp <source> <dest>
+  accept: true
 image/x-pict:
   command: convert <source> <dest>
   dest-ext: png
@@ -199,15 +201,15 @@ image/x-tga:
 inode/x-empty:
   remove: true
 message/rfc822:
-  command: cp <source> <dest>
+  accept: true
 multipart/appledouble:
   # Resource fork files from apple Mac OS operating system
   remove: true
 multipart/related:
   # Web archive format supported in Chrome
-  command: cp <source> <dest>
+  accept: true
 text/calendar:
-  command: cp <source> <dest>
+  accept: true
 text/css:
   command: python3 -m bin.text2utf8 <source> <dest>
 text/csv:
@@ -221,15 +223,15 @@ text/markdown:
   command: python3 -m bin.text2utf8 <source> <dest>
   dest-ext: md
 text/x-msdos-batch:
-  command: cp <source> <dest>
+  accept: true
 text/plain:
   command: python3 -m bin.text2utf8 <source> <dest>
 text/vnd.sosi:
-  command: cp <source> <dest>
+  accept: true
 text/x-vCalendar:
-  command: cp <source> <dest>
+  accept: true
 text/xml:
-  command: cp <source> <dest>
+  accept: true
 video/MP2T:
   command: vlc -I dummy <source> --sout=#std{access=file,mux=mp4,dst=<dest>} vlc://quit
   dest-ext: mp4
