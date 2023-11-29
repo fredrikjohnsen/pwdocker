@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-for f in ${@:1:$#-1}; do
+for f in "${@:1:$#-1}"; do
     base_name=$(basename ${f})
     echo "base_name: $base_name"
     # Treat last argument as folder if more than 2 arguments
