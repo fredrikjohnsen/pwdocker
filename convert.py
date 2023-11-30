@@ -230,7 +230,7 @@ def convert_file(
 
     if normalized["dest_path"] and normalized['mime_type'] != 'inode/directory':
         if (
-            str(normalized["dest_path"]) != str(moved_to_dest_path) and
+            str(normalized["dest_path"]).lower() != str(moved_to_dest_path).lower() and
             normalized['moved_to_target'] == 0
         ):
             if moved_to_dest_path.is_file():
@@ -242,7 +242,7 @@ def convert_file(
     elif os.path.isdir(dir):
         # if file has been extracted to directory
         row['result'] = Result.SUCCESSFUL
-        row['dest_path'] = source_file.relative_root
+        row["dest_path"] = relpath(normalized["dest_path"], start=dest_dir)
         row['dest_mime_type'] = 'inode/directory'
 
         unpacked_count = sum([len(files) for r, d, files in os.walk(dir)])
@@ -251,7 +251,7 @@ def convert_file(
         count_before, count_now, total = \
             convert_folder(source_dir, dest_dir,
                            debug, orig_ext, None, None, file_storage,
-                           source_file.relative_root, True)
+                           row['dest_path'], True)
 
         file_count += total
     else:
@@ -266,6 +266,10 @@ def convert_file(
             row["moved_to_target"] = 1
             row["dest_mime_type"] = source_file.mime_type
 
+    # Without sleep, we sometimes get Operational error:
+    # unable to open database file
+    # Don't know why
+    time.sleep(0.02)
     file_storage.update_row(row["source_path"], list(row.values()))
 
     return file_count

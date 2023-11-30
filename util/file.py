@@ -114,14 +114,13 @@ class File:
         if dest_ext:
             dest_path = dest_path + dest_ext
             temp_path = temp_path + dest_ext
-        else:
-            dest_path = dest_path + self.ext
-            temp_path = temp_path + self.ext
 
         if '<temp>' in cmd:
             Path(Path(temp_path).parent).mkdir(parents=True, exist_ok=True)
+
+        xtract = False
         if '<unpack-path>' in cmd:
-            Path(Path(dest_path)).mkdir(parents=True, exist_ok=True)
+            xtract = True
 
         cmd = cmd.replace("<source>", '"' + source_path + '"')
         cmd = cmd.replace("<dest>", '"' + dest_path + '"')
@@ -144,6 +143,9 @@ class File:
 
             returncode, out, err = run_shell_command(cmd, cwd=self.pwconv_path,
                                                      shell=True, timeout=timeout)
+
+        if xtract:
+            Path(Path(dest_path)).mkdir(parents=True, exist_ok=True)
 
         if returncode or not os.path.exists(dest_path):
             if out != 'timeout':
