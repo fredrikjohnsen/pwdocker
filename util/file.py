@@ -111,16 +111,17 @@ class File:
                               should be saved
         """
         cmd, dest_ext = self._get_dest_ext_and_cmd(converter)
-        if dest_ext:
+
+        xtract = False
+        if '<unpack-path>' in cmd:
+            xtract = True
+
+        if dest_ext and not xtract:
             dest_path = dest_path + dest_ext
             temp_path = temp_path + dest_ext
 
         if '<temp>' in cmd:
             Path(Path(temp_path).parent).mkdir(parents=True, exist_ok=True)
-
-        xtract = False
-        if '<unpack-path>' in cmd:
-            xtract = True
 
         cmd = cmd.replace("<source>", '"' + source_path + '"')
         cmd = cmd.replace("<dest>", '"' + dest_path + '"')
@@ -131,8 +132,12 @@ class File:
         cmd = cmd.replace("<source-parent>", '"' + str(Path(source_path).parent) + '"')
         cmd = cmd.replace("<dest-parent>", '"' + str(Path(dest_path).parent) + '"')
         cmd = cmd.replace("<temp-parent>", '"' + str(Path(temp_path).parent) + '"')
-        unpack_path = os.path.splitext(source_path)[0]
-        cmd = cmd.replace("<unpack-path>", '"' + unpack_path + '"')
+        if xtract:
+            unpack_path = os.path.splitext(source_path)[0]
+            cmd = cmd.replace("<unpack-path>", '"' + unpack_path + '"')
+            Path(unpack_path).mkdir(parents=True, exist_ok=True)
+
+
         # Disabled because not in use, and file command doesn't have version
         # with option --mime-type
         # cmd = cmd.replace("<version>", '"' + self.version + '"')
