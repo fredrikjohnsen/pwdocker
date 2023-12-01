@@ -29,6 +29,10 @@ application/vnd.ms-powerpoint:
 application/vnd.ms-word.document.macroEnabled.12:
   command: python3 -m bin.office2pdf <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
+application/vnd.oasis.opendocument.spreadsheet:
+  command: soffice --headless --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <temp-parent> <source> && bin/pdf2pdfa.sh <temp> <dest>
+  dest-ext: pdf
+  keep-original: true
 application/vnd.oasis.opendocument.text:
   command: python3 -m bin.unoconv2x <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
