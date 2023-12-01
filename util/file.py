@@ -113,29 +113,30 @@ class File:
         cmd, dest_ext = self._get_dest_ext_and_cmd(converter)
 
         xtract = False
-        if '<unpack-path>' in cmd:
+        if cmd and '<unpack-path>' in cmd:
             xtract = True
 
         if dest_ext and not xtract:
             dest_path = dest_path + dest_ext
             temp_path = temp_path + dest_ext
 
-        if '<temp>' in cmd:
-            Path(Path(temp_path).parent).mkdir(parents=True, exist_ok=True)
+        if cmd:
+            if '<temp>' in cmd:
+                Path(Path(temp_path).parent).mkdir(parents=True, exist_ok=True)
 
-        cmd = cmd.replace("<source>", '"' + source_path + '"')
-        cmd = cmd.replace("<dest>", '"' + dest_path + '"')
-        cmd = cmd.replace("<temp>", '"' + temp_path + '"')
-        cmd = cmd.replace("<mime-type>", '"' + self.mime_type + '"')
-        cmd = cmd.replace("<dest-ext>", str(dest_ext))
-        cmd = cmd.replace("<source-ext>", Path(source_path).suffix)
-        cmd = cmd.replace("<source-parent>", '"' + str(Path(source_path).parent) + '"')
-        cmd = cmd.replace("<dest-parent>", '"' + str(Path(dest_path).parent) + '"')
-        cmd = cmd.replace("<temp-parent>", '"' + str(Path(temp_path).parent) + '"')
-        if xtract:
-            unpack_path = os.path.splitext(source_path)[0]
-            cmd = cmd.replace("<unpack-path>", '"' + unpack_path + '"')
-            Path(unpack_path).mkdir(parents=True, exist_ok=True)
+            cmd = cmd.replace("<source>", '"' + source_path + '"')
+            cmd = cmd.replace("<dest>", '"' + dest_path + '"')
+            cmd = cmd.replace("<temp>", '"' + temp_path + '"')
+            cmd = cmd.replace("<mime-type>", '"' + self.mime_type + '"')
+            cmd = cmd.replace("<dest-ext>", str(dest_ext))
+            cmd = cmd.replace("<source-ext>", Path(source_path).suffix)
+            cmd = cmd.replace("<source-parent>", '"' + str(Path(source_path).parent) + '"')
+            cmd = cmd.replace("<dest-parent>", '"' + str(Path(dest_path).parent) + '"')
+            cmd = cmd.replace("<temp-parent>", '"' + str(Path(temp_path).parent) + '"')
+            if xtract:
+                unpack_path = os.path.splitext(source_path)[0]
+                cmd = cmd.replace("<unpack-path>", '"' + unpack_path + '"')
+                Path(unpack_path).mkdir(parents=True, exist_ok=True)
 
 
         # Disabled because not in use, and file command doesn't have version
@@ -144,15 +145,19 @@ class File:
         timeout = converter['timeout'] if 'timeout' in converter else cfg['timeout']
 
         returncode = 0
-        if not os.path.exists(dest_path):
+        if not os.path.exists(dest_path) and cmd:
 
             returncode, out, err = run_shell_command(cmd, cwd=self.pwconv_path,
                                                      shell=True, timeout=timeout)
+        elif cmd is None and not os.path.exists(dest_path):
+            self.normalized["result"] = Result.NOT_SUPPORTED
+            self.normalized["dest_path"] = None
+            return temp_path
 
         if xtract:
             Path(Path(dest_path)).mkdir(parents=True, exist_ok=True)
 
-        if returncode or not os.path.exists(dest_path):
+        if cmd and (returncode or not os.path.exists(dest_path)):
             if out != 'timeout':
                 print('out', out)
                 print('err', err)
@@ -206,7 +211,7 @@ class File:
             A Tuple containing the command and destination extension
         """
 
-        cmd = converter["command"]
+        cmd = converter["command"] if 'command' in converter else None
 
         if 'dest-ext' not in converter:
             dest_ext = self.ext

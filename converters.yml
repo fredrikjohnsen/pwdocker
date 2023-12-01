@@ -26,6 +26,10 @@ application/vnd.ms-outlook:
 application/vnd.ms-powerpoint:
   command: python3 -m bin.office2pdf <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
+application/vnd.ms-project:
+  # Can be manually converted with MS Project or ProjectLibre (freeware)
+  dest-ext: pdf
+  keep-original: true
 application/vnd.ms-word.document.macroEnabled.12:
   command: python3 -m bin.office2pdf <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
