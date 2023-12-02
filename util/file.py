@@ -136,8 +136,6 @@ class File:
             if xtract:
                 unpack_path = os.path.splitext(source_path)[0]
                 cmd = cmd.replace("<unpack-path>", '"' + unpack_path + '"')
-                Path(unpack_path).mkdir(parents=True, exist_ok=True)
-
 
         # Disabled because not in use, and file command doesn't have version
         # with option --mime-type
@@ -155,7 +153,10 @@ class File:
             return temp_path
 
         if xtract:
-            Path(Path(dest_path)).mkdir(parents=True, exist_ok=True)
+            self.normalized['result'] = Result.SUCCESSFUL
+            self.normalized['dest_path'] = dest_path
+            self.normalized['mime_type'] = 'inode/directory'
+            return temp_path
 
         if cmd and (returncode or not os.path.exists(dest_path)):
             if out != 'timeout':

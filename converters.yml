@@ -50,7 +50,7 @@ application/vnd.openxmlformats-officedocument.wordprocessingml.document:
   command: python3 -m bin.office2pdf <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
 application/vnd.rar:
-  command: unrar x <source> <unpack-path>
+  command: mkdir <unpack-path> && unrar x <source> <unpack-path>
 application/vnd.wordperfect:
   command: python3 -m bin.unoconv2x <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
