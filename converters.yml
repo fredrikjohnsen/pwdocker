@@ -1,5 +1,8 @@
 audio/mpeg:
   command: cp <source> <dest>
+application/gzip:
+  command: gzip -dk --stdout <source> > <dest>
+  dest-ext: null
 application/mp4:
   command: cp <source> <dest>
 application/msword:
