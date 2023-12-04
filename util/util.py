@@ -42,8 +42,7 @@ def run_shell_command(command, cwd=None, timeout=None, shell=False) -> tuple[int
         os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
         return 1, 'timeout', None
     except Exception as e:
-        print(command)
-        print(e)
+        return 1, '', e
 
     return proc.returncode, out, err
 
