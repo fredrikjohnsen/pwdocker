@@ -138,16 +138,22 @@ def convert_folder(
         for row in etl.dicts(table):
             db_files.append(row['source_path'])
         print("Following files don't exist in database:")
+        extra_files = []
         for r, d, files in os.walk(source_dir):
             for file_ in files:
                 path = Path(r, file_)
                 commonprefix = os.path.commonprefix([source_dir, path])
                 relpath = os.path.relpath(path, commonprefix)
                 if relpath not in db_files:
+                    extra_files.append(path)
                     print('- ' + relpath)
 
-        if input(f"Files listed in {file_storage.path} doesn't match "
-                 "files on disk. Continue? [y/n] ") != 'y':
+        answ = input(f"Files listed in {file_storage.path} doesn't match "
+                     "files on disk. Continue? [y]es, [n]o, [d]elete ")
+        if answ == 'd':
+            for file_ in extra_files:
+                file_.unlink()
+        elif answ != 'y':
             return 0, 0, False
 
     if not unpacked_path:
