@@ -216,7 +216,7 @@ def convert_file(
         row["source_mime_type"] = row["source_mime_type"].split(";")[0]
     print(end='\x1b[2K')  # clear line
     print(f"\r({str(table.row_count)}/{str(file_count)}): "
-          f"{row['source_path']}", end=" ", flush=True)
+          f"{row['source_path'][0:100]}", end=" ", flush=True)
 
     source_file = File(row, pwconv_path, file_storage, convert_folder)
     moved_to_dest_path = Path(dest_dir, row['source_path'])
