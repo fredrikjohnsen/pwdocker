@@ -306,6 +306,8 @@ def write_id_file_to_storage(tsv_source_path: str, source_dir: str,
     # Remove Siegfried generated columns
     table = remove_fields(table, "namespace", "basis", "warning")
 
+    table = etl.update(table, 'result', "new")
+
     # Treat csv (detected from extension only) as plain text:
     table = etl.convert(table, "source_mime_type", lambda v,
                         _row: "text/plain" if _row.id == "x-fmt/18" else v,
