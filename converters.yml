@@ -109,6 +109,8 @@ message/rfc822:
 multipart/related:
   # Web archive format supported in Chrome
   command: cp <source> <dest>
+text/css:
+  command: python3 -m bin.text2utf8 <source> <dest>
 text/csv:
   command: python3 -m bin.text2utf8 <source> <dest>
 text/html:
