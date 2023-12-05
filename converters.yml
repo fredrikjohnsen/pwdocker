@@ -6,6 +6,8 @@ audio/x-wav:
 application/gzip:
   command: gzip -dk --stdout <source> > <dest>
   dest-ext: null
+application/javascript:
+  command: cp <source> <dest>
 application/mp4:
   command: cp <source> <dest>
 application/msword:
