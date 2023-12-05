@@ -1,5 +1,8 @@
 audio/mpeg:
   command: cp <source> <dest>
+audio/x-wav:
+  command: vlc -I dummy <source> :sout=#transcode{acodec=mpga,ab=192}:std{dst=<dest>,access=file} vlc://quit
+  dest-ext: mp3
 application/gzip:
   command: gzip -dk --stdout <source> > <dest>
   dest-ext: null
