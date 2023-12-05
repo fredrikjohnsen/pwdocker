@@ -72,6 +72,8 @@ application/vnd.rar:
 application/vnd.wordperfect:
   command: python3 -m bin.unoconv2x <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
+application/x-7z-compressed:
+  command: 7za x <source> -o<unpack-path>
 application/xml:
   command: cp <source> <dest>
 application/xhtml+xml:
