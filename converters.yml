@@ -17,6 +17,9 @@ application/oxps:
   # Convert xps to pdf/a. This requires installation of GhostPDL from source.
   command: gxps -sDEVICE=pdfwrite -dPDFA=2 -dNOPAUSE -sOutputFile=<dest> <source>
   dest-ext: pdf
+application/postscript:
+  command: ps2pdf -dPDFA=2 <source> <dest>
+  dest-ext: pdf
 application/rtf:
   command: python3 -m bin.office2pdf <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
