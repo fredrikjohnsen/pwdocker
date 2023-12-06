@@ -143,7 +143,7 @@ class StorageSqliteImpl(ConvertStorage):
     def get_rows(self, mime_type: str, result: str, limit: int, reconvert: bool):
         params = []
         if reconvert:
-            select = "SELECT * from file WHERE result IS NOT NULL"
+            select = "SELECT * from file WHERE result != 'new'"
         else:
             select = """
                 SELECT * FROM file
