@@ -6,6 +6,7 @@ import subprocess
 import mimetypes
 from pathlib import Path
 from typing import Optional, Any, List, Callable, Type, Union, Tuple, Dict
+from shlex import quote
 
 import magic
 
@@ -124,18 +125,18 @@ class File:
             if '<temp>' in cmd:
                 Path(Path(temp_path).parent).mkdir(parents=True, exist_ok=True)
 
-            cmd = cmd.replace("<source>", '"' + source_path + '"')
-            cmd = cmd.replace("<dest>", '"' + dest_path + '"')
-            cmd = cmd.replace("<temp>", '"' + temp_path + '"')
-            cmd = cmd.replace("<mime-type>", '"' + self.mime_type + '"')
+            cmd = cmd.replace("<source>", quote(source_path))
+            cmd = cmd.replace("<dest>", quote(dest_path))
+            cmd = cmd.replace("<temp>", quote(temp_path))
+            cmd = cmd.replace("<mime-type>", self.mime_type)
             cmd = cmd.replace("<dest-ext>", str(dest_ext))
             cmd = cmd.replace("<source-ext>", Path(source_path).suffix)
-            cmd = cmd.replace("<source-parent>", '"' + str(Path(source_path).parent) + '"')
-            cmd = cmd.replace("<dest-parent>", '"' + str(Path(dest_path).parent) + '"')
-            cmd = cmd.replace("<temp-parent>", '"' + str(Path(temp_path).parent) + '"')
+            cmd = cmd.replace("<source-parent>", quote(str(Path(source_path).parent)))
+            cmd = cmd.replace("<dest-parent>", quote(str(Path(dest_path).parent)))
+            cmd = cmd.replace("<temp-parent>", quote(str(Path(temp_path).parent)))
             if xtract:
                 unpack_path = os.path.splitext(source_path)[0]
-                cmd = cmd.replace("<unpack-path>", '"' + unpack_path + '"')
+                cmd = cmd.replace("<unpack-path>", quote(unpack_path))
 
         # Disabled because not in use, and file command doesn't have version
         # with option --mime-type
