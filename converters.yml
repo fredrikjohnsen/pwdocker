@@ -89,18 +89,11 @@ image/bmp:
   command: convert <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
 image/gif:
-  #comment: Command tested and produces pdf/a
-  #command: python3 -m bin.image2pdf <source> <dest>
-  command: convert <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
-  dest-ext: pdf
+  command: cp <source> <dest>
 image/jpeg:
-  #comment: Command tested and produces pdf/a
-  #command: python3 -m bin.image2pdf <source> <dest>
-  command: convert <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
-  dest-ext: pdf
+  command: cp <source> <dest>
 image/png:
-  command: convert <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
-  dest-ext: pdf
+  command: cp <source> <dest>
 image/tiff:
   command: tiff2pdf -o <temp> <source>  && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
