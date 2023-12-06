@@ -145,14 +145,18 @@ def convert_folder(
                 commonprefix = os.path.commonprefix([source_dir, path])
                 relpath = os.path.relpath(path, commonprefix)
                 if relpath not in db_files:
-                    extra_files.append(path)
+                    extra_files.append({'source_path': relpath, 'result': 'new'})
                     print('- ' + relpath)
 
         answ = input(f"Files listed in {file_storage.path} doesn't match "
-                     "files on disk. Continue? [y]es, [n]o, [d]elete ")
+                     "files on disk. Continue? [y]es, [n]o, [a]dd, [d]elete ")
         if answ == 'd':
             for file_ in extra_files:
-                file_.unlink()
+                Path(source_dir, file_['source_path']).unlink()
+        elif answ == 'a':
+            table = etl.fromdicts(extra_files)
+            file_storage.append_rows(table)
+
         elif answ != 'y':
             return 0, 0, False
 
