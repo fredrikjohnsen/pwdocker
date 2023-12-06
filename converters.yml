@@ -102,6 +102,8 @@ image/vnd.dwg:
   dest-ext: pdf
   keep-original: true
   timeout: 240
+image/webp:
+  command: cp <source> <dest>
 message/rfc822:
   command: cp <source> <dest>
 multipart/related:
