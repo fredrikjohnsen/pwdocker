@@ -63,7 +63,9 @@ application/vnd.openxmlformats-officedocument.presentationml.presentation:
   dest-ext: pdf
 application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
   # Excel files are accepted by Library of Congress
-  command: cp <source> <dest>
+  command: soffice --headless  --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <temp-parent> <source> && bin/pdf2pdfa.sh <temp> <dest>
+  keep-original: true
+  dest-ext: pdf
 application/vnd.openxmlformats-officedocument.wordprocessingml.document:
   command: python3 -m bin.office2pdf <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
