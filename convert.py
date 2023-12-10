@@ -289,10 +289,7 @@ def write_id_file_to_storage(tsv_source_path: str, source_dir: str,
                              file_storage: ConvertStorage, unpacked_path: str) -> int:
     ext = os.path.splitext(tsv_source_path)[1]
 
-    if ext == '.tsv':
-        table = etl.fromtsv(tsv_source_path)
-    else:
-        table = etl.fromtext(tsv_source_path, header=['filename'])
+    table = etl.fromtext(tsv_source_path, header=['filename'], strip="\n")
     table = etl.rename(
         table,
         {
