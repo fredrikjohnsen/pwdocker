@@ -73,12 +73,12 @@ application/vnd.openxmlformats-officedocument.wordprocessingml.template:
   command: python3 -m bin.office2pdf <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
 application/vnd.rar:
-  command: mkdir <unpack-path> && unrar x <source> <unpack-path>
+  command: unar -k skip -D <source> -o <unpack-path>
 application/vnd.wordperfect:
   command: python3 -m bin.unoconv2x <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
 application/x-7z-compressed:
-  command: 7za x <source> -o<unpack-path>
+  command: unar -k skip -D <source> -o <unpack-path>
 application/xml:
   command: cp <source> <dest>
 application/xhtml+xml:
@@ -86,7 +86,7 @@ application/xhtml+xml:
   command: python3 -m bin.xhtml2pdf <source> <dest>
   dest-ext: pdf
 application/zip:
-  command: unzip <source> -d <unpack-path> -x __MACOSX/* .DS_Store Thumbs.db
+  command: unar -k skip -D <source> -o <unpack-path>
 image/bmp:
   command: convert <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
