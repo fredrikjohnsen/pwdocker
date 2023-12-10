@@ -249,7 +249,7 @@ def convert_file(
         row['moved_to_target'] = normalized['moved_to_target']
         row["dest_path"] = relpath(normalized["dest_path"], start=dest_dir)
         row["dest_mime_type"] = normalized['mime_type']
-    elif os.path.isdir(dir):
+    elif normalized['mime_type'] == 'inode/directory' and os.path.isdir(dir):
         # if file has been extracted to directory
         row['result'] = Result.SUCCESSFUL
         row["dest_path"] = relpath(normalized["dest_path"], start=dest_dir)
