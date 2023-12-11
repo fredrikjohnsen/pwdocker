@@ -119,6 +119,9 @@ image/vnd.dwg:
   timeout: 240
 image/webp:
   command: cp <source> <dest>
+image/x-tga:
+  command: convert -auto-orient <source> <dest>
+  dest-ext: png
 message/rfc822:
   command: cp <source> <dest>
 multipart/related:
