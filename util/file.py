@@ -80,6 +80,9 @@ class File:
 
         converter = converters[self.mime_type]
 
+        if 'puid' in converter and self.puid in converter['puid']:
+            converter = converter['puid'][self.puid]
+
         if converter.get('remove', False):
             self.normalized['result'] = Result.REMOVED
         else:
