@@ -87,6 +87,9 @@ application/vnd.rar:
 application/vnd.wordperfect:
   command: python3 -m bin.unoconv2x <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
+application/x-msaccess:
+  # No acceptable converter for such files yet
+  command: cp <source> <dest>
 application/x-7z-compressed:
   command: unar -k skip -D <source> -o <unpack-path>
 application/xml:
