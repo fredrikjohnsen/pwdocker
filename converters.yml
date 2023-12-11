@@ -3,6 +3,9 @@ audio/mpeg:
 audio/x-wav:
   command: vlc -I dummy <source> :sout=#transcode{acodec=mpga,ab=192}:std{dst=<dest>,access=file} vlc://quit
   dest-ext: mp3
+application/CDFV2:
+  # Thumbs.db is among these
+  remove: true
 application/gzip:
   command: gzip -dk --stdout <source> > <dest>
   dest-ext: null
