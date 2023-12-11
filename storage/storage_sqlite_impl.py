@@ -148,9 +148,10 @@ class StorageSqliteImpl(ConvertStorage):
         else:
             select = """
                 SELECT * FROM file
-                WHERE  (result IS NULL OR result NOT IN(?))
+                WHERE  (result = 'new' OR result NOT IN(?, ?))
             """
             params.append(Result.SUCCESSFUL)
+            params.append(Result.REMOVED)
 
         if mime_type:
             select += " AND source_mime_type = ?"

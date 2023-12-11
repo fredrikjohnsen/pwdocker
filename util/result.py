@@ -4,3 +4,4 @@ class Result:
     NOT_SUPPORTED = "skipped"
     PASSWORD_PROTECTED = "password"
     TIMEOUT = "timeout"
+    REMOVED = "removed"

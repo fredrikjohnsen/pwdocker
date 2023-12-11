@@ -41,9 +41,9 @@ class File:
         self.stem = Path(self.path).stem
         self.ext = Path(self.path).suffix
         self.normalized = {
-            'dest_path': Optional[str],
-            'result': Optional[str],
-            'mime_type': Optional[str],
+            'dest_path': None,
+            'result': None,
+            'mime_type': None,
             'moved_to_target': 0
         }
 
@@ -80,8 +80,11 @@ class File:
 
         converter = converters[self.mime_type]
 
-        temp_path = self._run_conversion_command(converter, source_path, dest_path,
-                                                 temp_path, orig_ext, dest_dir, debug)
+        if converter.get('remove', False):
+            self.normalized['result'] = Result.REMOVED
+        else:
+            temp_path = self._run_conversion_command(converter, source_path, dest_path,
+                                                     temp_path, orig_ext, dest_dir, debug)
 
         if converter.get('keep-original', False):
             try:

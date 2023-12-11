@@ -239,8 +239,13 @@ def convert_file(
 
     if os.path.isfile(temp_path):
         os.remove(temp_path)
-
-    if normalized["dest_path"] and normalized['mime_type'] != 'inode/directory':
+    if normalized['result'] == Result.REMOVED:
+        if moved_to_dest_path.is_file():
+            moved_to_dest_path.unlink()
+        row['moved_to_target'] = None
+        row['dest_path'] = None
+        row['dest_mime_type'] = None
+    elif normalized["dest_path"] and normalized['mime_type'] != 'inode/directory':
         if (
             str(normalized["dest_path"]).lower() != str(moved_to_dest_path).lower() and
             normalized['moved_to_target'] == 0
