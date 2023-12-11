@@ -57,6 +57,7 @@ def convert(
     orig_ext: bool = cfg['keep-original-ext'],
     debug: bool = cfg['debug'],
     mime_type: str = None,
+    puid: str = None,
     result: str = None,
     db_path: str = None,
     limit: int = None,
@@ -86,7 +87,7 @@ def convert(
     with StorageSqliteImpl(db_path) as file_storage:
         conv_before, conv_now, total = \
             convert_folder(source, dest, debug, orig_ext,
-                           mime_type, result, file_storage, '',
+                           mime_type, puid, result, file_storage, '',
                            first_run, limit, reconvert)
 
         if total is False:
@@ -105,6 +106,7 @@ def convert_folder(
     debug: bool,
     orig_ext: bool,
     mime_type: str,
+    puid: str,
     result: str,
     file_storage: ConvertStorage,
     unpacked_path: str,
@@ -170,7 +172,7 @@ def convert_folder(
         table = file_storage.get_new_rows(limit)
         files_converted_count = 0
     else:
-        table = file_storage.get_rows(mime_type, result, limit, reconvert)
+        table = file_storage.get_rows(mime_type, puid, result, limit, reconvert)
         files_converted_count = written_row_count - etl.nrows(table)
         if files_converted_count > 0:
             console.print(f"({files_converted_count}/{written_row_count}) files have already "

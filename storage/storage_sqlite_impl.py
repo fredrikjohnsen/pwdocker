@@ -140,7 +140,8 @@ class StorageSqliteImpl(ConvertStorage):
             sql,
         )
 
-    def get_rows(self, mime_type: str, result: str, limit: int, reconvert: bool):
+    def get_rows(self, mime_type: str, puid: str, result: str,
+                 limit: int, reconvert: bool):
         params = []
         if reconvert:
             select = "SELECT * from file WHERE result != 'new'"
@@ -154,6 +155,10 @@ class StorageSqliteImpl(ConvertStorage):
         if mime_type:
             select += " AND source_mime_type = ?"
             params.append(mime_type)
+
+        if puid:
+            select += " AND puid = ?"
+            params.append(puid)
 
         if result:
             select += " AND result = ?"
