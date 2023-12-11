@@ -122,6 +122,8 @@ image/webp:
 image/x-tga:
   command: convert -auto-orient <source> <dest>
   dest-ext: png
+inode/x-empty:
+  remove: true
 message/rfc822:
   command: cp <source> <dest>
 multipart/related:
