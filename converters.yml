@@ -99,6 +99,9 @@ application/x-msaccess:
   command: cp <source> <dest>
 application/x-7z-compressed:
   command: unar -k skip -D <source> -o <unpack-path>
+application/x-wine-extension-ini:
+  # file-command often identifies .ini-files with this mime-type
+  command: cp <ource> <dest>
 application/xml:
   command: cp <source> <dest>
 application/xhtml+xml:
