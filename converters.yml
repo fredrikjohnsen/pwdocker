@@ -33,6 +33,9 @@ application/rtf:
 application/pdf:
   command: bin/pdf2pdfa.sh <source> <dest>
   dest-ext: pdf
+application/vnd.microsoft.windows.thumbnail-cache:
+  # Thumbs.db files
+  remove: true
 application/vnd.microsoft.portable-executable:
   # .dll and .exe files
   remove: true
