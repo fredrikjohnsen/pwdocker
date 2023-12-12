@@ -198,7 +198,7 @@ def convert_folder(
                 Path(dest_dir, row['dest_path']).unlink()
 
             file_count = convert_file(file_count, file_storage, row, source_dir,
-                                      table, dest_dir, debug, orig_ext)
+                                      table, dest_dir, debug, orig_ext, reconvert)
 
     print(str(round(time.time() - t0, 2)) + ' sek')
 
@@ -216,6 +216,7 @@ def convert_file(
     dest_dir: str,
     debug: bool,
     orig_ext: bool,
+    reconvert: bool
 ) -> None:
     if row['source_mime_type']:
         # TODO: Why is this necessary?
@@ -224,7 +225,7 @@ def convert_file(
     print(f"\r({str(table.row_count)}/{str(file_count)}): "
           f"{row['source_path'][0:100]}", end=" ", flush=True)
 
-    source_file = File(row, pwconv_path, file_storage)
+    source_file = File(row, pwconv_path, file_storage, reconvert)
     moved_to_dest_path = Path(dest_dir, row['source_path'])
     Path(moved_to_dest_path.parent).mkdir(parents=True, exist_ok=True)
     normalized, temp_path = source_file.convert(source_dir, dest_dir, orig_ext, debug)

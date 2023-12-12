@@ -24,16 +24,17 @@ class File:
         row: Dict[str, Any],
         pwconv_path: Path,
         file_storage: ConvertStorage,
+        reconvert: bool
     ):
         self.pwconv_path = pwconv_path
         self.row = row
         self.file_storage = file_storage
         self.path = row["source_path"]
-        self.mime_type = row["source_mime_type"]
-        self.format = row["format"]
-        self.version = row["version"]
+        self.mime_type = None if reconvert else row["source_mime_type"]
+        self.format = None if reconvert else  row["format"]
+        self.version = None if reconvert else  row["version"]
         self.file_size = row["source_file_size"]
-        self.puid = row['puid']
+        self.puid = None if reconvert else row['puid']
         self.parent = Path(self.path).parent
         self.stem = Path(self.path).stem
         self.ext = Path(self.path).suffix
