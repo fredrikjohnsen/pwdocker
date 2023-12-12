@@ -107,6 +107,8 @@ application/xhtml+xml:
   dest-ext: pdf
 application/zip:
   command: unar -k skip -D <source> -o <unpack-path>
+font/ttf:
+  command: cp <source> <dest>
 image/bmp:
   command: convert <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
