@@ -90,6 +90,10 @@ application/vnd.rar:
 application/vnd.wordperfect:
   command: python3 -m bin.unoconv2x <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
+application/x-dbf:
+  command: soffice --headless  --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <temp-parent> <source> && bin/pdf2pdfa.sh <temp> <dest>
+  keep-original: true
+  dest-ext: pdf
 application/x-msaccess:
   # No acceptable converter for such files yet
   command: cp <source> <dest>
