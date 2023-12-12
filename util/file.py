@@ -24,11 +24,8 @@ class File:
         row: Dict[str, Any],
         pwconv_path: Path,
         file_storage: ConvertStorage,
-        convert_folder: Callable[[str, str, bool, ConvertStorage, bool],
-                                 Union[Tuple[str, int], Tuple[str, int, bool]]]
     ):
         self.pwconv_path = pwconv_path
-        self.convert_folder = convert_folder
         self.row = row
         self.file_storage = file_storage
         self.path = row["source_path"]

@@ -224,7 +224,7 @@ def convert_file(
     print(f"\r({str(table.row_count)}/{str(file_count)}): "
           f"{row['source_path'][0:100]}", end=" ", flush=True)
 
-    source_file = File(row, pwconv_path, file_storage, convert_folder)
+    source_file = File(row, pwconv_path, file_storage)
     moved_to_dest_path = Path(dest_dir, row['source_path'])
     Path(moved_to_dest_path.parent).mkdir(parents=True, exist_ok=True)
     normalized, temp_path = source_file.convert(source_dir, dest_dir, orig_ext, debug)
