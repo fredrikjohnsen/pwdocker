@@ -179,6 +179,8 @@ video/mpeg:
 video/quicktime:
   command: vlc -I dummy <source> --sout=#std{access=file,mux=mp4,dst=<dest>} vlc://quit
   dest-ext: mp4
+video/x-ifo:
+  remove: true
 video/x-ms-wmv:
   command: vlc -I dummy <source> --sout=#transcode{vcodec=h264,vb=1024,acodec=mp4a,ab=192,channels=2,deinterlace}:standard{access=file,mux=ts,dst=<dest>} vlc://quit
   dest-ext: mp4
