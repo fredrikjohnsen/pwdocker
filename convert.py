@@ -62,12 +62,14 @@ def convert(
     db_path: str = None,
     limit: int = None,
     reconvert: bool = False,
-    identify_only: bool = False
+    identify_only: bool = False,
+    check_files: bool = False
 ) -> None:
     """
     Convert all files in SOURCE folder
 
     --db-path: Database path. If not set, it uses default DEST + .db
+    --check-files: Check if files in source corresponds to files in database
     """
 
     Path(dest).mkdir(parents=True, exist_ok=True)
@@ -89,7 +91,8 @@ def convert(
         conv_before, conv_now, total = \
             convert_folder(source, dest, debug, orig_ext,
                            mime_type, puid, result, file_storage, '',
-                           first_run, limit, reconvert, identify_only)
+                           first_run, limit, reconvert, identify_only,
+                           check_files)
 
         if total is False:
             msg = "User terminated"
@@ -114,7 +117,8 @@ def convert_folder(
     first_run: bool,
     limit: int = None,
     reconvert: bool = False,
-    identify_only: bool = False
+    identify_only: bool = False,
+    check_files: bool = False
 ) -> tuple[str, str]:
     """Convert all files in folder"""
 
@@ -130,39 +134,41 @@ def convert_folder(
     written_row_count = file_storage.get_row_count(mime_type, result)
     total_row_count = file_storage.get_row_count(None)
 
-    files_count = sum([len(files) for r, d, files in os.walk(source_dir)])
+    if check_files:
+        files_count = sum([len(files) for r, d, files in os.walk(source_dir)])
 
-    if files_count == 0:
-        return "No files to convert. Exiting.", "bold red"
-    if not unpacked_path and files_count != total_row_count:
-        console.print(f"Row count: {str(total_row_count)}", style="red")
-        console.print(f"File count: {str(files_count)}", style="red")
-        db_files = []
-        table = file_storage.get_all_rows('', None)
-        for row in etl.dicts(table):
-            db_files.append(row['source_path'])
-        print("Following files don't exist in database:")
-        extra_files = []
-        for r, d, files in os.walk(source_dir):
-            for file_ in files:
-                path = Path(r, file_)
-                commonprefix = os.path.commonprefix([source_dir, path])
-                relpath = os.path.relpath(path, commonprefix)
-                if relpath not in db_files:
-                    extra_files.append({'source_path': relpath, 'result': 'new'})
-                    print('- ' + relpath)
+        if files_count == 0:
+            return "No files to convert. Exiting.", "bold red"
 
-        answ = input(f"Files listed in {file_storage.path} doesn't match "
-                     "files on disk. Continue? [y]es, [n]o, [a]dd, [d]elete ")
-        if answ == 'd':
-            for file_ in extra_files:
-                Path(source_dir, file_['source_path']).unlink()
-        elif answ == 'a':
-            table = etl.fromdicts(extra_files)
-            file_storage.append_rows(table)
+        if not unpacked_path and files_count != total_row_count:
+            console.print(f"Row count: {str(total_row_count)}", style="red")
+            console.print(f"File count: {str(files_count)}", style="red")
+            db_files = []
+            table = file_storage.get_all_rows('', None)
+            for row in etl.dicts(table):
+                db_files.append(row['source_path'])
+            print("Following files don't exist in database:")
+            extra_files = []
+            for r, d, files in os.walk(source_dir):
+                for file_ in files:
+                    path = Path(r, file_)
+                    commonprefix = os.path.commonprefix([source_dir, path])
+                    relpath = os.path.relpath(path, commonprefix)
+                    if relpath not in db_files:
+                        extra_files.append({'source_path': relpath, 'result': 'new'})
+                        print('- ' + relpath)
 
-        elif answ != 'y':
-            return 0, 0, False
+            answ = input(f"Files listed in {file_storage.path} doesn't match "
+                         "files on disk. Continue? [y]es, [n]o, [a]dd, [d]elete ")
+            if answ == 'd':
+                for file_ in extra_files:
+                    Path(source_dir, file_['source_path']).unlink()
+            elif answ == 'a':
+                table = etl.fromdicts(extra_files)
+                file_storage.append_rows(table)
+
+            elif answ != 'y':
+                return 0, 0, False
 
     if not unpacked_path:
         console.print("Converting files..", style="bold cyan")
