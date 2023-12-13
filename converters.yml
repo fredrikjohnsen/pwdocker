@@ -134,6 +134,9 @@ image/vnd.dwg:
   timeout: 240
 image/webp:
   command: cp <source> <dest>
+image/x-pict:
+  command: convert <source> <dest>
+  dest-ext: png
 image/x-tga:
   command: convert -auto-orient <source> <dest>
   dest-ext: png
