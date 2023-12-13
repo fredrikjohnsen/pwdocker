@@ -144,7 +144,7 @@ class StorageSqliteImpl(ConvertStorage):
                  limit: int, reconvert: bool):
         params = []
         if reconvert:
-            select = "SELECT * from file WHERE result != 'new'"
+            select = "SELECT * from file WHERE 1 = 1"
         else:
             select = """
                 SELECT * FROM file

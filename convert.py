@@ -61,7 +61,8 @@ def convert(
     result: str = None,
     db_path: str = None,
     limit: int = None,
-    reconvert: bool = False
+    reconvert: bool = False,
+    identify_only: bool = False
 ) -> None:
     """
     Convert all files in SOURCE folder
@@ -88,7 +89,7 @@ def convert(
         conv_before, conv_now, total = \
             convert_folder(source, dest, debug, orig_ext,
                            mime_type, puid, result, file_storage, '',
-                           first_run, limit, reconvert)
+                           first_run, limit, reconvert, identify_only)
 
         if total is False:
             msg = "User terminated"
@@ -112,7 +113,8 @@ def convert_folder(
     unpacked_path: str,
     first_run: bool,
     limit: int = None,
-    reconvert: bool = False
+    reconvert: bool = False,
+    identify_only: bool = False
 ) -> tuple[str, str]:
     """Convert all files in folder"""
 
@@ -172,7 +174,8 @@ def convert_folder(
         table = file_storage.get_new_rows(limit)
         files_converted_count = 0
     else:
-        table = file_storage.get_rows(mime_type, puid, result, limit, reconvert)
+        table = file_storage.get_rows(mime_type, puid, result, limit,
+                                      reconvert or identify_only)
         files_converted_count = written_row_count - etl.nrows(table)
         if files_converted_count > 0:
             console.print(f"({files_converted_count}/{written_row_count}) files have already "
@@ -198,7 +201,8 @@ def convert_folder(
                 Path(dest_dir, row['dest_path']).unlink()
 
             file_count = convert_file(file_count, file_storage, row, source_dir,
-                                      table, dest_dir, debug, orig_ext, reconvert)
+                                      table, dest_dir, debug, orig_ext, reconvert,
+                                      identify_only)
 
     print(str(round(time.time() - t0, 2)) + ' sek')
 
@@ -216,7 +220,8 @@ def convert_file(
     dest_dir: str,
     debug: bool,
     orig_ext: bool,
-    reconvert: bool
+    reconvert: bool,
+    identify_only: bool
 ) -> None:
     if row['source_mime_type']:
         # TODO: Why is this necessary?
@@ -225,11 +230,12 @@ def convert_file(
     print(f"\r({str(table.row_count)}/{str(file_count)}): "
           f"{row['source_path'][0:100]}", end=" ", flush=True)
 
-    source_file = File(row, pwconv_path, file_storage, reconvert)
+    unidentify = reconvert or identify_only
+    source_file = File(row, pwconv_path, file_storage, unidentify)
     moved_to_dest_path = Path(dest_dir, row['source_path'])
     Path(moved_to_dest_path.parent).mkdir(parents=True, exist_ok=True)
-    normalized, temp_path = source_file.convert(source_dir, dest_dir, orig_ext, debug)
-    row['result'] = normalized['result']
+    normalized, temp_path = source_file.convert(source_dir, dest_dir, orig_ext,
+                                                debug, identify_only)
     row['source_mime_type'] = source_file.mime_type
     row['format'] = source_file.format
     row['source_file_size'] = source_file.file_size
@@ -238,11 +244,15 @@ def convert_file(
 
     dir = os.path.join(source_dir, source_file.parent, source_file.stem)
 
-    if os.path.isfile(temp_path):
+    if not identify_only and os.path.isfile(temp_path):
         os.remove(temp_path)
-    if normalized['result'] == Result.REMOVED:
+
+    if identify_only:
+        pass
+    elif normalized['result'] == Result.REMOVED:
         if moved_to_dest_path.is_file():
             moved_to_dest_path.unlink()
+        row['result'] = normalized['result']
         row['moved_to_target'] = None
         row['dest_path'] = None
         row['dest_mime_type'] = None
@@ -254,6 +264,7 @@ def convert_file(
             if moved_to_dest_path.is_file():
                 moved_to_dest_path.unlink()
 
+        row['result'] = normalized['result']
         row['moved_to_target'] = normalized['moved_to_target']
         row["dest_path"] = relpath(normalized["dest_path"], start=dest_dir)
         row["dest_mime_type"] = normalized['mime_type']
@@ -273,6 +284,7 @@ def convert_file(
 
         file_count += total
     else:
+        row['result'] = normalized['result']
         console.print('  ' + row["result"], style="bold red")
         try:
             shutil.copyfile(Path(source_dir, row["source_path"]),

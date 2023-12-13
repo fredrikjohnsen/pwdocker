@@ -24,17 +24,17 @@ class File:
         row: Dict[str, Any],
         pwconv_path: Path,
         file_storage: ConvertStorage,
-        reconvert: bool
+        unidentify: bool
     ):
         self.pwconv_path = pwconv_path
         self.row = row
         self.file_storage = file_storage
         self.path = row["source_path"]
-        self.mime_type = None if reconvert else row["source_mime_type"]
-        self.format = None if reconvert else  row["format"]
-        self.version = None if reconvert else  row["version"]
+        self.mime_type = None if unidentify else row["source_mime_type"]
+        self.format = None if unidentify else  row["format"]
+        self.version = None if unidentify else  row["version"]
         self.file_size = row["source_file_size"]
-        self.puid = None if reconvert else row['puid']
+        self.puid = None if unidentify else row['puid']
         self.parent = Path(self.path).parent
         self.stem = Path(self.path).stem
         self.ext = Path(self.path).suffix
@@ -46,7 +46,7 @@ class File:
         }
 
     def convert(self, source_dir: str, dest_dir: str, orig_ext: bool,
-                debug: bool) -> dict[str, Type[str]]:
+                debug: bool, identify_only: bool) -> dict[str, Type[str]]:
         """Convert file to archive format"""
 
         source_path = os.path.join(source_dir, self.path)
@@ -68,6 +68,9 @@ class File:
 
         if self.mime_type in ['', 'None', None]:
             self.mime_type = magic.from_file(source_path, mime=True)
+
+        if identify_only:
+            return self.normalized, temp_path
 
         self.normalized["mime_type"] = self.mime_type
 
