@@ -137,6 +137,10 @@ image/vnd.dxf:
   dest-ext: pdf
   keep-original: true
   timeout: 90
+image/vnd.ms-modi:
+  # Can be manually converted with mdi2tif
+  # https://www.microsoft.com/en-us/download/details.aspx?id=30328
+  dest-ext: pdf
 image/webp:
   command: cp <source> <dest>
 image/x-pict:
