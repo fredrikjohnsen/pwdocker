@@ -141,6 +141,9 @@ inode/x-empty:
   remove: true
 message/rfc822:
   command: cp <source> <dest>
+multipart/appledouble:
+  # Resource fork files from apple Mac OS operating system
+  remove: true
 multipart/related:
   # Web archive format supported in Chrome
   command: cp <source> <dest>
