@@ -121,6 +121,9 @@ font/ttf:
 image/bmp:
   command: convert <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
+image/emf:
+  command: soffice --headless --convert-to png --outdir <dest-parent> <source>
+  dest-ext: png
 image/gif:
   command: cp <source> <dest>
 image/jpeg:
