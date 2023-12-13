@@ -131,7 +131,12 @@ image/vnd.dwg:
   command: python3 -m bin.dwg2pdf <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
   keep-original: true
-  timeout: 240
+  timeout: 90
+image/vnd.dxf:
+  command: python3 -m bin.dxf2pdf <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
+  dest-ext: pdf
+  keep-original: true
+  timeout: 90
 image/webp:
   command: cp <source> <dest>
 image/x-pict:
