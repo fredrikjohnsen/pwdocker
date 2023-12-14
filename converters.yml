@@ -76,10 +76,10 @@ application/vnd.oasis.opendocument.spreadsheet:
   dest-ext: pdf
   keep-original: true
 application/vnd.oasis.opendocument.text:
-  command: python3 -m bin.unoconv2x <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
+  command: soffice --headless --convert-to pdf --outdir <temp-parent> <source> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
 application/vnd.openxmlformats-officedocument.presentationml.presentation:
-  command: python3 -m bin.unoconv2x <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
+  command: soffice --headless --convert-to pdf --outdir <temp-parent> <source> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
 application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
   # Excel files are accepted by Library of Congress
@@ -95,7 +95,7 @@ application/vnd.openxmlformats-officedocument.wordprocessingml.template:
 application/vnd.rar:
   command: unar -k skip -D <source> -o <unpack-path>
 application/vnd.wordperfect:
-  command: python3 -m bin.unoconv2x <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
+  command: soffice --headless --convert-to pdf --outdir <temp-parent> <source> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
 application/x-cdf:
   # .cda files that tells where a CD track starts and stops
