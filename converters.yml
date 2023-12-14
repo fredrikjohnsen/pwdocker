@@ -103,6 +103,8 @@ application/x-dbf:
 application/x-msaccess:
   # No acceptable converter for such files yet
   command: cp <source> <dest>
+application/x-sqlite3:
+  command: cp <source> <dest>
 application/x-wine-extension-ini:
   # file-command often identifies .ini-files with this mime-type
   command: cp <ource> <dest>
