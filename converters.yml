@@ -1,15 +1,3 @@
-audio/3gpp:
-  # 3gpp is recognized as audio in Siegfried, but it's a video format
-  command: vlc -I dummy <source> --sout=#std{access=file,mux=mp4,dst=<dest>} vlc://quit
-  dest-ext: mp4
-audio/mpeg:
-  command: cp <source> <dest>
-audio/x-ms-wma:
-  command: vlc -I dummy <source> :sout=#transcode{acodec=mpga,ab=192}:std{dst=<dest>,access=file} vlc://quit
-  dest-ext: mp3
-audio/x-wav:
-  command: vlc -I dummy <source> :sout=#transcode{acodec=mpga,ab=192}:std{dst=<dest>,access=file} vlc://quit
-  dest-ext: mp3
 application/CDFV2:
   # Thumbs.db is among these
   remove: true
@@ -123,6 +111,18 @@ application/xhtml+xml:
   dest-ext: pdf
 application/zip:
   command: unar -k skip -D <source> -o <unpack-path>
+audio/3gpp:
+  # 3gpp is recognized as audio in Siegfried, but it's a video format
+  command: vlc -I dummy <source> --sout=#std{access=file,mux=mp4,dst=<dest>} vlc://quit
+  dest-ext: mp4
+audio/mpeg:
+  command: cp <source> <dest>
+audio/x-ms-wma:
+  command: vlc -I dummy <source> :sout=#transcode{acodec=mpga,ab=192}:std{dst=<dest>,access=file} vlc://quit
+  dest-ext: mp3
+audio/x-wav:
+  command: vlc -I dummy <source> :sout=#transcode{acodec=mpga,ab=192}:std{dst=<dest>,access=file} vlc://quit
+  dest-ext: mp3
 font/ttf:
   command: cp <source> <dest>
 image/bmp:
