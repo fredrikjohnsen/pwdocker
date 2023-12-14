@@ -155,6 +155,9 @@ image/vnd.dxf:
   dest-ext: pdf
   keep-original: true
   timeout: 90
+image/vnd.microsoft.icon:
+  command: cp <source> <dest>
+  dest-ext: ico
 image/vnd.ms-modi:
   # Can be manually converted with mdi2tif
   # https://www.microsoft.com/en-us/download/details.aspx?id=30328
