@@ -140,6 +140,9 @@ image/gif:
   command: cp <source> <dest>
 image/jpeg:
   command: cp <source> <dest>
+image/jxr:
+  command: convert <source> <dest>
+  dest-ext: webp
 image/png:
   command: cp <source> <dest>
 image/tiff:
