@@ -91,6 +91,8 @@ application/vnd.rar:
 application/vnd.wordperfect:
   command: soffice --headless --convert-to pdf --outdir <temp-parent> <source> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
+application/x-7z-compressed:
+  command: unar -k skip -D <source> -o <unpack-path>
 application/x-cdf:
   # .cda files that tells where a CD track starts and stops
   remove: true
@@ -101,8 +103,6 @@ application/x-dbf:
 application/x-msaccess:
   # No acceptable converter for such files yet
   command: cp <source> <dest>
-application/x-7z-compressed:
-  command: unar -k skip -D <source> -o <unpack-path>
 application/x-wine-extension-ini:
   # file-command often identifies .ini-files with this mime-type
   command: cp <ource> <dest>
