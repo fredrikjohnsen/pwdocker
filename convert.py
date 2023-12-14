@@ -203,7 +203,10 @@ def convert_folder(
         table.row_count = 0
         for row in etl.dicts(table):
             table.row_count += 1
-            if reconvert and os.path.isfile(Path(dest_dir, row['dest_path'])):
+            if (
+                reconvert and row['dest_path'] and
+                os.path.isfile(Path(dest_dir, row['dest_path']))
+            ):
                 Path(dest_dir, row['dest_path']).unlink()
 
             file_count = convert_file(file_count, file_storage, row, source_dir,
