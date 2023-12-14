@@ -86,6 +86,8 @@ class File:
 
         if converter.get('remove', False):
             self.normalized['result'] = Result.REMOVED
+        elif self.mime_type == 'application/encrypted':
+            self.normalized['result'] = Result.PASSWORD_PROTECTED
         else:
             temp_path = self._run_conversion_command(converter, source_path, dest_path,
                                                      temp_path, orig_ext, dest_dir, debug)

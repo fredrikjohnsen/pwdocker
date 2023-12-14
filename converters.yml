@@ -1,6 +1,9 @@
 application/CDFV2:
   # Thumbs.db is among these
   remove: true
+application/encrypted:
+  # These are given result 'password' in database
+  command: null
 application/gzip:
   command: gzip -dk --stdout <source> > <dest>
   dest-ext: null
