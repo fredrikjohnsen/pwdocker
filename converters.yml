@@ -162,6 +162,9 @@ image/vnd.ms-modi:
   # Can be manually converted with mdi2tif
   # https://www.microsoft.com/en-us/download/details.aspx?id=30328
   dest-ext: pdf
+image/vnd.adobe.photoshop:
+  command: convert <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
+  dest-ext: pdf
 image/webp:
   command: cp <source> <dest>
 image/x-pict:
