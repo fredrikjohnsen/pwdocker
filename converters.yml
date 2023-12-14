@@ -189,6 +189,8 @@ text/html:
 text/markdown:
   command: python3 -m bin.text2utf8 <source> <dest>
   dest-ext: md
+text/x-msdos-batch:
+  command: cp <source> <dest>
 text/plain:
   command: python3 -m bin.text2utf8 <source> <dest>
 text/vnd.sosi:
