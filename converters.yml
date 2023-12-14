@@ -81,6 +81,9 @@ application/vnd.oasis.opendocument.text:
 application/vnd.openxmlformats-officedocument.presentationml.presentation:
   command: soffice --headless --convert-to pdf --outdir <temp-parent> <source> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
+application/vnd.openxmlformats-officedocument.presentationml.slideshow:
+  command: soffice --headless --convert-to pdf --outdir <temp-parent> <source> && bin/pdf2pdfa.sh <temp> <dest>
+  dest-ext: pdf
 application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
   # Excel files are accepted by Library of Congress
   command: soffice --headless  --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <temp-parent> <source> && bin/pdf2pdfa.sh <temp> <dest>
