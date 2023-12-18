@@ -89,10 +89,9 @@ def convert(
 
     with StorageSqliteImpl(db_path) as file_storage:
         conv_before, conv_now, total = \
-            convert_folder(source, dest, debug, orig_ext,
-                           mime_type, puid, result, file_storage, '',
-                           first_run, limit, reconvert, identify_only,
-                           check_files)
+            convert_folder(source, dest, debug, orig_ext, file_storage, '',
+                           first_run, mime_type, puid, result, limit, reconvert,
+                           identify_only, check_files)
 
         if total is False:
             msg = "User terminated"
@@ -109,12 +108,12 @@ def convert_folder(
     dest_dir: str,
     debug: bool,
     orig_ext: bool,
-    mime_type: str,
-    puid: str,
-    result: str,
     file_storage: ConvertStorage,
     unpacked_path: str,
     first_run: bool,
+    mime_type: str = None,
+    puid: str = None,
+    result: str = None,
     limit: int = None,
     reconvert: bool = False,
     identify_only: bool = False,
@@ -288,7 +287,7 @@ def convert_file(
 
         count_before, count_now, total = \
             convert_folder(source_dir, dest_dir,
-                           debug, orig_ext, None, None, file_storage,
+                           debug, orig_ext, file_storage,
                            row['dest_path'], True)
 
         file_count += total
