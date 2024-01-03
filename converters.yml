@@ -116,6 +116,10 @@ application/xhtml+xml:
   dest-ext: pdf
 application/zip:
   command: unar -k skip -D <source> -o <unpack-path>
+  puid:
+    fmt1441: # iWork files
+      # iWork files have a preview file, so we remove other data
+      command: unzip <source> -d <unpack-path> -x Index/* Metadata/* Data/*
 audio/3gpp:
   # 3gpp is recognized as audio in Siegfried, but it's a video format
   command: vlc -I dummy <source> --sout=#std{access=file,mux=mp4,dst=<dest>} vlc://quit
