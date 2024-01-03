@@ -82,7 +82,9 @@ class File:
         converter = converters[self.mime_type]
 
         if 'puid' in converter and self.puid in converter['puid']:
-            converter = converter['puid'][self.puid]
+            converter.update(converter['puid'][self.puid])
+        elif 'source-ext' in converter and self.ext in converter['source-ext']:
+            converter.update(converter['source-ext'][self.ext])
 
         if converter.get('remove', False):
             self.normalized['result'] = Result.REMOVED
@@ -120,7 +122,13 @@ class File:
             dest_path:        destination file path for where the converted file
                               should be saved
         """
-        cmd, dest_ext = self._get_dest_ext_and_cmd(converter)
+        cmd = converter["command"] if 'command' in converter else None
+
+        if 'dest-ext' not in converter:
+            dest_ext = self.ext
+        else:
+            dest_ext = (None if converter['dest-ext'] is None
+                        else '.' + converter['dest-ext'].strip('.'))
 
         xtract = False
         if cmd and '<unpack-path>' in cmd:
@@ -210,30 +218,4 @@ class File:
                 self.normalized["mime_type"] = magic.from_file(dest_path, mime=True)
 
         return temp_path
-
-
-    def _get_dest_ext_and_cmd(self, converter: Any) -> Tuple:
-        """
-        Extract the destination extension and the conversion command
-
-        Args:
-            converter: The converter to use
-        Returns:
-            A Tuple containing the command and destination extension
-        """
-
-        cmd = converter["command"] if 'command' in converter else None
-
-        if 'dest-ext' not in converter:
-            dest_ext = self.ext
-        else:
-            dest_ext = (None if converter['dest-ext'] is None
-                        else '.' + converter['dest-ext'].strip('.'))
-
-        if ('source-ext' in converter and self.ext in converter['source-ext']):
-            cmd = converter['source-ext'][self.ext]['command']
-            if 'dest-ext' in converter['source-ext'][self.ext]:
-                dest_ext = converter['source-ext'][self.ext]['dest-ext']
-
-        return cmd, dest_ext
 
