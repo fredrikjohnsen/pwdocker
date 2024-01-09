@@ -250,7 +250,9 @@ def convert_file(
     row['version'] = source_file.version
     row['puid'] = source_file.puid
 
-    dir = os.path.join(source_dir, source_file.parent, source_file.stem)
+    # path to directory for extracted file
+    if normalized['dest_path']:
+        dir = os.path.join(source_dir, normalized['dest_path'])
 
     if not identify_only and os.path.isfile(temp_path):
         os.remove(temp_path)
@@ -278,8 +280,10 @@ def convert_file(
         row["dest_mime_type"] = normalized['mime_type']
     elif normalized['mime_type'] == 'inode/directory' and os.path.isdir(dir):
         # if file has been extracted to directory
+        if moved_to_dest_path.is_file():
+            moved_to_dest_path.unlink()
         row['result'] = Result.SUCCESSFUL
-        row["dest_path"] = relpath(normalized["dest_path"], start=dest_dir)
+        row["dest_path"] = relpath(normalized["dest_path"], start=source_dir)
         row['dest_mime_type'] = 'inode/directory'
 
         unpacked_count = sum([len(files) for r, d, files in os.walk(dir)])

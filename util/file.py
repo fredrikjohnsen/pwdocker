@@ -153,6 +153,9 @@ class File:
             cmd = cmd.replace("<temp-parent>", quote(str(Path(temp_path).parent)))
             if xtract:
                 unpack_path = os.path.splitext(source_path)[0]
+                if unpack_path == source_path:
+                    unpack_path = source_path + '_extracted'
+                dest_path = unpack_path
                 cmd = cmd.replace("<unpack-path>", quote(unpack_path))
 
         # Disabled because not in use, and file command doesn't have version
@@ -170,9 +173,9 @@ class File:
             self.normalized["dest_path"] = None
             return temp_path
 
-        if xtract:
+        if xtract and os.path.exists(unpack_path):
             self.normalized['result'] = Result.SUCCESSFUL
-            self.normalized['dest_path'] = dest_path
+            self.normalized['dest_path'] = unpack_path
             self.normalized['mime_type'] = 'inode/directory'
             return temp_path
 
