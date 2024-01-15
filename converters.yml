@@ -7,6 +7,13 @@ application/encrypted:
 application/gzip:
   command: gzip -dk --stdout <source> > <dest>
   dest-ext: null
+  source-ext:
+    .emz:
+      command: soffice --convert-to png --outdir <dest-parent> <source>
+      dest-ext: png
+    .wmz:
+      command: soffice --convert-to png --outdir <dest-parent> <source>
+      dest-ext: png
 application/javascript:
   command: cp <source> <dest>
 application/mp4:
