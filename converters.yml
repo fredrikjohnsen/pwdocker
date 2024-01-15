@@ -151,6 +151,9 @@ image/emf:
   dest-ext: png
 image/gif:
   command: cp <source> <dest>
+image/heif:
+  command: convert <source> <dest>
+  dest-ext: png
 image/jpeg:
   command: cp <source> <dest>
 image/jxr:
