@@ -16,6 +16,8 @@ application/gzip:
       dest-ext: png
 application/javascript:
   command: cp <source> <dest>
+application/json:
+  command: python3 -m bin.text2utf8 <source> <dest>
 application/mp4:
   command: cp <source> <dest>
 application/msword:
