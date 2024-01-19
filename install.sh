@@ -84,7 +84,7 @@ cecho "CYAN" "Installing apt-gettable dependencies..";
 echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | debconf-set-selections;
 apt-get install -y ttf-mscorefonts-installer pandoc abiword sqlite3 uchardet \
     libreoffice python3-wheel tesseract-ocr ghostscript unar \
-    onlyoffice-desktopeditors onlyoffice-documentbuilder \
+    onlyoffice-desktopeditors onlyoffice-documentbuilder texlive-latex-extra \
     icc-profiles-free clamtk  php-cli wkhtmltopdf \
     clamav-daemon clamav-unofficial-sigs clamdscan libclamunrar9 wimtools vlc \
     ruby-dev  imagemagick cabextract dos2unix \

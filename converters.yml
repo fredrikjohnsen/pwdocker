@@ -209,7 +209,9 @@ text/css:
 text/csv:
   command: python3 -m bin.text2utf8 <source> <dest>
 text/html:
-  command: python3 -m bin.html2pdf <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
+  # Timout for pandoc on http requests are 30 sec.
+  # So timeout for conversion should be set higher than this.
+  command: pandoc --resource-path <source-parent> -V geometry:margin=1in <source> -f html -t pdf -o <temp> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
 text/markdown:
   command: python3 -m bin.text2utf8 <source> <dest>
