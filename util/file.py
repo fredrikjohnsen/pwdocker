@@ -59,6 +59,11 @@ class File:
             p = subprocess.Popen(cmd, cwd=source_dir, stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE)
             out, err = p.communicate()
+            if err:
+                self.normalized["result"] = Result.ERROR
+                self.normalized["dest_path"] = None
+                return self.normalized, temp_path
+
             fileinfo = json.loads(out)
             self.mime_type = fileinfo['files'][0]['matches'][0]['mime']
             self.format = fileinfo['files'][0]['matches'][0]['format']

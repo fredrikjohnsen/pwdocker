@@ -5,3 +5,4 @@ class Result:
     PASSWORD_PROTECTED = "password"
     TIMEOUT = "timeout"
     REMOVED = "removed"
+    ERROR = "error"
