@@ -133,6 +133,8 @@ audio/3gpp:
   # 3gpp is recognized as audio in Siegfried, but it's a video format
   command: vlc -I dummy <source> --sout=#std{access=file,mux=mp4,dst=<dest>} vlc://quit
   dest-ext: mp4
+audio/aac:
+  command: cp <source> <dest>
 audio/mpeg:
   command: cp <source> <dest>
 audio/x-ms-wma:
