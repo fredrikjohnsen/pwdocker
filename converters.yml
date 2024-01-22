@@ -120,8 +120,7 @@ application/x-wine-extension-ini:
 application/xml:
   command: cp <source> <dest>
 application/xhtml+xml:
-  comment: Command tested and produces pdf/a
-  command: python3 -m bin.xhtml2pdf <source> <dest>
+  command: pandoc --resource-path <source-parent> -V geometry:margin=1in,landscape --pdf-engine=xelatex <source> -f html -t pdf -o <temp> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
 application/zip:
   command: unar -k skip -D <source> -o <unpack-path>
@@ -216,7 +215,7 @@ text/csv:
 text/html:
   # Timout for pandoc on http requests are 30 sec.
   # So timeout for conversion should be set higher than this.
-  command: pandoc --resource-path <source-parent> -V geometry:margin=1in <source> -f html -t pdf -o <temp> && bin/pdf2pdfa.sh <temp> <dest>
+  command: pandoc --resource-path <source-parent> -V geometry:margin=1in,landscape --pdf-engine=xelatex <source> -f html -t pdf -o <temp> && bin/pdf2pdfa.sh <temp> <dest>
   dest-ext: pdf
 text/markdown:
   command: python3 -m bin.text2utf8 <source> <dest>

@@ -85,7 +85,7 @@ echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select tr
 apt-get install -y ttf-mscorefonts-installer pandoc abiword sqlite3 uchardet \
     libreoffice python3-wheel tesseract-ocr ghostscript unar \
     onlyoffice-desktopeditors onlyoffice-documentbuilder texlive-latex-extra \
-    icc-profiles-free clamtk  php-cli wkhtmltopdf \
+    icc-profiles-free clamtk  php-cli wkhtmltopdf texlive-xetex librsvg2-bin \
     clamav-daemon clamav-unofficial-sigs clamdscan libclamunrar9 wimtools vlc \
     ruby-dev  imagemagick cabextract dos2unix \
     fontforge python3-pgmagick graphicsmagick graphviz img2pdf golang coolwsd \
