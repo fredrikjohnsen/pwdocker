@@ -311,7 +311,7 @@ def convert_file(
     # Without sleep, we sometimes get Operational error:
     # unable to open database file
     # Don't know why
-    time.sleep(0.02)
+    time.sleep(0.1)
     file_storage.update_row(row["source_path"], list(row.values()))
 
     return file_count
