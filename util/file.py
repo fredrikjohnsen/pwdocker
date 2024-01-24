@@ -59,17 +59,14 @@ class File:
             p = subprocess.Popen(cmd, cwd=source_dir, stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE)
             out, err = p.communicate()
-            if err:
-                self.normalized["result"] = Result.ERROR
-                self.normalized["dest_path"] = None
-                return self.normalized, temp_path
 
-            fileinfo = json.loads(out)
-            self.mime_type = fileinfo['files'][0]['matches'][0]['mime']
-            self.format = fileinfo['files'][0]['matches'][0]['format']
-            self.version = fileinfo['files'][0]['matches'][0]['version']
-            self.file_size = fileinfo['files'][0]['filesize']
-            self.puid = fileinfo['files'][0]['matches'][0]['id']
+            if not err:
+                fileinfo = json.loads(out)
+                self.mime_type = fileinfo['files'][0]['matches'][0]['mime']
+                self.format = fileinfo['files'][0]['matches'][0]['format']
+                self.version = fileinfo['files'][0]['matches'][0]['version']
+                self.file_size = fileinfo['files'][0]['filesize']
+                self.puid = fileinfo['files'][0]['matches'][0]['id']
 
         if self.mime_type in ['', 'None', None]:
             self.mime_type = magic.from_file(source_path, mime=True)
