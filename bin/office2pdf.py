@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+import sys
 from pathlib import Path
 
 import typer
@@ -34,8 +35,9 @@ def office2pdf(source_file: str, target_file: str):
     command = ['documentbuilder', docbuilder_file]
     result, out, err = run_shell_command(command)
 
-    if result:
-        raise Exception("Conversion failed")
+    if err:
+        print('err', err)
+        sys.exit(1)
 
 if __name__ == '__main__':
     typer.run(office2pdf)
