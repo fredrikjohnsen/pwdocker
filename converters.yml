@@ -116,7 +116,7 @@ application/x-sqlite3:
   command: cp <source> <dest>
 application/x-wine-extension-ini:
   # file-command often identifies .ini-files with this mime-type
-  command: cp <ource> <dest>
+  command: cp <source> <dest>
 application/xml:
   command: cp <source> <dest>
 application/xhtml+xml:
