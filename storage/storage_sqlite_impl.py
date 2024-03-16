@@ -110,14 +110,17 @@ class StorageSqliteImpl(ConvertStorage):
         self._conn.execute(self._add_converted_file_str, data)
         self._conn.commit()
 
-    def get_row_count(self, mime=None, status=None):
+    def get_row_count(self, mime=None, status=None, original=False):
         cursor = self._conn.cursor()
         query = """
         SELECT COUNT(*) FROM file
-        WHERE status != 'converted'
+        WHERE 1 = 1 -- status != 'converted'
         """
         conds = []
         params = []
+
+        if original:
+            query += "\nAND source_id IS NULL"
 
         if mime:
             conds.append("mime = ?")
@@ -134,7 +137,7 @@ class StorageSqliteImpl(ConvertStorage):
 
         return cursor.fetchone()[0]
 
-    def get_all_rows(self, unpacked_path, limit, timestamp):
+    def get_all_rows(self, unpacked_path, limit):
 
         if unpacked_path:
             unpacked_path = os.path.join(unpacked_path, '')
@@ -143,14 +146,9 @@ class StorageSqliteImpl(ConvertStorage):
         sql= f"""
         SELECT * FROM file
         where path like '{str(unpacked_path)}%'
-          and  (status IS NULL OR status NOT IN(?, ?, ?))
+          and source_id IS NULL
         """
         params = []
-        params.append('converted')
-        params.append('accepted')
-        params.append('removed')
-
-        sql += " AND status = 'new'"
 
         if limit:
             sql += f"\nlimit {limit}"

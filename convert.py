@@ -65,14 +65,14 @@ def convert(
     limit: int = None,
     reconvert: bool = False,
     identify_only: bool = False,
-    check_files: bool = False
+    filecheck: bool = False
 ) -> None:
     """
     Convert all files in SOURCE folder
 
     --db-path: Database path. If not set, it uses default DEST + .db
 
-    --check-files: Check if files in source corresponds to files in database
+    --filecheck: Check if files in source match files in database
 
     --status:  Filter on status: accepted, converted, deleted, failed,\n
     ..         protected, skipped, timeout
@@ -98,9 +98,9 @@ def convert(
     with StorageSqliteImpl(db_path) as file_storage:
         conv_before, conv_now, total = \
             convert_folder(source, dest, debug, orig_ext,
-                           file_storage, '', first_run,
+                           file_storage, '', first_run, None,
                            mime, puid, status, limit, reconvert,
-                           identify_only, check_files, timestamp)
+                           identify_only, filecheck, timestamp)
 
         if total is False:
             msg = "User terminated"
@@ -127,11 +127,12 @@ def convert_folder(
     limit: int = None,
     reconvert: bool = False,
     identify_only: bool = False,
-    check_files: bool = False,
+    filecheck: bool = False,
     timestamp: datetime.datetime = None
 ) -> tuple[str, str]:
     """Convert all files in folder"""
 
+    # Write new files to database
     filelist_dir = os.path.join(dest_dir, unpacked_path)
     filelist_path = filelist_dir.rstrip('/') + '-filelist.txt'
     is_new_batch = os.path.isfile(filelist_path)
@@ -141,55 +142,20 @@ def convert_folder(
         write_id_file_to_storage(filelist_path, source_dir, file_storage,
                                  unpacked_path, source_id = source_id)
 
-    written_row_count = file_storage.get_row_count(mime, status)
-    total_row_count = file_storage.get_row_count(None)
-
-    if check_files:
-        files_count = sum([len(files) for r, d, files in os.walk(source_dir)])
-
-        if files_count == 0:
-            return "No files to convert. Exiting.", "bold red"
-
-        if not unpacked_path and files_count != total_row_count:
-            console.print(f"Row count: {str(total_row_count)}", style="red")
-            console.print(f"File count: {str(files_count)}", style="red")
-            db_files = []
-            table = file_storage.get_all_rows('', None)
-            for row in etl.dicts(table):
-                db_files.append(row['source_path'])
-            print("Following files don't exist in database:")
-            extra_files = []
-            for r, d, files in os.walk(source_dir):
-                for file_ in files:
-                    path = Path(r, file_)
-                    commonprefix = os.path.commonprefix([source_dir, path])
-                    relpath = os.path.relpath(path, commonprefix)
-                    if relpath not in db_files:
-                        extra_files.append({'path': relpath, 'status': 'new'})
-                        print('- ' + relpath)
-
-            answ = input(f"Files listed in {file_storage.path} doesn't match "
-                         "files on disk. Continue? [y]es, [n]o, [a]dd, [d]elete ")
-            if answ == 'd':
-                for file_ in extra_files:
-                    Path(source_dir, file_['source_path']).unlink()
-            elif answ == 'a':
-                table = etl.fromdicts(extra_files)
-                file_storage.append_rows(table)
-
-            elif answ != 'y':
-                return 0, 0, False
+    if filecheck:
+        res = check_files(source_dir, unpacked_path, file_storage)
+        if res == 'cancelled':
+            return 0, 0, False
 
     if not unpacked_path:
         console.print("Converting files..", style="bold cyan")
 
-    if first_run:
-        files_converted_count = 0
-        table = file_storage.get_all_rows(unpacked_path, limit, timestamp)
-    elif is_new_batch:
+    # Get table and number of converted files
+    if is_new_batch:
         table = file_storage.get_new_rows(limit)
         files_converted_count = 0
     else:
+        written_row_count = file_storage.get_row_count(mime, status)
         table = file_storage.get_rows(mime, puid, status, limit,
                                       reconvert or identify_only,
                                       timestamp)
@@ -415,6 +381,42 @@ def get_conversion_result(before: int, to_convert: int,
         return ("Not all files were converted. See the db table for details.",
                 "bold cyan")
 
+def check_files(source_dir, unpacked_path, file_storage):
+    """ Check if files in database match files on disk """
+
+    files_count = sum([len(files) for r, d, files in os.walk(source_dir)])
+    total_row_count = file_storage.get_row_count(original=True)
+
+    if not unpacked_path and files_count != total_row_count:
+        console.print(f"Row count: {str(total_row_count)}", style="red")
+        console.print(f"File count: {str(files_count)}", style="red")
+        db_files = []
+        table = file_storage.get_all_rows('', None)
+        for row in etl.dicts(table):
+            db_files.append(row['path'])
+        print("Following files don't exist in database:")
+        extra_files = []
+        for r, d, files in os.walk(source_dir):
+            for file_ in files:
+                path = Path(r, file_)
+                commonprefix = os.path.commonprefix([source_dir, path])
+                relpath = os.path.relpath(path, commonprefix)
+                if relpath not in db_files:
+                    extra_files.append({'path': relpath, 'status': 'new'})
+                    print('- ' + relpath)
+
+        answ = input(f"Files listed in {file_storage.path} doesn't match "
+                     "files on disk. Continue? [y]es, [n]o, [a]dd, [d]elete ")
+        if answ == 'd':
+            for file_ in extra_files:
+                Path(source_dir, file_['source_path']).unlink()
+            return 'deleted'
+        elif answ == 'a':
+            table = etl.fromdicts(extra_files)
+            file_storage.append_rows(table)
+            return 'added'
+        elif answ != 'y':
+            return 'cancelled'
 
 if __name__ == "__main__":
     typer.run(convert)
