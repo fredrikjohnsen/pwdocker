@@ -20,6 +20,7 @@ class StorageSqliteImpl(ConvertStorage):
         format varchar(100),
         version varchar(32),
         mime varchar(100),
+        encoding varchar(30),
         ext varchar(10),
         status varchar(10),
         status_ts datetime default current_timestamp,
@@ -46,7 +47,8 @@ class StorageSqliteImpl(ConvertStorage):
     _update_str = """
         UPDATE file 
         SET size = :size, puid = :puid, format = :format, version = :version,
-            mime = :mime, ext = :ext, status = :status, status_ts = :status_ts
+            mime = :mime, encoding = :encoding, ext = :ext, status = :status,
+            status_ts = :status_ts
         WHERE id = :id
         """
 

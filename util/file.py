@@ -74,6 +74,11 @@ class File:
                 self.version = fileinfo['files'][0]['matches'][0]['version']
                 self.size = fileinfo['files'][0]['filesize']
                 self.puid = fileinfo['files'][0]['matches'][0]['id']
+                basis = fileinfo['files'][0]['matches'][0]['basis']
+                if self.mime == 'text/plain' and 'text match' in basis:
+                    self.encoding = basis.split('text match ')[1]
+                else:
+                    self.encoding = None
 
         if self.mime in ['', 'None', None]:
             self.mime = magic.from_file(source_path, mime=True)
@@ -98,6 +103,8 @@ class File:
                 accept = True
             elif 'version' in converter['accept']:
                 accept = self.version in converter['accept']['version']
+            elif 'encoding' in converter['accept']:
+                accept = self.encoding in converter['accept']['encoding']
 
         norm_path = None
         if accept:

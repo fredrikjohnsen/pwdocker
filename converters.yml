@@ -226,6 +226,8 @@ text/x-msdos-batch:
   accept: true
 text/plain:
   command: python3 -m bin.text2utf8 <source> <dest>
+  accept:
+    encoding: UTF-8 Unicode
 text/vnd.sosi:
   accept: true
 text/x-vCalendar:
