@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 
-import os
 import sys
 from pathlib import Path
 
 import typer
 
-from util import run_shell_command, remove_file
+from util import run_shell_cmd
 
 
 def office2pdf(source_file: str, target_file: str):
@@ -20,7 +19,7 @@ def office2pdf(source_file: str, target_file: str):
     Returns:
         Nothing
     """
-    target_dir = os.path.dirname(target_file)
+
     docbuilder_file = Path('/tmp', 'x2x.docbuilder')
 
     docbuilder = [
@@ -33,11 +32,12 @@ def office2pdf(source_file: str, target_file: str):
         file.write('\n'.join(docbuilder))
 
     command = ['documentbuilder', docbuilder_file]
-    result, out, err = run_shell_command(command)
+    result, out, err = run_shell_cmd(command)
 
     if err:
         print('err', err)
         sys.exit(1)
+
 
 if __name__ == '__main__':
     typer.run(office2pdf)

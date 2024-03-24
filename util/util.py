@@ -8,7 +8,8 @@ import zipfile
 from config import cfg
 
 
-def run_shell_command(command, cwd=None, timeout=None, shell=False) -> tuple[int, str, str]:
+def run_shell_cmd(command, cwd=None, timeout=None,
+                  shell=False) -> tuple[int, str, str]:
     """
     Run the given command as a subprocess
 
@@ -47,10 +48,10 @@ def run_shell_command(command, cwd=None, timeout=None, shell=False) -> tuple[int
     return proc.returncode, out, err
 
 
-def make_filelist(source_dir: str, filelist_path: str) -> None:
+def make_filelist(source_dir: str, path: str) -> None:
     os.chdir(source_dir)
-    cmd = 'find -type f -not -path "./.*" | cut -c 3- > "' + filelist_path + '"'
-    subprocess.run( cmd,
+    cmd = 'find -type f -not -path "./.*" | cut -c 3- > "' + path + '"'
+    subprocess.run(cmd,
                    stderr=subprocess.DEVNULL,
                    stdout=subprocess.DEVNULL,
                    shell=True)

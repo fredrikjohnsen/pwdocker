@@ -3,7 +3,7 @@
 import os
 import typer
 
-from util import run_shell_command
+from util import run_shell_cmd
 
 
 def mhtml2pdf(source_file: str, target_file: str):
@@ -17,10 +17,10 @@ def mhtml2pdf(source_file: str, target_file: str):
     Returns:
         Nothing
     """
-    converter_jar = os.path.expanduser("~") + '/bin/emailconvert/emailconverter.jar'
+    conv_jar = os.path.expanduser("~") + '/bin/emailconvert/emailconverter.jar'
 
-    command = ['java', '-jar', converter_jar, '-e', source_file, '-o', target_file]
-    run_shell_command(command)
+    command = ['java', '-jar', conv_jar, '-e', source_file, '-o', target_file]
+    run_shell_cmd(command)
 
 
 if __name__ == '__main__':

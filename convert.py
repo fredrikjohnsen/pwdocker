@@ -18,15 +18,11 @@ import os
 import shutil
 import datetime
 import time
-from os.path import relpath
 from pathlib import Path
-from typing import Dict
-from inspect import currentframe, getframeinfo
 import typer
 
 from rich.console import Console
 import petl as etl
-from petl.io.db import DbView
 
 from storage import ConvertStorage, StorageSqliteImpl
 from util import make_filelist, remove_file, File
@@ -88,7 +84,8 @@ def convert(
     first_run = False
 
     if db_path and os.path.dirname(db_path) == '':
-        console.print("Error: --db-path must refer to an absolute path", style='red')
+        console.print("Error: --db-path must refer to an absolute path",
+                      style='red')
         return
     if not db_path:
         db_path = dest + '.db'
@@ -138,9 +135,10 @@ def convert_folder(
     is_new_batch = os.path.isfile(filelist_path)
     if first_run or is_new_batch:
         if not is_new_batch:
-            make_filelist(os.path.join(source_dir, unpacked_path), filelist_path)
+            make_filelist(os.path.join(source_dir, unpacked_path),
+                          filelist_path)
         write_id_file_to_storage(filelist_path, source_dir, file_storage,
-                                 unpacked_path, source_id = source_id)
+                                 unpacked_path, source_id=source_id)
 
     if filecheck:
         res = check_files(source_dir, unpacked_path, file_storage)
@@ -153,19 +151,19 @@ def convert_folder(
     # Get table and number of converted files
     if is_new_batch:
         table = file_storage.get_new_rows(limit)
-        files_converted_count = 0
+        files_conv_count = 0
     else:
         written_row_count = file_storage.get_row_count(mime, status)
         table = file_storage.get_rows(mime, puid, status, limit,
                                       reconvert or identify_only,
                                       timestamp)
-        files_converted_count = written_row_count - etl.nrows(table)
-        if files_converted_count > 0:
-            console.print(f"({files_converted_count}/{written_row_count}) files have already "
-                          "been converted", style="bold cyan")
+        files_conv_count = written_row_count - etl.nrows(table)
+        if files_conv_count > 0:
+            console.print(f"({files_conv_count}/{written_row_count}) files "
+                          "have already been converted", style="bold cyan")
         # print the files in this directory that have already been converted
         if etl.nrows(table) == 0:
-            return files_converted_count, 0, written_row_count
+            return files_conv_count, 0, written_row_count
 
     file_count = etl.nrows(table)
 
@@ -173,7 +171,7 @@ def convert_folder(
                                    "Continue? [y/n] ") != 'y':
         return 0, 0, False
 
-    # run conversion:
+    # loop through all files and run conversion:
     t0 = time.time()
     # unpacked files are added to and converted in main loop
     if not unpacked_path:
@@ -191,143 +189,55 @@ def convert_folder(
             ):
                 file_storage.delete_descendants(row['id'])
 
-            file_count = convert_file(file_count, file_storage, row, source_dir,
-                                      table, dest_dir, debug, orig_ext, reconvert,
-                                      identify_only)
+            print(end='\x1b[2K')  # clear line
+            print(f"\r({str(table.row_count)}/{str(file_count)}): "
+                  f"{row['path'][0:100]}", end=" ", flush=True)
+
+            unidentify = reconvert or identify_only
+            source_file = File(row, pwconv_path, file_storage, unidentify)
+            norm_path = source_file.convert(source_dir, dest_dir, orig_ext,
+                                            debug, identify_only)
+
+            # If conversion failed
+            if norm_path is False:
+                console.print('  ' + source_file.status, style="bold red")
+                file_count -= 1
+            elif norm_path:
+                dest_path = Path(dest_dir, norm_path)
+                if os.path.isdir(dest_path):
+                    unpacked_count = sum([len(files) for r, d, files
+                                          in os.walk(dest_path)])
+                    console.print(f'Unpacked {unpacked_count} files',
+                                  style="bold cyan", end=' ')
+
+                    count_before, count_now, total = \
+                        convert_folder(dest_dir, dest_dir, debug, orig_ext,
+                                       file_storage, norm_path, True,
+                                       source_id=row['id'])
+
+                    file_count += total
+                else:
+                    # Without sleep, we sometimes get Operational error:
+                    # unable to open database file
+                    # Don't know why
+                    time.sleep(0.1)
+                    file_storage.add_row({'path': norm_path,
+                                          'source_id': source_file.id})
+
+            source_file.status_ts = datetime.datetime.now()
+            time.sleep(0.1)
+            file_storage.update_row(source_file.__dict__)
 
     print(str(round(time.time() - t0, 2)) + ' sek')
 
     converted_count = etl.nrows(file_storage.get_converted_rows(mime))
 
-    return files_converted_count, converted_count, file_count 
-
-
-def convert_file(
-    file_count: int,
-    file_storage: ConvertStorage,
-    row: Dict[str, any],
-    source_dir: str,
-    table: DbView,
-    dest_dir: str,
-    debug: bool,
-    orig_ext: bool,
-    reconvert: bool,
-    identify_only: bool
-) -> None:
-    if row['mime']:
-        # TODO: Why is this necessary?
-        row["mime"] = row["mime"].split(";")[0]
-    print(end='\x1b[2K')  # clear line
-    print(f"\r({str(table.row_count)}/{str(file_count)}): "
-          f"{row['path'][0:100]}", end=" ", flush=True)
-
-    unidentify = reconvert or identify_only
-    source_file = File(row, pwconv_path, file_storage, unidentify)
-    moved_to_dest_path = Path(dest_dir, row['path'])
-    Path(moved_to_dest_path.parent).mkdir(parents=True, exist_ok=True)
-    norm, temp_path = source_file.convert(source_dir, dest_dir, orig_ext, debug,
-                                          identify_only)
-
-    row['status'] = source_file.status
-    row['mime'] = source_file.mime
-    row['ext'] = source_file.ext
-    row['format'] = source_file.format
-    row['size'] = source_file.size
-    row['version'] = source_file.version
-    row['puid'] = source_file.puid
-
-    # path to directory for extracted file
-    if norm.get('path'):
-        dir = os.path.join(source_dir, norm['path'])
-    else:
-        dir = None
-
-    if not identify_only and os.path.isfile(temp_path):
-        os.remove(temp_path)
-
-    if identify_only:
-        pass
-    elif row['status'] == 'removed':
-        if moved_to_dest_path.is_file():
-            moved_to_dest_path.unlink()
-        row['moved_to_target'] = None
-    # else if file is converted
-    elif norm.get('path') and norm['mime'] != 'inode/directory':
-        if (
-            str(norm['path']).lower() != str(moved_to_dest_path).lower() and
-            norm['moved_to_target'] == 0
-        ):
-            # Remove file previously moved to dest because it could
-            # not be converted
-            if moved_to_dest_path.is_file():
-                moved_to_dest_path.unlink()
-
-        norm['path'] = relpath(norm['path'], start=dest_dir)
-        # row['moved_to_target'] = norm['moved_to_target']
-    # else if file has been extracted to directory
-    elif norm['mime'] == 'inode/directory' and dir and os.path.isdir(dir):
-        if moved_to_dest_path.is_file():
-            moved_to_dest_path.unlink()
-        row['status'] = 'converted'
-        norm['path'] = relpath(norm['path'], start=dest_dir)
-        norm['mime'] = 'inode/directory'
-        norm['size'] = None
-        norm['puid'] = None
-        norm['format'] = 'Directory'
-        norm['version'] = None
-        norm['ext'] = None
-        norm['status'] = None
-        norm['source_id'] = row['id']
-
-        unpacked_count = sum([len(files) for r, d, files in os.walk(dir)])
-        console.print(f'Unpacked {unpacked_count} files', style="bold cyan", end=' ')
-
-        count_before, count_now, total = \
-            convert_folder(dest_dir, dest_dir,
-                           debug, orig_ext, file_storage,
-                           norm['path'], True, source_id = row['id'])
-
-        file_count += total
-    # remaining only failed conversion
-    else:
-        console.print('  ' + row['status'], style="bold red")
-
-        # copy failed file
-        if dest_dir != source_dir:
-            try:
-                shutil.copyfile(Path(source_dir, row['path']),
-                                moved_to_dest_path)
-            except Exception as e:
-                frame = getframeinfo(currentframe())
-                filename = frame.filename
-                line = frame.lineno
-                print(filename + ':' + str(line), e)
-        if moved_to_dest_path.is_file():
-            row["dest_path"] = source_file.path
-            row["moved_to_target"] = 1
-            row["dest_mime_type"] = source_file.mime
-
-    row['status_ts'] = datetime.datetime.now()
-    file_storage.update_row(row)
-    if 'source_id' in norm and norm['status'] == 'new':
-        # Without sleep, we sometimes get Operational error:
-        # unable to open database file
-        # Don't know why
-        time.sleep(0.1)
-        norm.pop('moved_to_target', None)
-        # table1 = etl.fromdicts([norm])
-        # file_storage.append_rows(table1)
-        file_storage.add_row(norm)
-    else:
-        file_count -= 1
-
-    return file_count
+    return files_conv_count, converted_count, file_count
 
 
 def write_id_file_to_storage(tsv_source_path: str, source_dir: str,
                              file_storage: ConvertStorage, unpacked_path: str,
                              source_id: int = None) -> int:
-    ext = os.path.splitext(tsv_source_path)[1]
 
     table = etl.fromtext(tsv_source_path, header=['filename'], strip="\n")
     table = etl.rename(
@@ -381,6 +291,7 @@ def get_conversion_result(before: int, to_convert: int,
         return ("Not all files were converted. See the db table for details.",
                 "bold cyan")
 
+
 def check_files(source_dir, unpacked_path, file_storage):
     """ Check if files in database match files on disk """
 
@@ -417,6 +328,7 @@ def check_files(source_dir, unpacked_path, file_storage):
             return 'added'
         elif answ != 'y':
             return 'cancelled'
+
 
 if __name__ == "__main__":
     typer.run(convert)

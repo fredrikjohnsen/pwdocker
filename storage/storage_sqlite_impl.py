@@ -29,7 +29,7 @@ class StorageSqliteImpl(ConvertStorage):
     _create_view_file_root = """
     create view file_root as
     with cte as (
-        select id, path, source_id, NULL as root_id
+        select id, path, source_id, id as root_id
         from file
         where source_id is null
         union
@@ -51,8 +51,8 @@ class StorageSqliteImpl(ConvertStorage):
         """
 
     _add_converted_file_str = """
-    insert into file (path, size, puid, format, version, mime, ext, status, source_id)
-    values (:path, :size, :puid, :format, :version, :mime, :ext, :status, :source_id)
+    insert into file (path, source_id)
+    values (:path, :source_id)
     """
 
     def __init__(self, path: str):

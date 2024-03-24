@@ -5,7 +5,7 @@ import os
 from typing import List
 
 from bin.pdf2pdfa import pdf2pdfa
-from util import run_shell_command, remove_file
+from util import run_shell_cmd, remove_file
 
 
 def is_conversion_success(status_code: int, file_path: str):
@@ -19,7 +19,7 @@ def remove_tmp_and_exit(status_code: int, file_path: str):
 
 
 def run_command_and_convert_to_pdfa(command: List[str], tmp_path: str, target_path: str):
-    initial_convert_status_code, out, err = run_shell_command(command)[0]
+    initial_convert_status_code, out, err = run_shell_cmd(command)[0]
     if not is_conversion_success(initial_convert_status_code, tmp_path):
         remove_tmp_and_exit(initial_convert_status_code, tmp_path)
 
