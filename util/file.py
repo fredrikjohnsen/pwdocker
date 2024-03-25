@@ -74,9 +74,11 @@ class File:
                 self.version = fileinfo['files'][0]['matches'][0]['version']
                 self.size = fileinfo['files'][0]['filesize']
                 self.puid = fileinfo['files'][0]['matches'][0]['id']
-                basis = fileinfo['files'][0]['matches'][0]['basis']
-                if self.mime == 'text/plain' and 'text match' in basis:
-                    self.encoding = basis.split('text match ')[1]
+                if self.mime.startswith('text/'):
+                    blob = open(source_path, 'rb').read()
+                    m = magic.open(magic.MAGIC_MIME_ENCODING)
+                    m.load()
+                    self.encoding = m.buffer(blob)
                 else:
                     self.encoding = None
 
@@ -101,9 +103,9 @@ class File:
         if 'accept' in converter:
             if converter['accept'] is True:
                 accept = True
-            elif 'version' in converter['accept']:
+            elif 'version' in converter['accept'] and self.version:
                 accept = self.version in converter['accept']['version']
-            elif 'encoding' in converter['accept']:
+            elif 'encoding' in converter['accept'] and self.encoding:
                 accept = self.encoding in converter['accept']['encoding']
 
         norm_path = None
