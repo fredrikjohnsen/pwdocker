@@ -217,15 +217,10 @@ def convert_folder(
 
                     file_count += total
                 else:
-                    # Without sleep, we sometimes get Operational error:
-                    # unable to open database file
-                    # Don't know why
-                    time.sleep(0.1)
                     file_storage.add_row({'path': norm_path,
                                           'source_id': source_file.id})
 
             source_file.status_ts = datetime.datetime.now()
-            time.sleep(0.1)
             file_storage.update_row(source_file.__dict__)
 
     print(str(round(time.time() - t0, 2)) + ' sek')

@@ -110,7 +110,9 @@ class StorageSqliteImpl(ConvertStorage):
 
     def add_row(self, data: dict):
         self._conn.execute(self._add_converted_file_str, data)
-        self._conn.commit()
+        # This gets commmited when `update_row` is called
+        # Got 'unable to open database file' when calling this
+        # and `update_row` rigth after in convert.py
 
     def get_row_count(self, mime=None, status=None, original=False):
         cursor = self._conn.cursor()
