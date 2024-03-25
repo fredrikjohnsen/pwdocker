@@ -126,6 +126,7 @@ application/xhtml+xml:
   dest-ext: pdf
 application/zip:
   command: unar -k skip -D <source> -o <dest>
+  dest-ext: null
   puid:
     fmt1441: # iWork files
       # iWork files have a preview file, so we remove other data

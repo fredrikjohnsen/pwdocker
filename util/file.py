@@ -170,7 +170,7 @@ class File:
         if 'dest-ext' not in converter:
             dest_ext = self.ext
         else:
-            dest_ext = (None if converter['dest-ext'] is None
+            dest_ext = ('' if converter['dest-ext'] is None
                         else '.' + converter['dest-ext'].strip('.'))
 
         dest_path = dest_path + dest_ext
