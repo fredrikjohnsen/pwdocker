@@ -42,6 +42,74 @@ class File:
         self.stem = Path(self.path).stem
         self.ext = Path(self.path).suffix
 
+    def set_metadata(self, source_path, source_dir):
+        cmd = ['sf', '-json', source_path]
+        p = subprocess.Popen(cmd, cwd=source_dir, stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
+        out, err = p.communicate()
+
+        if not err:
+            fileinfo = json.loads(out)
+            self.mime = fileinfo['files'][0]['matches'][0]['mime']
+            self.format = fileinfo['files'][0]['matches'][0]['format']
+            self.version = fileinfo['files'][0]['matches'][0]['version']
+            self.size = fileinfo['files'][0]['filesize']
+            self.puid = fileinfo['files'][0]['matches'][0]['id']
+            if self.mime.startswith('text/'):
+                blob = open(source_path, 'rb').read()
+                m = magic.open(magic.MAGIC_MIME_ENCODING)
+                m.load()
+                self.encoding = m.buffer(blob)
+            else:
+                self.encoding = None
+
+        if self.mime in ['', 'None', None]:
+            self.mime = magic.from_file(source_path, mime=True)
+
+    def get_dest_ext(self, converter, orig_ext):
+        if 'dest-ext' not in converter:
+            dest_ext = self.ext
+        else:
+            dest_ext = ('' if converter['dest-ext'] is None
+                        else '.' + converter['dest-ext'].strip('.'))
+
+        if orig_ext and dest_ext != self.ext:
+            dest_ext = self.ext + dest_ext
+
+        return dest_ext
+
+    def get_conversion_cmd(self, converter, source_path, dest_path, temp_path):
+        cmd = converter["command"] if 'command' in converter else None
+
+        if cmd:
+            if '<temp>' in cmd:
+                Path(Path(temp_path).parent).mkdir(parents=True, exist_ok=True)
+
+            cmd = cmd.replace("<source>", quote(source_path))
+            cmd = cmd.replace("<dest>", quote(dest_path))
+            cmd = cmd.replace("<temp>", quote(temp_path))
+            cmd = cmd.replace("<mime-type>", self.mime)
+            cmd = cmd.replace("<source-parent>",
+                              quote(str(Path(source_path).parent)))
+            cmd = cmd.replace("<dest-parent>",
+                              quote(str(Path(dest_path).parent)))
+            cmd = cmd.replace("<temp-parent>",
+                              quote(str(Path(temp_path).parent)))
+
+        return cmd, dest_path, temp_path
+
+    def is_accepted(self, converter):
+        accept = False
+        if 'accept' in converter:
+            if converter['accept'] is True:
+                accept = True
+            elif 'version' in converter['accept'] and self.version:
+                accept = self.version in converter['accept']['version']
+            elif 'encoding' in converter['accept'] and self.encoding:
+                accept = self.encoding in converter['accept']['encoding']
+
+        return accept
+
     def convert(self, source_dir: str, dest_dir: str, orig_ext: bool,
                 debug: bool, identify_only: bool) -> dict[str, Type[str]]:
         """
@@ -58,32 +126,11 @@ class File:
         else:
             source_path = os.path.join(source_dir, self.path)
         dest_path = os.path.join(dest_dir, self.parent, self.stem)
-        tmp_path = os.path.join('/tmp/convert', self.parent, self.stem)
+        temp_path = os.path.join('/tmp/convert', self.parent, self.stem)
         dest_path = os.path.abspath(dest_path)
 
         if self.mime in ['', 'None', None]:
-            cmd = ['sf', '-json', source_path]
-            p = subprocess.Popen(cmd, cwd=source_dir, stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE)
-            out, err = p.communicate()
-
-            if not err:
-                fileinfo = json.loads(out)
-                self.mime = fileinfo['files'][0]['matches'][0]['mime']
-                self.format = fileinfo['files'][0]['matches'][0]['format']
-                self.version = fileinfo['files'][0]['matches'][0]['version']
-                self.size = fileinfo['files'][0]['filesize']
-                self.puid = fileinfo['files'][0]['matches'][0]['id']
-                if self.mime.startswith('text/'):
-                    blob = open(source_path, 'rb').read()
-                    m = magic.open(magic.MAGIC_MIME_ENCODING)
-                    m.load()
-                    self.encoding = m.buffer(blob)
-                else:
-                    self.encoding = None
-
-        if self.mime in ['', 'None', None]:
-            self.mime = magic.from_file(source_path, mime=True)
+            self.set_metadata(source_path, source_dir)
 
         if identify_only:
             return None
@@ -99,14 +146,7 @@ class File:
         elif 'source-ext' in converter and self.ext in converter['source-ext']:
             converter.update(converter['source-ext'][self.ext])
 
-        accept = False
-        if 'accept' in converter:
-            if converter['accept'] is True:
-                accept = True
-            elif 'version' in converter['accept'] and self.version:
-                accept = self.version in converter['accept']['version']
-            elif 'encoding' in converter['accept'] and self.encoding:
-                accept = self.encoding in converter['accept']['encoding']
+        accept = self.is_accepted(converter)
 
         norm_path = None
         if accept:
@@ -116,18 +156,55 @@ class File:
         elif self.mime == 'application/encrypted':
             self.status = 'protected'
         else:
-            norm_path = self._run_conv_cmd(converter, source_path, dest_path,
-                                           tmp_path, orig_ext, dest_dir, debug)
+            dest_ext = self.get_dest_ext(converter, orig_ext)
+            dest_path = dest_path + dest_ext
+            temp_path = temp_path + dest_ext
 
-            # TODO: plasser denne inne i `_run_conversion_command` isteden
-            if os.path.exists(tmp_path):
-                os.remove(tmp_path)
+            cmd = self.get_conversion_cmd(converter, source_path, dest_path,
+                                          temp_path)
+
+            # Disabled because not in use, and file command doesn't have version
+            # with option --mime-type
+            # cmd = cmd.replace("<version>", '"' + self.version + '"')
+            timeout = (converter['timeout'] if 'timeout' in converter
+                       else cfg['timeout'])
+
+            returncode = 0
+            if (not os.path.exists(dest_path) or source_path == dest_path) and cmd:
+
+                returncode, out, err = run_shell_cmd(cmd, cwd=self.pwconv_path,
+                                                     shell=True, timeout=timeout)
+
+            if cmd and (returncode or not os.path.exists(dest_path)):
+                if out != 'timeout':
+                    print('out', out)
+                    print('err', err)
+                if os.path.exists(dest_path):
+                    # Remove possibel corrupted file
+                    os.remove(dest_path)
+                if 'file requires a password for access' in out:
+                    self.status = 'protected'
+                elif out == 'timeout':
+                    self.status = 'timeout'
+                else:
+                    self.status = 'failed'
+
+                if debug:
+                    print("\nCommand: " + cmd + f" ({returncode})", end="")
+
+                norm_path = False
+            else:
+                self.status = 'converted'
+                norm_path = relpath(dest_path, start=dest_dir)
+
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
 
         copy_path = Path(dest_dir, self.path)
         if (
             converter.get('keep-original', False) or
             (self.source_id is None and accept) or
-            norm_path is False
+            (self.source_id is None and norm_path is False)
         ):
             try:
                 shutil.copyfile(Path(source_dir, self.path), copy_path)
@@ -145,99 +222,4 @@ class File:
                 copy_path.unlink()
 
         return norm_path
-
-    def _run_conv_cmd(
-            self,
-            converter: Any,
-            source_path: str,
-            dest_path: str,
-            temp_path: str,
-            orig_ext: bool,
-            dest_dir: str,
-            debug: bool
-    ) -> tuple[int, list, list]:
-        """
-        Convert function
-
-        Args:
-            converter:       which converter to use
-            source_path:     source file path for the file to be converted
-            dest_path:       destination file path for where the converted file
-                             should be saved
-        """
-        cmd = converter["command"] if 'command' in converter else None
-
-        if 'dest-ext' not in converter:
-            dest_ext = self.ext
-        else:
-            dest_ext = ('' if converter['dest-ext'] is None
-                        else '.' + converter['dest-ext'].strip('.'))
-
-        dest_path = dest_path + dest_ext
-        temp_path = temp_path + dest_ext
-
-        if cmd:
-            if '<temp>' in cmd:
-                Path(Path(temp_path).parent).mkdir(parents=True, exist_ok=True)
-
-            cmd = cmd.replace("<source>", quote(source_path))
-            cmd = cmd.replace("<dest>", quote(dest_path))
-            cmd = cmd.replace("<temp>", quote(temp_path))
-            cmd = cmd.replace("<mime-type>", self.mime)
-            cmd = cmd.replace("<dest-ext>", str(dest_ext))
-            cmd = cmd.replace("<source-ext>", Path(source_path).suffix)
-            cmd = cmd.replace("<source-parent>",
-                              quote(str(Path(source_path).parent)))
-            cmd = cmd.replace("<dest-parent>",
-                              quote(str(Path(dest_path).parent)))
-            cmd = cmd.replace("<temp-parent>",
-                              quote(str(Path(temp_path).parent)))
-
-        # Disabled because not in use, and file command doesn't have version
-        # with option --mime-type
-        # cmd = cmd.replace("<version>", '"' + self.version + '"')
-        timeout = (converter['timeout'] if 'timeout' in converter
-                   else cfg['timeout'])
-
-        returncode = 0
-        if (not os.path.exists(dest_path) or source_path == dest_path) and cmd:
-
-            returncode, out, err = run_shell_cmd(cmd, cwd=self.pwconv_path,
-                                                 shell=True, timeout=timeout)
-
-        if cmd and (returncode or not os.path.exists(dest_path)):
-            if out != 'timeout':
-                print('out', out)
-                print('err', err)
-            if os.path.exists(dest_path):
-                # Remove possibel corrupted file
-                os.remove(dest_path)
-            if 'file requires a password for access' in out:
-                self.status = 'protected'
-            elif out == 'timeout':
-                self.status = 'timeout'
-            else:
-                self.status = 'failed'
-
-            if debug:
-                print("\nCommand: " + cmd + f" ({returncode})", end="")
-
-            return False
-        else:
-            if orig_ext:
-                new_path = os.path.join(dest_dir, self.path)
-
-                if dest_ext:
-                    new_path = new_path + dest_ext
-                else:
-                    new_path = new_path + self.ext
-
-                if new_path != dest_path:
-                    os.rename(dest_path, new_path)
-                    dest_path = new_path
-
-            self.status = 'converted'
-            norm_path = relpath(dest_path, start=dest_dir)
-
-            return norm_path
 
