@@ -162,7 +162,7 @@ class File:
             self.kept = True
         else:
             from_path = source_path
-            if converter.get('keep-original', False):
+            if converter.get('keep', False):
                 self.kept = True
             elif self.source_id:
                 os.makedirs(os.path.dirname(temp_path), exist_ok=True)
@@ -221,7 +221,7 @@ class File:
         # it should be kept, accepted or if conversion failed
         copy_path = Path(dest_dir, self.path)
         if self.source_id is None and (
-            converter.get('keep-original', False) or
+            converter.get('keep', False) or
             accept or
             norm_path is False  # conversion failed
         ):

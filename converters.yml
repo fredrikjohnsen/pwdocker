@@ -52,11 +52,11 @@ application/vnd.ms-excel:
   # Excel files are accepted by Library of Congress
   command: soffice --headless  --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <dest-parent> <source>
   dest-ext: pdf
-  keep-original: true
+  keep: true
 application/vnd.ms-excel.sheet.macroEnabled.12:
   command: soffice --headless --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <dest-parent> <source>
   dest-ext: pdf
-  keep-original: true
+  keep: true
 application/vnd.ms-outlook:
   # Library of Congress has no preferred format, but accepts both .msg and .pst
   accept: true
@@ -66,7 +66,7 @@ application/vnd.ms-powerpoint:
 application/vnd.ms-project:
   # Can be manually converted with MS Project or ProjectLibre (freeware)
   dest-ext: pdf
-  keep-original: true
+  keep: true
 application/vnd.ms-visio.drawing.main+xml:
   command: soffice --headless --convert-to pdf --outdir <dest-parent> <source>
   dest-ext: pdf
@@ -76,7 +76,7 @@ application/vnd.ms-word.document.macroEnabled.12:
 application/vnd.oasis.opendocument.spreadsheet:
   command: soffice --headless --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <dest-parent> <source>
   dest-ext: pdf
-  keep-original: true
+  keep: true
 application/vnd.oasis.opendocument.text:
   command: soffice --headless --convert-to pdf --outdir <dest-parent> <source>
   dest-ext: pdf
@@ -89,7 +89,7 @@ application/vnd.openxmlformats-officedocument.presentationml.slideshow:
 application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
   # Excel files are accepted by Library of Congress
   command: soffice --headless  --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <dest-parent> <source>
-  keep-original: true
+  keep: true
   dest-ext: pdf
 application/vnd.openxmlformats-officedocument.wordprocessingml.document:
   command: python3 -m bin.office2pdf <source> <dest> || soffice --headless --convert-to pdf --outdir <dest-parent> <source>
@@ -109,7 +109,7 @@ application/x-cdf:
   remove: true
 application/x-dbf:
   command: soffice --headless  --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <dest-parent> <source>
-  keep-original: true
+  keep: true
   dest-ext: pdf
 application/x-msaccess:
   # No acceptable converter for such files yet
@@ -174,12 +174,12 @@ image/tiff:
 image/vnd.dwg:
   command: python3 -m bin.dwg2pdf <source> <dest>
   dest-ext: pdf
-  keep-original: true
+  keep: true
   timeout: 90
 image/vnd.dxf:
   command: python3 -m bin.dxf2pdf <source> <dest>
   dest-ext: pdf
-  keep-original: true
+  keep: true
   timeout: 90
 image/vnd.microsoft.icon:
   accept: true

@@ -24,6 +24,7 @@ class StorageSqliteImpl(ConvertStorage):
         ext varchar(10),
         status varchar(10),
         status_ts datetime default current_timestamp,
+        kept boolean,
         source_id int
     );"""
 
@@ -48,7 +49,7 @@ class StorageSqliteImpl(ConvertStorage):
         UPDATE file 
         SET size = :size, puid = :puid, format = :format, version = :version,
             mime = :mime, encoding = :encoding, ext = :ext, status = :status,
-            status_ts = :status_ts
+            status_ts = :status_ts, kept = :kept
         WHERE id = :id
         """
 
