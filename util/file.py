@@ -67,7 +67,7 @@ class File:
         if self.mime in ['', 'None', None]:
             self.mime = magic.from_file(source_path, mime=True)
 
-    def get_dest_ext(self, converter, orig_ext):
+    def get_dest_ext(self, converter, dest_path, orig_ext):
         if 'dest-ext' not in converter:
             dest_ext = self.ext
         else:
@@ -76,6 +76,11 @@ class File:
 
         if orig_ext and dest_ext != self.ext:
             dest_ext = self.ext + dest_ext
+
+        n = 0
+        while os.path.exists(dest_path + dest_ext):
+            n += 1
+            dest_ext = '.' + str(n) + dest_ext
 
         return dest_ext
 
