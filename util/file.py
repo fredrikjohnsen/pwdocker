@@ -129,7 +129,7 @@ class File:
         else:
             source_path = os.path.join(source_dir, self.path)
         dest_path = os.path.join(dest_dir, self.parent, self.stem)
-        temp_path = os.path.join('/tmp/convert', self.parent, self.stem)
+        temp_path = os.path.join(dest_dir.rstrip('/') + '-temp',  self.path)
         dest_path = os.path.abspath(dest_path)
 
         if self.mime in ['', 'None', None]:
