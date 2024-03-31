@@ -74,6 +74,8 @@ def convert(
     --status:  Filter on status: accepted, converted, deleted, failed,\n
     ..         protected, skipped, timeout
 
+    --keep-temp: Keep temporary files in temp directory and in file table
+
     """
 
     Path(dest).mkdir(parents=True, exist_ok=True)
@@ -198,7 +200,7 @@ def convert_folder(
             unidentify = reconvert or identify_only
             source_file = File(row, pwconv_path, file_storage, unidentify)
             norm_path = source_file.convert(source_dir, dest_dir, orig_ext,
-                                            debug, identify_only)
+                                            debug, identify_only, keep_temp)
 
             # If conversion failed
             if norm_path is False:
