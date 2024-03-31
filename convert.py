@@ -61,7 +61,8 @@ def convert(
     limit: int = None,
     reconvert: bool = False,
     identify_only: bool = False,
-    filecheck: bool = False
+    filecheck: bool = False,
+    keep_temp: bool = False
 ) -> None:
     """
     Convert all files in SOURCE folder
@@ -94,10 +95,10 @@ def convert(
 
     with StorageSqliteImpl(db_path) as file_storage:
         conv_before, conv_now, total = \
-            convert_folder(source, dest, debug, orig_ext,
-                           file_storage, '', first_run, None,
-                           mime, puid, status, limit, reconvert,
-                           identify_only, filecheck, timestamp)
+            convert_folder(source, dest, debug, orig_ext, file_storage, '',
+                           first_run, None, mime, puid, status, limit,
+                           reconvert, identify_only, filecheck, timestamp,
+                           keep_temp)
 
         if total is False:
             msg = "User terminated"
@@ -125,7 +126,8 @@ def convert_folder(
     reconvert: bool = False,
     identify_only: bool = False,
     filecheck: bool = False,
-    timestamp: datetime.datetime = None
+    timestamp: datetime.datetime = None,
+    keep_temp: bool = False
 ) -> tuple[str, str]:
     """Convert all files in folder"""
 
@@ -204,6 +206,12 @@ def convert_folder(
                 file_count -= 1
             elif norm_path:
                 dest_path = Path(dest_dir, norm_path)
+
+                if keep_temp or source_file.source_id is None or source_file.kept:
+                    source_id = source_file.id
+                else:
+                    source_id = source_file.source_id
+
                 if os.path.isdir(dest_path):
                     unpacked_count = sum([len(files) for r, d, files
                                           in os.walk(dest_path)])
@@ -213,15 +221,18 @@ def convert_folder(
                     count_before, count_now, total = \
                         convert_folder(dest_dir, dest_dir, debug, orig_ext,
                                        file_storage, norm_path, True,
-                                       source_id=row['id'])
+                                       source_id=source_id, keep_temp=keep_temp)
 
                     file_count += total
                 else:
                     file_storage.add_row({'path': norm_path,
-                                          'source_id': source_file.id})
+                                          'source_id': source_id})
 
             source_file.status_ts = datetime.datetime.now()
-            file_storage.update_row(source_file.__dict__)
+            if keep_temp or source_file.source_id is None or source_file.kept:
+                file_storage.update_row(source_file.__dict__)
+            else:
+                file_storage.delete_row(source_file.__dict__)
 
     print(str(round(time.time() - t0, 2)) + ' sek')
 

@@ -57,6 +57,10 @@ class StorageSqliteImpl(ConvertStorage):
     values (:path, :source_id)
     """
 
+    _delete_str = """
+    delete from file where id = :id
+    """
+
     def __init__(self, path: str):
         self._conn = Optional[Connection]
         self.path = path
@@ -113,6 +117,9 @@ class StorageSqliteImpl(ConvertStorage):
         # This gets commmited when `update_row` is called
         # Got 'unable to open database file' when calling this
         # and `update_row` rigth after in convert.py
+
+    def delete_row(self, data: dict):
+        self._conn.execute(self._delete_str, data)
 
     def get_row_count(self, mime=None, status=None, original=False):
         cursor = self._conn.cursor()

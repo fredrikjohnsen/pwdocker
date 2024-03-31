@@ -41,6 +41,7 @@ class File:
         self.parent = Path(self.path).parent
         self.stem = Path(self.path).stem
         self.ext = Path(self.path).suffix
+        self.kept = False
 
     def set_metadata(self, source_path, source_dir):
         cmd = ['sf', '-json', source_path]
@@ -87,14 +88,11 @@ class File:
 
             cmd = cmd.replace("<source>", quote(source_path))
             cmd = cmd.replace("<dest>", quote(dest_path))
-            cmd = cmd.replace("<temp>", quote(temp_path))
             cmd = cmd.replace("<mime-type>", self.mime)
             cmd = cmd.replace("<source-parent>",
                               quote(str(Path(source_path).parent)))
             cmd = cmd.replace("<dest-parent>",
                               quote(str(Path(dest_path).parent)))
-            cmd = cmd.replace("<temp-parent>",
-                              quote(str(Path(temp_path).parent)))
 
         return cmd, dest_path, temp_path
 
@@ -151,16 +149,25 @@ class File:
         norm_path = None
         if accept:
             self.status = 'accepted'
+            self.kept = True
         elif converter.get('remove', False):
             self.status = 'removed'
         elif self.mime == 'application/encrypted':
             self.status = 'protected'
+            self.kept = True
         else:
-            dest_ext = self.get_dest_ext(converter, orig_ext)
-            dest_path = dest_path + dest_ext
-            temp_path = temp_path + dest_ext
+            from_path = source_path
+            if converter.get('keep-original', False):
+                self.kept = True
+            elif self.source_id:
+                os.makedirs(os.path.dirname(temp_path), exist_ok=True)
+                shutil.move(source_path, temp_path)
+                from_path = temp_path
 
-            cmd = self.get_conversion_cmd(converter, source_path, dest_path,
+            dest_ext = self.get_dest_ext(converter, dest_path, orig_ext)
+            dest_path = dest_path + dest_ext
+
+            cmd = self.get_conversion_cmd(converter, from_path, dest_path,
                                           temp_path)
 
             # Disabled because not in use, and file command doesn't have version
@@ -191,6 +198,11 @@ class File:
 
                 if debug:
                     print("\nCommand: " + cmd + f" ({returncode})", end="")
+
+                # Move the file back from temp if it was moved there
+                # prior to conversion
+                if from_path != source_path:
+                    shutil.move(from_path, source_path)
 
                 norm_path = False
             else:

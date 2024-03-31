@@ -35,10 +35,10 @@ application/postscript:
   command: ps2pdf -dPDFA=2 <source> <dest>
   dest-ext: pdf
 application/rtf:
-  command: python3 -m bin.office2pdf <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
+  command: python3 -m bin.office2pdf <source> <dest>
   dest-ext: pdf
 application/pdf:
-  command: mv <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
+  command: bin/pdf2pdfa.sh <source> <dest>
   dest-ext: pdf
   accept:
     version: [1a, 1b, 2a, 2b]
@@ -50,57 +50,57 @@ application/vnd.microsoft.portable-executable:
   remove: true
 application/vnd.ms-excel:
   # Excel files are accepted by Library of Congress
-  command: soffice --headless  --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <temp-parent> <source> && bin/pdf2pdfa.sh <temp> <dest>
+  command: soffice --headless  --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <dest-parent> <source>
   dest-ext: pdf
   keep-original: true
 application/vnd.ms-excel.sheet.macroEnabled.12:
-  command: soffice --headless --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <temp-parent> <source> && bin/pdf2pdfa.sh <temp> <dest>
+  command: soffice --headless --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <dest-parent> <source>
   dest-ext: pdf
   keep-original: true
 application/vnd.ms-outlook:
   # Library of Congress has no preferred format, but accepts both .msg and .pst
   accept: true
 application/vnd.ms-powerpoint:
-  command: python3 -m bin.office2pdf <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
+  command: python3 -m bin.office2pdf <source> <dest>
   dest-ext: pdf
 application/vnd.ms-project:
   # Can be manually converted with MS Project or ProjectLibre (freeware)
   dest-ext: pdf
   keep-original: true
 application/vnd.ms-visio.drawing.main+xml:
-  command: soffice --headless --convert-to pdf --outdir <temp-parent> <source> && bin/pdf2pdfa.sh <temp> <dest>
+  command: soffice --headless --convert-to pdf --outdir <dest-parent> <source>
   dest-ext: pdf
 application/vnd.ms-word.document.macroEnabled.12:
-  command: python3 -m bin.office2pdf <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
+  command: python3 -m bin.office2pdf <source> <dest>
   dest-ext: pdf
 application/vnd.oasis.opendocument.spreadsheet:
-  command: soffice --headless --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <temp-parent> <source> && bin/pdf2pdfa.sh <temp> <dest>
+  command: soffice --headless --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <dest-parent> <source>
   dest-ext: pdf
   keep-original: true
 application/vnd.oasis.opendocument.text:
-  command: soffice --headless --convert-to pdf --outdir <temp-parent> <source> && bin/pdf2pdfa.sh <temp> <dest>
+  command: soffice --headless --convert-to pdf --outdir <dest-parent> <source>
   dest-ext: pdf
 application/vnd.openxmlformats-officedocument.presentationml.presentation:
-  command: soffice --headless --convert-to pdf --outdir <temp-parent> <source> && bin/pdf2pdfa.sh <temp> <dest>
+  command: soffice --headless --convert-to pdf --outdir <dest-parent> <source>
   dest-ext: pdf
 application/vnd.openxmlformats-officedocument.presentationml.slideshow:
-  command: soffice --headless --convert-to pdf --outdir <temp-parent> <source> && bin/pdf2pdfa.sh <temp> <dest>
+  command: soffice --headless --convert-to pdf --outdir <dest-parent> <source>
   dest-ext: pdf
 application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
   # Excel files are accepted by Library of Congress
-  command: soffice --headless  --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <temp-parent> <source> && bin/pdf2pdfa.sh <temp> <dest>
+  command: soffice --headless  --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <dest-parent> <source>
   keep-original: true
   dest-ext: pdf
 application/vnd.openxmlformats-officedocument.wordprocessingml.document:
-  command: python3 -m bin.office2pdf <source> <temp> || soffice --headless --convert-to pdf --outdir <temp-parent> <source> && bin/pdf2pdfa.sh <temp> <dest>
+  command: python3 -m bin.office2pdf <source> <dest> || soffice --headless --convert-to pdf --outdir <dest-parent> <source>
   dest-ext: pdf
 application/vnd.openxmlformats-officedocument.wordprocessingml.template:
-  command: python3 -m bin.office2pdf <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
+  command: python3 -m bin.office2pdf <source> <dest>
   dest-ext: pdf
 application/vnd.rar:
   command: unar -k skip -D <source> -o <dest>
 application/vnd.wordperfect:
-  command: soffice --headless --convert-to pdf --outdir <temp-parent> <source> && bin/pdf2pdfa.sh <temp> <dest>
+  command: soffice --headless --convert-to pdf --outdir <dest-parent> <source>
   dest-ext: pdf
 application/x-7z-compressed:
   command: unar -k skip -D <source> -o <dest>
@@ -108,7 +108,7 @@ application/x-cdf:
   # .cda files that tells where a CD track starts and stops
   remove: true
 application/x-dbf:
-  command: soffice --headless  --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <temp-parent> <source> && bin/pdf2pdfa.sh <temp> <dest>
+  command: soffice --headless  --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <dest-parent> <source>
   keep-original: true
   dest-ext: pdf
 application/x-msaccess:
@@ -122,7 +122,7 @@ application/x-wine-extension-ini:
 application/xml:
   accept: true
 application/xhtml+xml:
-  command: pandoc --resource-path <source-parent> -V geometry:margin=1in,landscape --pdf-engine=xelatex <source> -f html -t pdf -o <temp> && bin/pdf2pdfa.sh <temp> <dest>
+  command: pandoc --resource-path <source-parent> -V geometry:margin=1in,landscape --pdf-engine=xelatex <source> -f html -t pdf -o <dest>
   dest-ext: pdf
 application/zip:
   command: unar -k skip -D <source> -o <dest>
@@ -151,7 +151,7 @@ audio/x-wav:
 font/ttf:
   accept: true
 image/bmp:
-  command: convert <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
+  command: convert <source> <dest>
   dest-ext: pdf
 image/emf:
   command: soffice --headless --convert-to png --outdir <dest-parent> <source>
@@ -169,15 +169,15 @@ image/jxr:
 image/png:
   accept: true
 image/tiff:
-  command: tiff2pdf -o <temp> <source>  && bin/pdf2pdfa.sh <temp> <dest>
+  command: tiff2pdf -o <dest> <source>
   dest-ext: pdf
 image/vnd.dwg:
-  command: python3 -m bin.dwg2pdf <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
+  command: python3 -m bin.dwg2pdf <source> <dest>
   dest-ext: pdf
   keep-original: true
   timeout: 90
 image/vnd.dxf:
-  command: python3 -m bin.dxf2pdf <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
+  command: python3 -m bin.dxf2pdf <source> <dest>
   dest-ext: pdf
   keep-original: true
   timeout: 90
@@ -189,7 +189,7 @@ image/vnd.ms-modi:
   # https://www.microsoft.com/en-us/download/details.aspx?id=30328
   dest-ext: pdf
 image/vnd.adobe.photoshop:
-  command: convert <source> <temp> && bin/pdf2pdfa.sh <temp> <dest>
+  command: convert <source> <dest>
   dest-ext: pdf
 image/webp:
   accept: true
@@ -222,7 +222,7 @@ text/csv:
 text/html:
   # Timout for pandoc on http requests are 30 sec.
   # So timeout for conversion should be set higher than this.
-  command: pandoc --resource-path <source-parent> -V geometry:margin=1in,landscape --pdf-engine=xelatex <source> -f html -t pdf -o <temp> && bin/pdf2pdfa.sh <temp> <dest>
+  command: pandoc --resource-path <source-parent> -V geometry:margin=1in,landscape --pdf-engine=xelatex <source> -f html -t pdf -o <dest>
   dest-ext: pdf
 text/markdown:
   command: python3 -m bin.text2utf8 <source> <dest>

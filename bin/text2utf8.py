@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
 
-import os
-import re
-import shutil
 import typer
 import cchardet as chardet
 
@@ -38,9 +35,7 @@ def text2utf8(input_file: str, output_file: str):
         #('=C3=A5', 'å'),
     #)
 
-    tmp_file = '/tmp/file.txt'
-
-    with open(tmp_file, 'wb') as file:
+    with open(output_file, 'wb') as file:
         with open(input_file, 'rb') as file_r:
             content = file_r.read()
             if content is None:
@@ -67,8 +62,6 @@ def text2utf8(input_file: str, output_file: str):
             file.write(data.encode('utf8'))
         except UnicodeEncodeError:
             return ''
-
-    shutil.copyfile(tmp_file, output_file)
 
 if __name__ == '__main__':
     typer.run(text2utf8)
