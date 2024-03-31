@@ -217,11 +217,13 @@ class File:
             if not keep_temp and os.path.exists(temp_path):
                 os.remove(temp_path)
 
+        # Copy file from `dest_dir` if it's an original file and
+        # it should be kept, accepted or if conversion failed
         copy_path = Path(dest_dir, self.path)
-        if (
+        if self.source_id is None and (
             converter.get('keep-original', False) or
-            (self.source_id is None and accept) or
-            (self.source_id is None and norm_path is False)
+            accept or
+            norm_path is False  # conversion failed
         ):
             try:
                 shutil.copyfile(Path(source_dir, self.path), copy_path)
