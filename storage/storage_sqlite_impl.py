@@ -220,12 +220,25 @@ class StorageSqliteImpl(ConvertStorage):
 
         return fromdb(self._conn, select, params)
 
-    def get_converted_rows(self, mime: str = None):
+    def get_failed_rows(self, mime: str = None):
+        select = """
+            SELECT path FROM file
+            WHERE  status IS NOT NULL AND status IN(?, ?, ?)
+        """
+        params = ['timeout', 'failed', 'protected']
+
+        if mime:
+            select += " AND mime = ?"
+            params.append(mime)
+
+        return fromdb(self._conn, select, params)
+
+    def get_skipped_rows(self, mime: str = None):
         select = """
             SELECT path FROM file
             WHERE  status IS NOT NULL AND status IN(?)
         """
-        params = ['converted']
+        params = ['skipped']
 
         if mime:
             select += " AND mime = ?"

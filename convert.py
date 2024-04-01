@@ -96,20 +96,25 @@ def convert(
         first_run = True
 
     with StorageSqliteImpl(db_path) as file_storage:
-        conv_before, conv_now, total = \
-            convert_folder(source, dest, debug, orig_ext, file_storage, '',
-                           first_run, None, mime, puid, status, limit,
-                           reconvert, identify_only, filecheck, timestamp,
-                           keep_temp)
+        total = convert_folder(source, dest, debug, orig_ext, file_storage, '',
+                               first_run, None, mime, puid, status, limit,
+                               reconvert, identify_only, filecheck, timestamp,
+                               keep_temp)
 
         if total is False:
-            msg = "User terminated"
-            color = "bold red"
+            console.print("User terminated", style="bold red")
         else:
             # check conversion result
-            msg, color = get_conversion_result(conv_before, conv_now, total)
-
-        console.print(msg, style=color)
+            failed_count = etl.nrows(file_storage.get_failed_rows(mime))
+            skipped_count = etl.nrows(file_storage.get_skipped_rows(mime))
+            if failed_count:
+                msg = f"{failed_count} conversions failed. See db table."
+                console.print(msg, style="bold red")
+            if skipped_count:
+                msg = f"{skipped_count} files skipped. Se db table."
+                console.print(msg, style="bold cyan")
+            if not (failed_count or skipped_count):
+                console.print("All files converted", style="bold green")
 
 
 def convert_folder(
@@ -162,7 +167,7 @@ def convert_folder(
                                       reconvert or identify_only,
                                       timestamp)
         files_conv_count = written_row_count - etl.nrows(table)
-        if files_conv_count > 0:
+        if not unpacked_path and files_conv_count > 0:
             console.print(f"({files_conv_count}/{written_row_count}) files "
                           "have already been converted", style="bold cyan")
         # print the files in this directory that have already been converted
@@ -217,10 +222,9 @@ def convert_folder(
                     console.print(f'Unpacked {unpacked_count} files',
                                   style="bold cyan", end=' ')
 
-                    count_before, count_now, total = \
-                        convert_folder(dest_dir, dest_dir, debug, orig_ext,
-                                       file_storage, norm_path, True,
-                                       source_id=source_id, keep_temp=keep_temp)
+                    convert_folder(dest_dir, dest_dir, debug, orig_ext,
+                                   file_storage, norm_path, True,
+                                   source_id=source_id, keep_temp=keep_temp)
 
                 else:
                     file_storage.add_row({'path': norm_path,
@@ -234,9 +238,7 @@ def convert_folder(
 
     print(str(round(time.time() - t0, 2)) + ' sek')
 
-    converted_count = etl.nrows(file_storage.get_converted_rows(mime))
-
-    return files_conv_count, converted_count, file_count
+    return file_count
 
 
 def write_id_file_to_storage(tsv_source_path: str, source_dir: str,
@@ -280,20 +282,6 @@ def write_id_file_to_storage(tsv_source_path: str, source_dir: str,
     row_count = etl.nrows(table)
     remove_file(tsv_source_path)
     return row_count
-
-
-def get_conversion_result(before: int, to_convert: int,
-                          total: int) -> tuple[str, str]:
-    print('before', before)
-    print('to_convert', to_convert)
-    print('total', total)
-    if before == total:
-        return "All files converted previously.", "bold cyan"
-    if total - before == to_convert:
-        return "All files converted successfully.", "bold green"
-    else:
-        return ("Not all files were converted. See the db table for details.",
-                "bold cyan")
 
 
 def check_files(source_dir, unpacked_path, file_storage):
