@@ -180,12 +180,10 @@ def convert_folder(
     # unpacked files are added to and converted in main loop
     if not unpacked_path:
         table.row_count = 0
-        i = 0
         while etl.nrows(table):
             row = etl.dicts(table)[0]
-            file_count = table.row_count + etl.nrows(table)
-            i += 1
-            table.row_count += 1
+            if row['source_id'] is None:
+                table.row_count += 1
 
             if (
                 reconvert and row['dest_path'] and
@@ -205,7 +203,6 @@ def convert_folder(
             # If conversion failed
             if norm_path is False:
                 console.print('  ' + source_file.status, style="bold red")
-                file_count -= 1
             elif norm_path:
                 dest_path = Path(dest_dir, norm_path)
 
@@ -225,7 +222,6 @@ def convert_folder(
                                        file_storage, norm_path, True,
                                        source_id=source_id, keep_temp=keep_temp)
 
-                    file_count += total
                 else:
                     file_storage.add_row({'path': norm_path,
                                           'source_id': source_id})
