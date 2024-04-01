@@ -2,15 +2,13 @@ import os
 import sqlite3
 import datetime
 from sqlite3 import Connection
-from typing import Optional, Any, List
+from typing import Optional
 
 import petl
 from petl import appenddb, fromdb, todb
 
-from storage import ConvertStorage
 
-
-class StorageSqliteImpl(ConvertStorage):
+class Storage:
     _create_table_str = """
     CREATE TABLE file(
         id integer primary key,

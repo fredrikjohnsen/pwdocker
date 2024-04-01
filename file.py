@@ -3,7 +3,6 @@ import os
 import shutil
 import json
 import subprocess
-import mimetypes
 from os.path import relpath
 from inspect import currentframe, getframeinfo
 from pathlib import Path
@@ -13,7 +12,6 @@ from shlex import quote
 import magic
 
 from config import cfg, converters
-from storage import ConvertStorage
 from util import run_shell_cmd
 
 
@@ -24,12 +22,10 @@ class File:
         self,
         row: Dict[str, Any],
         pwconv_path: Path,
-        file_storage: ConvertStorage,
         unidentify: bool
     ):
         self.pwconv_path = pwconv_path
         self.row = row
-        self.file_storage = file_storage
         self.id = row['id']
         self.path = row['path']
         self.mime = None if unidentify else row['mime']

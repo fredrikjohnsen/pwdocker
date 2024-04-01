@@ -24,8 +24,9 @@ import typer
 from rich.console import Console
 import petl as etl
 
-from storage import ConvertStorage, StorageSqliteImpl
-from util import make_filelist, remove_file, File
+from storage import Storage
+from file import File
+from util import make_filelist, remove_file
 from config import cfg
 
 console = Console()
@@ -95,7 +96,7 @@ def convert(
     if not os.path.isfile(db_path):
         first_run = True
 
-    with StorageSqliteImpl(db_path) as file_storage:
+    with Storage(db_path) as file_storage:
         total = convert_folder(source, dest, debug, orig_ext, file_storage, '',
                                first_run, None, mime, puid, status, limit,
                                reconvert, identify_only, filecheck, timestamp,
@@ -201,7 +202,7 @@ def convert_folder(
                   f"{row['path'][0:100]}", end=" ", flush=True)
 
             unidentify = reconvert or identify_only
-            source_file = File(row, pwconv_path, file_storage, unidentify)
+            source_file = File(row, pwconv_path, unidentify)
             norm_path = source_file.convert(source_dir, dest_dir, orig_ext,
                                             debug, identify_only, keep_temp)
 
