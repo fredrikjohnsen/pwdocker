@@ -186,10 +186,16 @@ def convert_folder(
     # unpacked files are added to and converted in main loop
     if not unpacked_path:
         table.row_count = 0
-        while etl.nrows(table):
+        i = 0
+        percent = 0
+        while nrows := etl.nrows(table):
+            i += 1
             row = etl.dicts(table)[0]
             if row['source_id'] is None:
                 table.row_count += 1
+
+            new_percent = round((1 - nrows/(nrows + i)) * 100)
+            percent = percent if percent > new_percent else new_percent
 
             if (
                 reconvert and row['dest_path'] and
@@ -198,7 +204,7 @@ def convert_folder(
                 file_storage.delete_descendants(row['id'])
 
             print(end='\x1b[2K')  # clear line
-            print(f"\r({str(table.row_count)}/{str(file_count)}): "
+            print(f"\r{percent}% | "
                   f"{row['path'][0:100]}", end=" ", flush=True)
 
             unidentify = reconvert or identify_only
