@@ -123,7 +123,7 @@ def convert_folder(
     dest_dir: str,
     debug: bool,
     orig_ext: bool,
-    file_storage: ConvertStorage,
+    file_storage: Storage,
     unpacked_path: str,
     first_run: bool,
     source_id: int = None,
@@ -249,7 +249,7 @@ def convert_folder(
 
 
 def write_id_file_to_storage(tsv_source_path: str, source_dir: str,
-                             file_storage: ConvertStorage, unpacked_path: str,
+                             file_storage: Storage, unpacked_path: str,
                              source_id: int = None) -> int:
 
     table = etl.fromtext(tsv_source_path, header=['filename'], strip="\n")
