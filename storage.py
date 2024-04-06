@@ -52,8 +52,8 @@ class Storage:
         """
 
     _add_converted_file_str = """
-    insert into file (path, source_id)
-    values (:path, :source_id)
+    insert into file (path, status, source_id)
+    values (:path, :status, :source_id)
     """
 
     _delete_str = """
@@ -178,7 +178,7 @@ class Storage:
 
         if limit:
             sql += f"\nlimit {limit}"
-        
+
         return fromdb(
             self._conn,
             sql,

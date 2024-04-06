@@ -160,20 +160,17 @@ def convert_folder(
 
     # Get table and number of converted files
     if is_new_batch:
-        table = file_storage.get_new_rows(limit)
-        files_conv_count = 0
-    else:
-        written_row_count = file_storage.get_row_count(mime, status)
-        table = file_storage.get_rows(mime, puid, status, limit,
-                                      reconvert or identify_only,
-                                      timestamp)
-        files_conv_count = written_row_count - etl.nrows(table)
-        if not unpacked_path and files_conv_count > 0:
-            console.print(f"({files_conv_count}/{written_row_count}) files "
-                          "have already been converted", style="bold cyan")
-        # print the files in this directory that have already been converted
-        if etl.nrows(table) == 0:
-            return files_conv_count, 0, written_row_count
+        status = 'new'
+    written_row_count = file_storage.get_row_count(mime, status)
+    table = file_storage.get_rows(mime, puid, status, limit,
+                                  reconvert or identify_only,
+                                  timestamp)
+    files_conv_count = written_row_count - etl.nrows(table)
+    if not unpacked_path and files_conv_count > 0:
+        console.print(f"({files_conv_count}/{written_row_count}) files "
+                      "have already been converted", style="bold cyan")
+    if etl.nrows(table) == 0:
+        return files_conv_count, 0, written_row_count
 
     file_count = etl.nrows(table)
 
@@ -234,7 +231,8 @@ def convert_folder(
                                    source_id=source_id, keep_temp=keep_temp)
 
                 else:
-                    file_storage.add_row({'path': norm_path,
+                    file_storage.add_row({'path': norm_path, 'status': 'new',
+                                          'status_ts': datetime.datetime.now(),
                                           'source_id': source_id})
 
             source_file.status_ts = datetime.datetime.now()
