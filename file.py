@@ -91,7 +91,7 @@ class File:
             cmd = cmd.replace("<dest-parent>",
                               quote(str(Path(dest_path).parent)))
 
-        return cmd, dest_path, temp_path
+        return cmd
 
     def is_accepted(self, converter):
         accept = False
