@@ -74,11 +74,6 @@ class File:
         if orig_ext and dest_ext != self.ext:
             dest_ext = self.ext + dest_ext
 
-        n = 0
-        while os.path.exists(dest_path + dest_ext):
-            n += 1
-            dest_ext = '.' + str(n) + dest_ext
-
         return dest_ext
 
     def get_conversion_cmd(self, converter, source_path, dest_path, temp_path):
