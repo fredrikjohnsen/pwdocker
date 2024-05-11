@@ -153,7 +153,7 @@ def convert_folder(
     if filecheck:
         res = check_files(source_dir, unpacked_path, file_storage)
         if res == 'cancelled':
-            return 0, 0, False
+            return False
 
     if not unpacked_path:
         console.print("Converting files..", style="bold cyan")
@@ -170,13 +170,13 @@ def convert_folder(
         console.print(f"({files_conv_count}/{written_row_count}) files "
                       "have already been converted", style="bold cyan")
     if etl.nrows(table) == 0:
-        return files_conv_count, 0, written_row_count
+        return 0
 
     file_count = etl.nrows(table)
 
     if not unpacked_path and input(f"Converts {etl.nrows(table)} files. "
                                    "Continue? [y/n] ") != 'y':
-        return 0, 0, False
+        return False
 
     # loop through all files and run conversion:
     t0 = time.time()
@@ -185,7 +185,8 @@ def convert_folder(
         table.row_count = 0
         i = 0
         percent = 0
-        while nrows := etl.nrows(table):
+        nrows = etl.nrows(table)
+        while nrows > 0:
             i += 1
             row = etl.dicts(table)[0]
             if row['source_id'] is None:
@@ -226,20 +227,23 @@ def convert_folder(
                     console.print(f'Unpacked {unpacked_count} files',
                                   style="bold cyan", end=' ')
 
-                    convert_folder(dest_dir, dest_dir, debug, orig_ext,
-                                   file_storage, norm_path, True,
-                                   source_id=source_id, keep_temp=keep_temp)
+                    n = convert_folder(dest_dir, dest_dir, debug, orig_ext,
+                                       file_storage, norm_path, True,
+                                       source_id=source_id, keep_temp=keep_temp)
+                    nrows += n
 
                 else:
                     file_storage.add_row({'path': norm_path, 'status': 'new',
                                           'status_ts': datetime.datetime.now(),
                                           'source_id': source_id})
+                    nrows += 1
 
             source_file.status_ts = datetime.datetime.now()
             if keep_temp or source_file.source_id is None or source_file.kept:
                 file_storage.update_row(source_file.__dict__)
             else:
                 file_storage.delete_row(source_file.__dict__)
+            nrows -= 1
 
     print(str(round(time.time() - t0, 2)) + ' sek')
 
