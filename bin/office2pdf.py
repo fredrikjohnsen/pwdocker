@@ -2,6 +2,7 @@
 
 import sys
 from pathlib import Path
+import uuid
 
 import typer
 
@@ -20,7 +21,7 @@ def office2pdf(source_file: str, target_file: str):
         Nothing
     """
 
-    docbuilder_file = Path('/tmp', 'x2x.docbuilder')
+    docbuilder_file = Path('/tmp', str(uuid.uuid4()).split("-")[0])
 
     docbuilder = [
         f'builder.OpenFile("{source_file}", "")',
@@ -33,6 +34,8 @@ def office2pdf(source_file: str, target_file: str):
 
     command = ['documentbuilder', docbuilder_file]
     result, out, err = run_shell_cmd(command)
+
+    docbuilder_file.unlink()
 
     if err:
         print('err', err)
