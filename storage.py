@@ -44,10 +44,10 @@ class Storage:
     """
 
     _update_str = """
-        UPDATE file 
-        SET size = :size, puid = :puid, format = :format, version = :version,
-            mime = :mime, encoding = :encoding, ext = :ext, status = :status,
-            status_ts = :status_ts, kept = :kept
+        UPDATE file
+        SET path = :path, size = :size, puid = :puid, format = :format,
+            version = :version, mime = :mime, encoding = :encoding, ext = :ext,
+            status = :status, status_ts = :status_ts, kept = :kept
         WHERE id = :id
         """
 

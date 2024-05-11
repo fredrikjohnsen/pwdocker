@@ -19,6 +19,7 @@ import shutil
 import datetime
 import time
 from pathlib import Path
+import mimetypes
 import typer
 
 from rich.console import Console
@@ -63,6 +64,7 @@ def convert(
     reconvert: bool = False,
     identify_only: bool = False,
     filecheck: bool = False,
+    set_source_ext: bool = False,
     keep_temp: bool = False
 ) -> None:
     """
@@ -100,7 +102,7 @@ def convert(
         total = convert_folder(source, dest, debug, orig_ext, file_storage, '',
                                first_run, None, mime, puid, status, limit,
                                reconvert, identify_only, filecheck, timestamp,
-                               keep_temp)
+                               set_source_ext, keep_temp)
 
         if total is False:
             console.print("User terminated", style="bold red")
@@ -135,6 +137,7 @@ def convert_folder(
     identify_only: bool = False,
     filecheck: bool = False,
     timestamp: datetime.datetime = None,
+    set_source_ext: bool = False,
     keep_temp: bool = False
 ) -> tuple[str, str]:
     """Convert all files in folder"""
@@ -206,20 +209,26 @@ def convert_folder(
                   f"{row['path'][0:100]}", end=" ", flush=True)
 
             unidentify = reconvert or identify_only
-            source_file = File(row, pwconv_path, unidentify)
-            norm_path = source_file.convert(source_dir, dest_dir, orig_ext,
-                                            debug, identify_only, keep_temp)
+            src_file = File(row, pwconv_path, unidentify)
+            norm_path = src_file.convert(source_dir, dest_dir, orig_ext,
+                                         debug, identify_only, keep_temp)
+
+            if identify_only and set_source_ext:
+                mime_ext = mimetypes.guess_extension(src_file.mime)
+                new_path = str(Path(src_file.parent, src_file.stem + mime_ext))
+                shutil.move(src_file.path, new_path)
+                src_file.path = new_path
 
             # If conversion failed
             if norm_path is False:
-                console.print('  ' + source_file.status, style="bold red")
+                console.print('  ' + src_file.status, style="bold red")
             elif norm_path:
                 dest_path = Path(dest_dir, norm_path)
 
-                if keep_temp or source_file.source_id is None or source_file.kept:
-                    source_id = source_file.id
+                if keep_temp or src_file.source_id is None or src_file.kept:
+                    source_id = src_file.id
                 else:
-                    source_id = source_file.source_id
+                    source_id = src_file.source_id
 
                 if os.path.isdir(dest_path):
                     unpacked_count = sum([len(files) for r, d, files
@@ -238,11 +247,11 @@ def convert_folder(
                                           'source_id': source_id})
                     nrows += 1
 
-            source_file.status_ts = datetime.datetime.now()
-            if keep_temp or source_file.source_id is None or source_file.kept:
-                file_storage.update_row(source_file.__dict__)
+            src_file.status_ts = datetime.datetime.now()
+            if keep_temp or src_file.source_id is None or src_file.kept:
+                file_storage.update_row(src_file.__dict__)
             else:
-                file_storage.delete_row(source_file.__dict__)
+                file_storage.delete_row(src_file.__dict__)
             nrows -= 1
 
     print(str(round(time.time() - t0, 2)) + ' sek')
