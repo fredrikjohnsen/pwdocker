@@ -28,6 +28,8 @@ class File:
         self.row = row
         self.id = row['id']
         self.path = row['path']
+        self.encoding = row['encoding']
+        self.status = row['status']
         self.mime = None if unidentify else row['mime']
         self.format = None if unidentify else row['format']
         self.version = None if unidentify else row['version']
@@ -45,6 +47,7 @@ class File:
                              stderr=subprocess.PIPE)
         out, err = p.communicate()
 
+        self.encoding = None
         if not err:
             fileinfo = json.loads(out)
             self.mime = fileinfo['files'][0]['matches'][0]['mime']
@@ -57,8 +60,6 @@ class File:
                 m = magic.open(magic.MAGIC_MIME_ENCODING)
                 m.load()
                 self.encoding = m.buffer(blob)
-            else:
-                self.encoding = None
 
         if self.mime in ['', 'None', None]:
             self.mime = magic.from_file(source_path, mime=True)
