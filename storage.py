@@ -188,7 +188,7 @@ class Storage:
                  limit: int, reconvert: bool, timestamp: datetime.datetime):
         params = []
         if reconvert:
-            select = "SELECT * from file WHERE status != 'new'"
+            select = "SELECT * from file WHERE 1=1"
         else:
             select = """
                 SELECT * FROM file
