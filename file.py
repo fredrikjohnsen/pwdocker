@@ -179,7 +179,12 @@ class File:
                 returncode, out, err = run_shell_cmd(cmd, cwd=self.pwconv_path,
                                                      shell=True, timeout=timeout)
 
-            if cmd and (returncode or not os.path.exists(dest_path)):
+            if cmd and source_path == dest_path and os.path.getsize(dest_path) == self.size:
+                # Accepts pdf -> pdfa/a even if conversion fails 
+                self.status = 'accepted'
+                self.kept = True
+                norm_path = False
+            elif cmd and (returncode or not os.path.exists(dest_path)):
                 if out != 'timeout':
                     print('out', out)
                     print('err', err)
