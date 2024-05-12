@@ -119,6 +119,7 @@ class Storage:
 
     def delete_row(self, data: dict):
         self._conn.execute(self._delete_str, data)
+        self._conn.commit()
 
     def get_row_count(self, mime=None, status=None, original=False):
         cursor = self._conn.cursor()
