@@ -106,7 +106,7 @@ class File:
         return accept
 
     def convert(self, source_dir: str, dest_dir: str, orig_ext: bool,
-                debug: bool, identify_only: bool, keep_temp: bool) -> dict[str, Type[str]]:
+                debug: bool, identify_only: bool) -> dict[str, Type[str]]:
         """
         Convert file to archive format
 
@@ -121,7 +121,8 @@ class File:
         else:
             source_path = os.path.join(source_dir, self.path)
         dest_path = os.path.join(dest_dir, self.parent, self.stem)
-        temp_path = os.path.join(dest_dir.rstrip('/') + '-temp',  self.path)
+        # temp_path = os.path.join(dest_dir.rstrip('/') + '-temp',  self.path)
+        temp_path = os.path.join('/tmp/convert',  self.path)
         dest_path = os.path.abspath(dest_path)
 
         if self.mime in ['', 'None', None]:
@@ -211,7 +212,7 @@ class File:
                 self.status = 'converted'
                 norm_path = relpath(dest_path, start=dest_dir)
 
-            if not keep_temp and os.path.exists(temp_path):
+            if os.path.exists(temp_path):
                 os.remove(temp_path)
 
         # Copy file from `dest_dir` if it's an original file and

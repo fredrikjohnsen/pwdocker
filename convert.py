@@ -64,7 +64,6 @@ def convert(
     identify_only: bool = False,
     filecheck: bool = False,
     set_source_ext: bool = False,
-    keep_temp: bool = False,
     from_path: str = None,
     to_path: str = None
 ) -> None:
@@ -77,8 +76,6 @@ def convert(
 
     --status:    Filter on status: accepted, converted, deleted, failed,\n
     ..           protected, skipped, timeout
-
-    --keep-temp: Keep temporary files in temp directory and in file table
 
     --from-path: Convert files where path is larger than or the same as this value
 
@@ -107,7 +104,7 @@ def convert(
         total = convert_folder(source, dest, debug, orig_ext, file_storage, '',
                                first_run, None, mime, puid, status,
                                reconvert, identify_only, filecheck, timestamp,
-                               set_source_ext, keep_temp, from_path, to_path)
+                               set_source_ext, from_path, to_path)
 
         if total is False:
             console.print("User terminated", style="bold red")
@@ -142,7 +139,6 @@ def convert_folder(
     filecheck: bool = False,
     timestamp: datetime.datetime = None,
     set_source_ext: bool = False,
-    keep_temp: bool = False,
     from_path: str = None,
     to_path: str = None
 ) -> tuple[str, str]:
@@ -217,7 +213,7 @@ def convert_folder(
             unidentify = reconvert or identify_only
             src_file = File(row, pwconv_path, unidentify)
             norm_path = src_file.convert(source_dir, dest_dir, orig_ext,
-                                         debug, identify_only, keep_temp)
+                                         debug, identify_only)
 
             if identify_only and set_source_ext:
                 mime_ext = mimetypes.guess_extension(src_file.mime)
@@ -231,7 +227,7 @@ def convert_folder(
             elif norm_path:
                 dest_path = Path(dest_dir, norm_path)
 
-                if keep_temp or src_file.source_id is None or src_file.kept:
+                if src_file.source_id is None or src_file.kept:
                     source_id = src_file.id
                 else:
                     source_id = src_file.source_id
@@ -244,7 +240,7 @@ def convert_folder(
 
                     n = convert_folder(dest_dir, dest_dir, debug, orig_ext,
                                        file_storage, norm_path, True,
-                                       source_id=source_id, keep_temp=keep_temp)
+                                       source_id=source_id)
                     nrows += n
 
                 else:
@@ -254,7 +250,7 @@ def convert_folder(
                     nrows += 1
 
             src_file.status_ts = datetime.datetime.now()
-            if keep_temp or src_file.source_id is None or src_file.kept:
+            if src_file.source_id is None or src_file.kept:
                 file_storage.update_row(src_file.__dict__)
             else:
                 file_storage.delete_row(src_file.__dict__)
