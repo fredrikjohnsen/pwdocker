@@ -148,21 +148,18 @@ class Storage:
 
         return cursor.fetchone()[0]
 
-    def get_all_rows(self, unpacked_path, limit):
+    def get_all_rows(self, unpacked_path):
 
         if unpacked_path:
             unpacked_path = os.path.join(unpacked_path, '')
             unpacked_path = unpacked_path.replace("'", "''")
 
-        sql= f"""
+        sql = f"""
         SELECT * FROM file
         where path like '{str(unpacked_path)}%'
           and source_id IS NULL
         """
         params = []
-
-        if limit:
-            sql += f"\nlimit {limit}"
 
         return fromdb(
             self._conn,
@@ -170,22 +167,19 @@ class Storage:
             params
         )
 
-    def get_new_rows(self, limit):
+    def get_new_rows(self):
 
         sql = """
         SELECT * FROM file
         WHERE  status IS NULL
         """
 
-        if limit:
-            sql += f"\nlimit {limit}"
-
         return fromdb(
             self._conn,
             sql,
         )
 
-    def get_rows(self, mime: str, puid: str, status: str, limit: int,
+    def get_rows(self, mime: str, puid: str, status: str,
                  reconvert: bool, from_path: str, to_path: str,
                  timestamp: datetime.datetime):
         params = []
@@ -222,9 +216,6 @@ class Storage:
 
         select += " AND status_ts < ?"
         params.append(timestamp)
-
-        if limit:
-            select += f" limit {limit}"
 
         return fromdb(self._conn, select, params)
 

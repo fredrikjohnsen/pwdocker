@@ -60,7 +60,6 @@ def convert(
     puid: str = None,
     status: str = None,
     db_path: str = None,
-    limit: int = None,
     reconvert: bool = False,
     identify_only: bool = False,
     filecheck: bool = False,
@@ -106,7 +105,7 @@ def convert(
 
     with Storage(db_path) as file_storage:
         total = convert_folder(source, dest, debug, orig_ext, file_storage, '',
-                               first_run, None, mime, puid, status, limit,
+                               first_run, None, mime, puid, status,
                                reconvert, identify_only, filecheck, timestamp,
                                set_source_ext, keep_temp, from_path, to_path)
 
@@ -138,7 +137,6 @@ def convert_folder(
     mime: str = None,
     puid: str = None,
     status: str = None,
-    limit: int = None,
     reconvert: bool = False,
     identify_only: bool = False,
     filecheck: bool = False,
@@ -173,7 +171,7 @@ def convert_folder(
     if is_new_batch:
         status = 'new'
     written_row_count = file_storage.get_row_count(mime, status)
-    table = file_storage.get_rows(mime, puid, status, limit,
+    table = file_storage.get_rows(mime, puid, status,
                                   reconvert or identify_only,
                                   from_path, to_path, timestamp)
     files_conv_count = written_row_count - etl.nrows(table)
@@ -320,7 +318,7 @@ def check_files(source_dir, unpacked_path, file_storage):
         console.print(f"Row count: {str(total_row_count)}", style="red")
         console.print(f"File count: {str(files_count)}", style="red")
         db_files = []
-        table = file_storage.get_all_rows('', None)
+        table = file_storage.get_all_rows('')
         for row in etl.dicts(table):
             db_files.append(row['path'])
         print("Following files don't exist in database:")
