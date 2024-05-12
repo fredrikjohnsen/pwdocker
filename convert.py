@@ -65,19 +65,25 @@ def convert(
     identify_only: bool = False,
     filecheck: bool = False,
     set_source_ext: bool = False,
-    keep_temp: bool = False
+    keep_temp: bool = False,
+    from_path: str = None,
+    to_path: str = None
 ) -> None:
     """
     Convert all files in SOURCE folder
 
-    --db-path: Database path. If not set, it uses default DEST + .db
+    --db-path:   Database path. If not set, it uses default DEST + .db
 
     --filecheck: Check if files in source match files in database
 
-    --status:  Filter on status: accepted, converted, deleted, failed,\n
-    ..         protected, skipped, timeout
+    --status:    Filter on status: accepted, converted, deleted, failed,\n
+    ..           protected, skipped, timeout
 
     --keep-temp: Keep temporary files in temp directory and in file table
+
+    --from-path: Convert files where path is larger than or the same as this value
+
+    --to-path:   Convert files where path is smaller than this value
 
     """
 
@@ -102,7 +108,7 @@ def convert(
         total = convert_folder(source, dest, debug, orig_ext, file_storage, '',
                                first_run, None, mime, puid, status, limit,
                                reconvert, identify_only, filecheck, timestamp,
-                               set_source_ext, keep_temp)
+                               set_source_ext, keep_temp, from_path, to_path)
 
         if total is False:
             console.print("User terminated", style="bold red")
@@ -138,7 +144,9 @@ def convert_folder(
     filecheck: bool = False,
     timestamp: datetime.datetime = None,
     set_source_ext: bool = False,
-    keep_temp: bool = False
+    keep_temp: bool = False,
+    from_path: str = None,
+    to_path: str = None
 ) -> tuple[str, str]:
     """Convert all files in folder"""
 
@@ -167,7 +175,7 @@ def convert_folder(
     written_row_count = file_storage.get_row_count(mime, status)
     table = file_storage.get_rows(mime, puid, status, limit,
                                   reconvert or identify_only,
-                                  timestamp)
+                                  from_path, to_path, timestamp)
     files_conv_count = written_row_count - etl.nrows(table)
     if not unpacked_path and files_conv_count > 0:
         console.print(f"({files_conv_count}/{written_row_count}) files "

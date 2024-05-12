@@ -184,8 +184,9 @@ class Storage:
             sql,
         )
 
-    def get_rows(self, mime: str, puid: str, status: str,
-                 limit: int, reconvert: bool, timestamp: datetime.datetime):
+    def get_rows(self, mime: str, puid: str, status: str, limit: int,
+                 reconvert: bool, from_path: str, to_path: str,
+                 timestamp: datetime.datetime):
         params = []
         if reconvert:
             select = "SELECT * from file WHERE 1=1"
@@ -209,6 +210,14 @@ class Storage:
         if status:
             select += " AND status = ?"
             params.append(status)
+
+        if from_path:
+            select += " AND path >= ?"
+            params.append(from_path)
+
+        if to_path:
+            select += " AND path < ?"
+            params.append(to_path)
 
         select += " AND status_ts < ?"
         params.append(timestamp)
