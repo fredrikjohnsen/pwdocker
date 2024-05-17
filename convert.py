@@ -20,6 +20,7 @@ import datetime
 import time
 from pathlib import Path
 import mimetypes
+from multiprocessing import Process, Value
 import typer
 
 from rich.console import Console
@@ -65,7 +66,8 @@ def convert(
     filecheck: bool = False,
     set_source_ext: bool = False,
     from_path: str = None,
-    to_path: str = None
+    to_path: str = None,
+    multi: bool = False
 ) -> None:
     """
     Convert all files in SOURCE folder
@@ -89,48 +91,85 @@ def convert(
     if os.path.isdir('/tmp/convert'):
         shutil.rmtree('/tmp/convert')
 
-    first_run = False
-
     if db_path and os.path.dirname(db_path) == '':
         console.print("Error: --db-path must refer to an absolute path",
                       style='red')
         return
     if not db_path:
         db_path = dest + '.db'
-    if not os.path.isfile(db_path):
-        first_run = True
 
-    with Storage(db_path) as file_storage:
-        total = convert_folder(source, dest, debug, orig_ext, file_storage, '',
-                               first_run, None, mime, puid, status,
-                               reconvert, identify_only, filecheck, timestamp,
-                               set_source_ext, from_path, to_path)
+    first_run = not os.path.isfile(db_path)
 
-        if total is False:
-            console.print("User terminated", style="bold red")
+    with Storage(db_path) as db:
+        filelist_path = dest.rstrip('/') + '-filelist.txt'
+        is_new_batch = os.path.isfile(filelist_path)
+        if first_run:
+            make_filelist(source, filelist_path)
+
+        if first_run or is_new_batch:
+            write_id_file_to_storage(filelist_path, source, db, '')
+            status = 'new'
+
+        conds, params = db.get_conditions(mime=mime, puid=puid, status=status,
+                                          reconvert=(reconvert or identify_only),
+                                          from_path=from_path, to_path=to_path,
+                                          timestamp=timestamp)
+        count = db.get_row_count(conds, params)
+        remains = Value('i', count)
+        finished = Value('i', 0)
+        failed = Value('i', 0)
+
+        if input(f"Converts {count} files. Continue? [y/n] ") != 'y':
+            return False
+
+        if filecheck:
+            res = check_files(source, db)
+            if res == 'cancelled':
+                return False
+
+        console.print("Converting files..", style="bold cyan")
+
+        jobs = []
+        t0 = time.time()
+
+        if multi:
+            dirs = db.get_subfolders(conds, params)
+            for dir in dirs:
+                dir = Path(dir).name
+                args = (source, dest, debug, orig_ext, db, dir, True,
+                        mime, puid, status, reconvert,
+                        identify_only, filecheck, timestamp, set_source_ext,
+                        from_path, to_path, finished, remains, failed)
+                p = Process(target=convert_folder, args=args)
+                p.start()
+                jobs.append(p)
         else:
-            # check conversion result
-            failed_count = etl.nrows(file_storage.get_failed_rows(mime))
-            skipped_count = etl.nrows(file_storage.get_skipped_rows(mime))
-            if failed_count:
-                msg = f"{failed_count} conversions failed. See db table."
-                console.print(msg, style="bold red")
-            if skipped_count:
-                msg = f"{skipped_count} files skipped. Se db table."
-                console.print(msg, style="bold cyan")
-            if not (failed_count or skipped_count):
-                console.print("All files converted", style="bold green")
+            args = (source, dest, debug, orig_ext, db, '', True,
+                    mime, puid, status, reconvert,
+                    identify_only, filecheck, timestamp, set_source_ext,
+                    from_path, to_path, finished, remains, failed)
+            p = Process(target=convert_folder, args=args)
+            p.start()
+            jobs.append(p)
 
+        for p in jobs:
+            p.join()
+
+        duration = str(round(time.time() - t0, 2)) + ' sek'
+        console.print('\nConversion finished in ' + duration)
+        console.print(f"{finished.value} files converted", style="bold green")
+        if failed.value > 0:
+            console.print(f"{failed.value} conversions failed", style="bold red")
+            console.print(f"See database {db_path} for details")
 
 def convert_folder(
     source_dir: str,
     dest_dir: str,
     debug: bool,
     orig_ext: bool,
-    file_storage: Storage,
-    unpacked_path: str,
-    first_run: bool,
-    source_id: int = None,
+    db: Storage,
+    subpath: str,
+    multi: bool,
     mime: str = None,
     puid: str = None,
     status: str = None,
@@ -140,71 +179,44 @@ def convert_folder(
     timestamp: datetime.datetime = None,
     set_source_ext: bool = False,
     from_path: str = None,
-    to_path: str = None
+    to_path: str = None,
+    finished: Value = Value('i', 0),
+    remains: Value = Value('i', 0),
+    failed: Value = Value('i', 0)
 ) -> tuple[str, str]:
     """Convert all files in folder"""
 
-    # Write new files to database
-    filelist_dir = os.path.join(dest_dir, unpacked_path)
-    filelist_path = filelist_dir.rstrip('/') + '-filelist.txt'
-    is_new_batch = os.path.isfile(filelist_path)
-    if first_run or is_new_batch:
-        if not is_new_batch:
-            make_filelist(os.path.join(source_dir, unpacked_path),
-                          filelist_path)
-        write_id_file_to_storage(filelist_path, source_dir, file_storage,
-                                 unpacked_path, source_id=source_id)
+    conds, params = db.get_conditions(mime=mime, puid=puid, status=status,
+                                      reconvert=(reconvert or identify_only),
+                                      subpath=subpath, from_path=from_path,
+                                      to_path=to_path, timestamp=timestamp)
+    table = db.get_rows(conds, params)
 
-    if filecheck:
-        res = check_files(source_dir, unpacked_path, file_storage)
-        if res == 'cancelled':
-            return False
-
-    if not unpacked_path:
-        console.print("Converting files..", style="bold cyan")
-
-    # Get table and number of converted files
-    if is_new_batch:
-        status = 'new'
-    written_row_count = file_storage.get_row_count(mime, status)
-    table = file_storage.get_rows(mime, puid, status,
-                                  reconvert or identify_only,
-                                  from_path, to_path, timestamp)
-    files_conv_count = written_row_count - etl.nrows(table)
-    if not unpacked_path and files_conv_count > 0:
-        console.print(f"({files_conv_count}/{written_row_count}) files "
-                      "have already been converted", style="bold cyan")
     if etl.nrows(table) == 0:
         return 0
 
-    file_count = etl.nrows(table)
-
-    if not unpacked_path and input(f"Converts {etl.nrows(table)} files. "
-                                   "Continue? [y/n] ") != 'y':
-        return False
-
     # loop through all files and run conversion:
-    t0 = time.time()
     # unpacked files are added to and converted in main loop
-    if not unpacked_path:
+    if not subpath or multi:
         table.row_count = 0
         i = 0
         percent = 0
         nrows = etl.nrows(table)
         while nrows > 0:
             i += 1
+            finished.value += 1
             row = etl.dicts(table)[0]
             if row['source_id'] is None:
                 table.row_count += 1
 
-            new_percent = round((1 - nrows/(nrows + i)) * 100)
+            new_percent = round((1 - remains.value/(remains.value + finished.value)) * 100)
             percent = percent if percent > new_percent else new_percent
 
             if (
                 reconvert and row['dest_path'] and
                 os.path.isfile(Path(dest_dir, row['dest_path']))
             ):
-                file_storage.delete_descendants(row['id'])
+                db.delete_descendants(row['id'])
 
             print(end='\x1b[2K')  # clear line
             print(f"\r{percent}% | "
@@ -224,6 +236,7 @@ def convert_folder(
             # If conversion failed
             if norm_path is False:
                 console.print('  ' + src_file.status, style="bold red")
+                failed.value += 1
             elif norm_path:
                 dest_path = Path(dest_dir, norm_path)
 
@@ -238,31 +251,35 @@ def convert_folder(
                     console.print(f'Unpacked {unpacked_count} files',
                                   style="bold cyan", end=' ')
 
-                    n = convert_folder(dest_dir, dest_dir, debug, orig_ext,
-                                       file_storage, norm_path, True,
-                                       source_id=source_id)
+                    # Write new files to database
+                    filelist_dir = os.path.join(dest_dir, norm_path)
+                    filelist_path = filelist_dir.rstrip('/') + '-filelist.txt'
+                    make_filelist(os.path.join(dest_dir, norm_path),
+                                  filelist_path)
+                    n = write_id_file_to_storage(filelist_path, dest_dir, db,
+                                                 norm_path, source_id=source_id)
+
                     nrows += n
+                    remains.value += n
 
                 else:
-                    file_storage.add_row({'path': norm_path, 'status': 'new',
-                                          'status_ts': datetime.datetime.now(),
-                                          'source_id': source_id})
+                    db.add_row({'path': norm_path, 'status': 'new',
+                                'status_ts': datetime.datetime.now(),
+                                'source_id': source_id})
                     nrows += 1
+                    remains.value += 1
 
             src_file.status_ts = datetime.datetime.now()
             if src_file.source_id is None or src_file.kept:
-                file_storage.update_row(src_file.__dict__)
+                db.update_row(src_file.__dict__)
             else:
-                file_storage.delete_row(src_file.__dict__)
+                db.delete_row(src_file.__dict__)
             nrows -= 1
-
-    print(str(round(time.time() - t0, 2)) + ' sek')
-
-    return file_count
+            remains.value -= 1
 
 
 def write_id_file_to_storage(tsv_source_path: str, source_dir: str,
-                             file_storage: Storage, unpacked_path: str,
+                             db: Storage, unpacked_path: str,
                              source_id: int = None) -> int:
 
     table = etl.fromtext(tsv_source_path, header=['filename'], strip="\n")
@@ -298,23 +315,24 @@ def write_id_file_to_storage(tsv_source_path: str, source_dir: str,
         table = etl.convert(table, 'path',
                             lambda v: os.path.join(unpacked_path, v))
 
-    file_storage.append_rows(table)
+    db.append_rows(table)
     row_count = etl.nrows(table)
     remove_file(tsv_source_path)
     return row_count
 
 
-def check_files(source_dir, unpacked_path, file_storage):
+def check_files(source_dir, db):
     """ Check if files in database match files on disk """
 
     files_count = sum([len(files) for r, d, files in os.walk(source_dir)])
-    total_row_count = file_storage.get_row_count(original=True)
+    conds, params = db.get_conditions(original=True)
+    total_row_count = db.get_row_count(conds, params)
 
-    if not unpacked_path and files_count != total_row_count:
+    if files_count != total_row_count:
         console.print(f"Row count: {str(total_row_count)}", style="red")
         console.print(f"File count: {str(files_count)}", style="red")
         db_files = []
-        table = file_storage.get_all_rows('')
+        table = db.get_all_rows('')
         for row in etl.dicts(table):
             db_files.append(row['path'])
         print("Following files don't exist in database:")
@@ -328,7 +346,7 @@ def check_files(source_dir, unpacked_path, file_storage):
                     extra_files.append({'path': relpath, 'status': 'new'})
                     print('- ' + relpath)
 
-        answ = input(f"Files listed in {file_storage.path} doesn't match "
+        answ = input(f"Files listed in {db.path} doesn't match "
                      "files on disk. Continue? [y]es, [n]o, [a]dd, [d]elete ")
         if answ == 'd':
             for file_ in extra_files:
@@ -336,7 +354,7 @@ def check_files(source_dir, unpacked_path, file_storage):
             return 'deleted'
         elif answ == 'a':
             table = etl.fromdicts(extra_files)
-            file_storage.append_rows(table)
+            db.append_rows(table)
             return 'added'
         elif answ != 'y':
             return 'cancelled'

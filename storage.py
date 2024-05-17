@@ -121,28 +121,31 @@ class Storage:
         self._conn.execute(self._delete_str, data)
         self._conn.commit()
 
-    def get_row_count(self, mime=None, status=None, original=False):
+    def get_subfolders(self, conds, params):
         cursor = self._conn.cursor()
         query = """
-        SELECT COUNT(*) FROM file
-        WHERE 1 = 1 -- status != 'converted'
+        SELECT DISTINCT substr(path, 0, instr(path, '/')) as dir
+        FROM   file
         """
-        conds = []
-        params = []
-
-        if original:
-            query += "\nAND source_id IS NULL"
-
-        if mime:
-            conds.append("mime = ?")
-            params.append(mime)
-
-        if status:
-            conds.append("status = ?")
-            params.append(status)
 
         if len(conds):
-            query += "\nAND " + ' AND '.join(conds)
+            query += "\nwhere " + ' AND '.join(conds)
+
+        cursor.execute(query, params)
+
+        rows = cursor.fetchall()
+        folders = []
+        for row in rows:
+            folders.append(row[0])
+
+        return folders
+
+    def get_row_count(self, conds, params):
+        cursor = self._conn.cursor()
+        query = "SELECT COUNT(*) FROM file"
+
+        if len(conds):
+            query += " where " + ' AND '.join(conds)
 
         cursor.execute(query, params)
 
@@ -179,43 +182,58 @@ class Storage:
             sql,
         )
 
-    def get_rows(self, mime: str, puid: str, status: str,
-                 reconvert: bool, from_path: str, to_path: str,
-                 timestamp: datetime.datetime):
+    def get_conditions(self, mime=None, puid=None, status=None, reconvert=False,
+                       subpath=None, from_path=None, to_path=None,
+                       timestamp=None, original=False):
+
+        conds = []
         params = []
-        if reconvert:
-            select = "SELECT * from file WHERE 1=1"
-        else:
-            select = """
-                SELECT * FROM file
-                WHERE  (status IS NULL OR status NOT IN(?, ?, ?))
-            """
+
+        if original:
+            conds.append("source_id IS NULL")
+
+        if not reconvert:
+            conds.append('(status is null or status not in (?, ?, ?))')
             params.append('converted')
             params.append('accepted')
             params.append('removed')
 
         if mime:
-            select += " AND mime = ?"
+            conds.append("mime = ?")
             params.append(mime)
 
         if puid:
-            select += " AND puid = ?"
+            conds.append("puid = ?")
             params.append(puid)
 
         if status:
-            select += " AND status = ?"
+            conds.append("status = ?")
             params.append(status)
 
+        if subpath:
+            conds.append("path like ?")
+            params.append(subpath + '%')
+
         if from_path:
-            select += " AND path >= ?"
+            conds.append("path >= ?")
             params.append(from_path)
 
         if to_path:
-            select += " AND path < ?"
+            conds.append("path < ?")
             params.append(to_path)
 
-        select += " AND status_ts < ?"
-        params.append(timestamp)
+        if timestamp:
+            conds.append("status_ts < ?")
+            params.append(timestamp)
+
+        return conds, params
+
+    def get_rows(self, conds, params):
+
+        select = "SELECT * from file"
+
+        if len(conds):
+            select += " WHERE " + ' AND '.join(conds)
 
         return fromdb(self._conn, select, params)
 
