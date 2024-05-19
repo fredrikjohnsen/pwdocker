@@ -180,17 +180,17 @@ def convert_folder(
     db_path: str,
     subpath: str,
     multi: bool,
-    mime: str = None,
-    puid: str = None,
-    status: str = None,
-    reconvert: bool = False,
-    identify_only: bool = False,
-    filecheck: bool = False,
-    timestamp: datetime.datetime = None,
-    set_source_ext: bool = False,
-    from_path: str = None,
-    to_path: str = None,
-    count: dict = {}
+    mime: str,
+    puid: str,
+    status: str,
+    reconvert: bool,
+    identify_only: bool,
+    filecheck: bool,
+    timestamp: datetime.datetime,
+    set_source_ext: bool,
+    from_path: str,
+    to_path: str,
+    count: dict
 ) -> tuple[str, str]:
     """Convert all files in folder"""
 
@@ -200,9 +200,6 @@ def convert_folder(
                                           subpath=subpath, from_path=from_path,
                                           to_path=to_path, timestamp=timestamp)
         table = db.get_rows(conds, params)
-
-        if etl.nrows(table) == 0:
-            return 0
 
         # loop through all files and run conversion:
         # unpacked files are added to and converted in main loop
