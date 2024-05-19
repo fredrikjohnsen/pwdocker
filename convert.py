@@ -114,12 +114,15 @@ def convert(
                                           reconvert=(reconvert or identify_only),
                                           from_path=from_path, to_path=to_path,
                                           timestamp=timestamp)
-        count = db.get_row_count(conds, params)
-        remains = Value('i', count)
-        finished = Value('i', 0)
-        failed = Value('i', 0)
 
-        if input(f"Converts {count} files. Continue? [y/n] ") != 'y':
+        count_remains = db.get_row_count(conds, params)
+        count = {
+            'remains': Value('i', count_remains),
+            'finished': Value('i', 0),
+            'failed': Value('i', 0)
+        }
+
+        if input(f"Converts {count_remains} files. Continue? [y/n] ") != 'y':
             return False
 
         if filecheck:
@@ -139,7 +142,7 @@ def convert(
                 args = (source, dest, debug, orig_ext, db, dir, True,
                         mime, puid, status, reconvert,
                         identify_only, filecheck, timestamp, set_source_ext,
-                        from_path, to_path, finished, remains, failed)
+                        from_path, to_path, count)
                 p = Process(target=convert_folder, args=args)
                 p.start()
                 jobs.append(p)
@@ -147,7 +150,7 @@ def convert(
             args = (source, dest, debug, orig_ext, db, '', True,
                     mime, puid, status, reconvert,
                     identify_only, filecheck, timestamp, set_source_ext,
-                    from_path, to_path, finished, remains, failed)
+                    from_path, to_path, count)
             p = Process(target=convert_folder, args=args)
             p.start()
             jobs.append(p)
@@ -180,9 +183,7 @@ def convert_folder(
     set_source_ext: bool = False,
     from_path: str = None,
     to_path: str = None,
-    finished: Value = Value('i', 0),
-    remains: Value = Value('i', 0),
-    failed: Value = Value('i', 0)
+    count: dict = {}
 ) -> tuple[str, str]:
     """Convert all files in folder"""
 
@@ -204,12 +205,13 @@ def convert_folder(
         nrows = etl.nrows(table)
         while nrows > 0:
             i += 1
-            finished.value += 1
+            count['finished'].value += 1
             row = etl.dicts(table)[0]
             if row['source_id'] is None:
                 table.row_count += 1
 
-            new_percent = round((1 - remains.value/(remains.value + finished.value)) * 100)
+            n = count['remains'].value
+            new_percent = round((1 - n/(n + count['finished'].value)) * 100)
             percent = percent if percent > new_percent else new_percent
 
             if (
@@ -236,7 +238,7 @@ def convert_folder(
             # If conversion failed
             if norm_path is False:
                 console.print('  ' + src_file.status, style="bold red")
-                failed.value += 1
+                count['failed'].value += 1
             elif norm_path:
                 dest_path = Path(dest_dir, norm_path)
 
@@ -260,14 +262,14 @@ def convert_folder(
                                                  norm_path, source_id=source_id)
 
                     nrows += n
-                    remains.value += n
+                    count['remains'].value += n
 
                 else:
                     db.add_row({'path': norm_path, 'status': 'new',
                                 'status_ts': datetime.datetime.now(),
                                 'source_id': source_id})
                     nrows += 1
-                    remains.value += 1
+                    count['remains'].value += 1
 
             src_file.status_ts = datetime.datetime.now()
             if src_file.source_id is None or src_file.kept:
@@ -275,7 +277,7 @@ def convert_folder(
             else:
                 db.delete_row(src_file.__dict__)
             nrows -= 1
-            remains.value -= 1
+            count['remains'].value -= 1
 
 
 def write_id_file_to_storage(tsv_source_path: str, source_dir: str,
