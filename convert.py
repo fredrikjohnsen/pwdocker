@@ -203,86 +203,85 @@ def convert_folder(
 
     # loop through all files and run conversion:
     # unpacked files are added to and converted in main loop
-    if not subpath or multi:
-        table.row_count = 0
-        i = 0
-        percent = 0
-        nrows = etl.nrows(table)
-        while nrows > 0:
-            i += 1
-            count['finished'].value += 1
-            row = etl.dicts(table)[0]
-            if row['source_id'] is None:
-                table.row_count += 1
+    table.row_count = 0
+    i = 0
+    percent = 0
+    nrows = etl.nrows(table)
+    while nrows > 0:
+        i += 1
+        count['finished'].value += 1
+        row = etl.dicts(table)[0]
+        if row['source_id'] is None:
+            table.row_count += 1
 
-            n = count['remains'].value
-            new_percent = round((1 - n/(n + count['finished'].value)) * 100)
-            percent = percent if percent > new_percent else new_percent
+        n = count['remains'].value
+        new_percent = round((1 - n/(n + count['finished'].value)) * 100)
+        percent = percent if percent > new_percent else new_percent
 
-            if (
-                reconvert and row['dest_path'] and
-                os.path.isfile(Path(dest_dir, row['dest_path']))
-            ):
-                db.delete_descendants(row['id'])
+        if (
+            reconvert and row['dest_path'] and
+            os.path.isfile(Path(dest_dir, row['dest_path']))
+        ):
+            db.delete_descendants(row['id'])
 
-            print(end='\x1b[2K')  # clear line
-            print(f"\r{percent}% | "
-                  f"{row['path'][0:100]}", end=" ", flush=True)
+        print(end='\x1b[2K')  # clear line
+        print(f"\r{percent}% | "
+              f"{row['path'][0:100]}", end=" ", flush=True)
 
-            unidentify = reconvert or identify_only
-            src_file = File(row, pwconv_path, unidentify)
-            norm_path = src_file.convert(source_dir, dest_dir, orig_ext,
-                                         debug, identify_only)
+        unidentify = reconvert or identify_only
+        src_file = File(row, pwconv_path, unidentify)
+        norm_path = src_file.convert(source_dir, dest_dir, orig_ext,
+                                     debug, identify_only)
 
-            if identify_only and set_source_ext:
-                mime_ext = mimetypes.guess_extension(src_file.mime)
-                new_path = str(Path(src_file.parent, src_file.stem + mime_ext))
-                shutil.move(src_file.path, new_path)
-                src_file.path = new_path
+        if identify_only and set_source_ext:
+            mime_ext = mimetypes.guess_extension(src_file.mime)
+            new_path = str(Path(src_file.parent, src_file.stem + mime_ext))
+            shutil.move(src_file.path, new_path)
+            src_file.path = new_path
 
-            # If conversion failed
-            if norm_path is False:
-                console.print('  ' + src_file.status, style="bold red")
-                count['failed'].value += 1
-            elif norm_path:
-                dest_path = Path(dest_dir, norm_path)
+        # If conversion failed
+        if norm_path is False:
+            console.print('  ' + src_file.status, style="bold red")
+            count['failed'].value += 1
+        elif norm_path:
+            dest_path = Path(dest_dir, norm_path)
 
-                if src_file.source_id is None or src_file.kept:
-                    source_id = src_file.id
-                else:
-                    source_id = src_file.source_id
-
-                if os.path.isdir(dest_path):
-                    unpacked_count = sum([len(files) for r, d, files
-                                          in os.walk(dest_path)])
-                    console.print(f'Unpacked {unpacked_count} files',
-                                  style="bold cyan", end=' ')
-
-                    # Write new files to database
-                    filelist_dir = os.path.join(dest_dir, norm_path)
-                    filelist_path = filelist_dir.rstrip('/') + '-filelist.txt'
-                    make_filelist(os.path.join(dest_dir, norm_path),
-                                  filelist_path)
-                    n = write_id_file_to_storage(filelist_path, dest_dir, db,
-                                                 norm_path, source_id=source_id)
-
-                    nrows += n
-                    count['remains'].value += n
-
-                else:
-                    db.add_row({'path': norm_path, 'status': 'new',
-                                'status_ts': datetime.datetime.now(),
-                                'source_id': source_id})
-                    nrows += 1
-                    count['remains'].value += 1
-
-            src_file.status_ts = datetime.datetime.now()
             if src_file.source_id is None or src_file.kept:
-                db.update_row(src_file.__dict__)
+                source_id = src_file.id
             else:
-                db.delete_row(src_file.__dict__)
-            nrows -= 1
-            count['remains'].value -= 1
+                source_id = src_file.source_id
+
+            if os.path.isdir(dest_path):
+                unpacked_count = sum([len(files) for r, d, files
+                                      in os.walk(dest_path)])
+                console.print(f'Unpacked {unpacked_count} files',
+                              style="bold cyan", end=' ')
+
+                # Write new files to database
+                filelist_dir = os.path.join(dest_dir, norm_path)
+                filelist_path = filelist_dir.rstrip('/') + '-filelist.txt'
+                make_filelist(os.path.join(dest_dir, norm_path),
+                              filelist_path)
+                n = write_id_file_to_storage(filelist_path, dest_dir, db,
+                                             norm_path, source_id=source_id)
+
+                nrows += n
+                count['remains'].value += n
+
+            else:
+                db.add_row({'path': norm_path, 'status': 'new',
+                            'status_ts': datetime.datetime.now(),
+                            'source_id': source_id})
+                nrows += 1
+                count['remains'].value += 1
+
+        src_file.status_ts = datetime.datetime.now()
+        if src_file.source_id is None or src_file.kept:
+            db.update_row(src_file.__dict__)
+        else:
+            db.delete_row(src_file.__dict__)
+        nrows -= 1
+        count['remains'].value -= 1
 
 
 def write_id_file_to_storage(tsv_source_path: str, source_dir: str,
