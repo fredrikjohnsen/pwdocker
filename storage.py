@@ -183,7 +183,7 @@ class Storage:
         )
 
     def get_conditions(self, mime=None, puid=None, status=None, reconvert=False,
-                       subpath=None, from_path=None, to_path=None,
+                       finished=False, subpath=None, from_path=None, to_path=None,
                        timestamp=None, original=False):
 
         conds = []
@@ -192,8 +192,13 @@ class Storage:
         if original:
             conds.append("source_id IS NULL")
 
-        if not reconvert:
+        if not finished and not reconvert:
             conds.append('(status is null or status not in (?, ?, ?))')
+            params.append('converted')
+            params.append('accepted')
+            params.append('removed')
+        elif finished:
+            conds.append('status in (?, ?, ?)')
             params.append('converted')
             params.append('accepted')
             params.append('removed')

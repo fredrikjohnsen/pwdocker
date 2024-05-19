@@ -160,10 +160,15 @@ def convert(
 
         duration = str(round(time.time() - t0, 2)) + ' sek'
         console.print('\nConversion finished in ' + duration)
-        console.print(f"{finished.value} files converted", style="bold green")
-        if failed.value > 0:
-            console.print(f"{failed.value} conversions failed", style="bold red")
+        conds, params = db.get_conditions(finished=True, original=True)
+        count_finished = db.get_row_count(conds, params)
+        console.print(f"{count_finished} files converted",
+                      style="bold green")
+        if count['failed'].value > 0:
+            console.print(f"{count['failed'].value} conversions failed",
+                          style="bold red")
             console.print(f"See database {db_path} for details")
+
 
 def convert_folder(
     source_dir: str,
