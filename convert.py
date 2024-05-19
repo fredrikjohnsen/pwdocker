@@ -241,8 +241,11 @@ def convert_folder(
 
             # If conversion failed
             if norm_path is False:
-                console.print('  ' + src_file.status, style="bold red")
-                count['failed'].value += 1
+                if src_file.status == 'accepted':
+                    console.print('file accepted', style="bold orange1")
+                else:
+                    console.print('  ' + src_file.status, style="bold red")
+                    count['failed'].value += 1
             elif norm_path:
                 dest_path = Path(dest_dir, norm_path)
 
