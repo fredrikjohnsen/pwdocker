@@ -20,7 +20,7 @@ import datetime
 import time
 from pathlib import Path
 import mimetypes
-from multiprocessing import Process, Value
+from multiprocessing import Pool, Manager
 import typer
 
 from rich.console import Console
@@ -50,6 +50,11 @@ def add_fields(table, *args):
         if field not in etl.fieldnames(table):
             table = etl.addfield(table, field, None)
     return table
+
+
+# handle raised errors
+def handle_error(error):
+    print(error, flush=True)
 
 
 def convert(
@@ -116,10 +121,11 @@ def convert(
                                           timestamp=timestamp)
 
         count_remains = db.get_row_count(conds, params)
+        m = Manager()
         count = {
-            'remains': Value('i', count_remains),
-            'finished': Value('i', 0),
-            'failed': Value('i', 0)
+            'remains': m.Value('i', count_remains),
+            'finished': m.Value('i', 0),
+            'failed': m.Value('i', 0)
         }
 
         if input(f"Converts {count_remains} files. Continue? [y/n] ") != 'y':
@@ -132,31 +138,27 @@ def convert(
 
         console.print("Converting files..", style="bold cyan")
 
-        jobs = []
+        pool = Pool()
         t0 = time.time()
 
         if multi:
             dirs = db.get_subfolders(conds, params)
             for dir in dirs:
                 dir = Path(dir).name
-                args = (source, dest, debug, orig_ext, db, dir, True,
+                args = (source, dest, debug, orig_ext, db_path, dir, True,
                         mime, puid, status, reconvert,
                         identify_only, filecheck, timestamp, set_source_ext,
                         from_path, to_path, count)
-                p = Process(target=convert_folder, args=args)
-                p.start()
-                jobs.append(p)
+                pool.apply_async(convert_folder, args=args, error_callback=handle_error)
         else:
             args = (source, dest, debug, orig_ext, db, '', True,
                     mime, puid, status, reconvert,
                     identify_only, filecheck, timestamp, set_source_ext,
                     from_path, to_path, count)
-            p = Process(target=convert_folder, args=args)
-            p.start()
-            jobs.append(p)
+            pool.apply_async(convert_folder, args=args)
 
-        for p in jobs:
-            p.join()
+        pool.close()
+        pool.join()
 
         duration = str(round(time.time() - t0, 2)) + ' sek'
         console.print('\nConversion finished in ' + duration)
@@ -175,7 +177,7 @@ def convert_folder(
     dest_dir: str,
     debug: bool,
     orig_ext: bool,
-    db: Storage,
+    db_path: str,
     subpath: str,
     multi: bool,
     mime: str = None,
@@ -192,96 +194,97 @@ def convert_folder(
 ) -> tuple[str, str]:
     """Convert all files in folder"""
 
-    conds, params = db.get_conditions(mime=mime, puid=puid, status=status,
-                                      reconvert=(reconvert or identify_only),
-                                      subpath=subpath, from_path=from_path,
-                                      to_path=to_path, timestamp=timestamp)
-    table = db.get_rows(conds, params)
+    with Storage(db_path) as db:
+        conds, params = db.get_conditions(mime=mime, puid=puid, status=status,
+                                          reconvert=(reconvert or identify_only),
+                                          subpath=subpath, from_path=from_path,
+                                          to_path=to_path, timestamp=timestamp)
+        table = db.get_rows(conds, params)
 
-    if etl.nrows(table) == 0:
-        return 0
+        if etl.nrows(table) == 0:
+            return 0
 
-    # loop through all files and run conversion:
-    # unpacked files are added to and converted in main loop
-    table.row_count = 0
-    i = 0
-    percent = 0
-    nrows = etl.nrows(table)
-    while nrows > 0:
-        i += 1
-        count['finished'].value += 1
-        row = etl.dicts(table)[0]
-        if row['source_id'] is None:
-            table.row_count += 1
+        # loop through all files and run conversion:
+        # unpacked files are added to and converted in main loop
+        table.row_count = 0
+        i = 0
+        percent = 0
+        nrows = etl.nrows(table)
+        while nrows > 0:
+            i += 1
+            count['finished'].value += 1
+            row = etl.dicts(table)[0]
+            if row['source_id'] is None:
+                table.row_count += 1
 
-        n = count['remains'].value
-        new_percent = round((1 - n/(n + count['finished'].value)) * 100)
-        percent = percent if percent > new_percent else new_percent
+            n = count['remains'].value
+            new_percent = round((1 - n/(n + count['finished'].value)) * 100)
+            percent = percent if percent > new_percent else new_percent
 
-        if (
-            reconvert and row['dest_path'] and
-            os.path.isfile(Path(dest_dir, row['dest_path']))
-        ):
-            db.delete_descendants(row['id'])
+            if (
+                reconvert and row['dest_path'] and
+                os.path.isfile(Path(dest_dir, row['dest_path']))
+            ):
+                db.delete_descendants(row['id'])
 
-        print(end='\x1b[2K')  # clear line
-        print(f"\r{percent}% | "
-              f"{row['path'][0:100]}", end=" ", flush=True)
+            print(end='\x1b[2K')  # clear line
+            print(f"\r{percent}% | "
+                  f"{row['path'][0:100]}", end=" ", flush=True)
 
-        unidentify = reconvert or identify_only
-        src_file = File(row, pwconv_path, unidentify)
-        norm_path = src_file.convert(source_dir, dest_dir, orig_ext,
-                                     debug, identify_only)
+            unidentify = reconvert or identify_only
+            src_file = File(row, pwconv_path, unidentify)
+            norm_path = src_file.convert(source_dir, dest_dir, orig_ext,
+                                         debug, identify_only)
 
-        if identify_only and set_source_ext:
-            mime_ext = mimetypes.guess_extension(src_file.mime)
-            new_path = str(Path(src_file.parent, src_file.stem + mime_ext))
-            shutil.move(src_file.path, new_path)
-            src_file.path = new_path
+            if identify_only and set_source_ext:
+                mime_ext = mimetypes.guess_extension(src_file.mime)
+                new_path = str(Path(src_file.parent, src_file.stem + mime_ext))
+                shutil.move(src_file.path, new_path)
+                src_file.path = new_path
 
-        # If conversion failed
-        if norm_path is False:
-            console.print('  ' + src_file.status, style="bold red")
-            count['failed'].value += 1
-        elif norm_path:
-            dest_path = Path(dest_dir, norm_path)
+            # If conversion failed
+            if norm_path is False:
+                console.print('  ' + src_file.status, style="bold red")
+                count['failed'].value += 1
+            elif norm_path:
+                dest_path = Path(dest_dir, norm_path)
 
+                if src_file.source_id is None or src_file.kept:
+                    source_id = src_file.id
+                else:
+                    source_id = src_file.source_id
+
+                if os.path.isdir(dest_path):
+                    unpacked_count = sum([len(files) for r, d, files
+                                          in os.walk(dest_path)])
+                    console.print(f'Unpacked {unpacked_count} files',
+                                  style="bold cyan", end=' ')
+
+                    # Write new files to database
+                    filelist_dir = os.path.join(dest_dir, norm_path)
+                    filelist_path = filelist_dir.rstrip('/') + '-filelist.txt'
+                    make_filelist(os.path.join(dest_dir, norm_path),
+                                  filelist_path)
+                    n = write_id_file_to_storage(filelist_path, dest_dir, db,
+                                                 norm_path, source_id=source_id)
+
+                    nrows += n
+                    count['remains'].value += n
+
+                else:
+                    db.add_row({'path': norm_path, 'status': 'new',
+                                'status_ts': datetime.datetime.now(),
+                                'source_id': source_id})
+                    nrows += 1
+                    count['remains'].value += 1
+
+            src_file.status_ts = datetime.datetime.now()
             if src_file.source_id is None or src_file.kept:
-                source_id = src_file.id
+                db.update_row(src_file.__dict__)
             else:
-                source_id = src_file.source_id
-
-            if os.path.isdir(dest_path):
-                unpacked_count = sum([len(files) for r, d, files
-                                      in os.walk(dest_path)])
-                console.print(f'Unpacked {unpacked_count} files',
-                              style="bold cyan", end=' ')
-
-                # Write new files to database
-                filelist_dir = os.path.join(dest_dir, norm_path)
-                filelist_path = filelist_dir.rstrip('/') + '-filelist.txt'
-                make_filelist(os.path.join(dest_dir, norm_path),
-                              filelist_path)
-                n = write_id_file_to_storage(filelist_path, dest_dir, db,
-                                             norm_path, source_id=source_id)
-
-                nrows += n
-                count['remains'].value += n
-
-            else:
-                db.add_row({'path': norm_path, 'status': 'new',
-                            'status_ts': datetime.datetime.now(),
-                            'source_id': source_id})
-                nrows += 1
-                count['remains'].value += 1
-
-        src_file.status_ts = datetime.datetime.now()
-        if src_file.source_id is None or src_file.kept:
-            db.update_row(src_file.__dict__)
-        else:
-            db.delete_row(src_file.__dict__)
-        nrows -= 1
-        count['remains'].value -= 1
+                db.delete_row(src_file.__dict__)
+            nrows -= 1
+            count['remains'].value -= 1
 
 
 def write_id_file_to_storage(tsv_source_path: str, source_dir: str,
