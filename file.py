@@ -163,6 +163,7 @@ class File:
 
             dest_ext = self.get_dest_ext(converter, dest_path, orig_ext)
             dest_path = dest_path + dest_ext
+            os.makedirs(os.path.dirname(dest_path), exist_ok=True)
 
             cmd = self.get_conversion_cmd(converter, from_path, dest_path,
                                           temp_path)
