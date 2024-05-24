@@ -65,7 +65,7 @@ def convert(
     mime: str = None,
     puid: str = None,
     status: str = None,
-    db_path: str = None,
+    db: str = None,
     reconvert: bool = False,
     identify_only: bool = False,
     filecheck: bool = False,
@@ -77,7 +77,8 @@ def convert(
     """
     Convert all files in SOURCE folder
 
-    --db-path:   Database path. If not set, it uses default DEST + .db
+    --db:        Name of MySQL base.
+    ..           If not set, it uses a SQLite base with path `dest + .db`
 
     --filecheck: Check if files in source match files in database
 
@@ -96,31 +97,26 @@ def convert(
     if os.path.isdir('/tmp/convert'):
         shutil.rmtree('/tmp/convert')
 
-    if db_path and os.path.dirname(db_path) == '':
-        console.print("Error: --db-path must refer to an absolute path",
-                      style='red')
-        return
-    if not db_path:
-        db_path = dest + '.db'
+    if not db:
+        db = dest + '.db'
 
-    first_run = not os.path.isfile(db_path)
-
-    with Storage(db_path) as db:
+    with Storage(db) as store:
         filelist_path = dest.rstrip('/') + '-filelist.txt'
         is_new_batch = os.path.isfile(filelist_path)
+        first_run = store.get_row_count() == 0
         if first_run:
             make_filelist(source, filelist_path)
 
         if first_run or is_new_batch:
-            write_id_file_to_storage(filelist_path, source, db, '')
+            write_id_file_to_storage(filelist_path, source, store, '')
             status = 'new'
 
-        conds, params = db.get_conditions(mime=mime, puid=puid, status=status,
-                                          reconvert=(reconvert or identify_only),
-                                          from_path=from_path, to_path=to_path,
-                                          timestamp=timestamp)
+        conds, params = store.get_conditions(mime=mime, puid=puid, status=status,
+                                             reconvert=(reconvert or identify_only),
+                                             from_path=from_path, to_path=to_path,
+                                             timestamp=timestamp)
 
-        count_remains = db.get_row_count(conds, params)
+        count_remains = store.get_row_count(conds, params)
         m = Manager()
         count = {
             'remains': m.Value('i', count_remains),
@@ -132,7 +128,7 @@ def convert(
             return False
 
         if filecheck:
-            res = check_files(source, db)
+            res = check_files(source, store)
             if res == 'cancelled':
                 return False
 
@@ -142,34 +138,34 @@ def convert(
         t0 = time.time()
 
         if multi:
-            dirs = db.get_subfolders(conds, params)
+            dirs = store.get_subfolders(conds, params)
             for dir in dirs:
                 dir = Path(dir).name
-                args = (source, dest, debug, orig_ext, db_path, dir, True,
+                args = (source, dest, debug, orig_ext, db, dir, True,
                         mime, puid, status, reconvert,
                         identify_only, filecheck, timestamp, set_source_ext,
                         from_path, to_path, count)
                 pool.apply_async(convert_folder, args=args, error_callback=handle_error)
         else:
-            args = (source, dest, debug, orig_ext, db_path, '', True,
+            args = (source, dest, debug, orig_ext, db, '', True,
                     mime, puid, status, reconvert,
                     identify_only, filecheck, timestamp, set_source_ext,
                     from_path, to_path, count)
-            pool.apply_async(convert_folder, args=args)
+            pool.apply_async(convert_folder, args=args, error_callback=handle_error)
 
         pool.close()
         pool.join()
 
         duration = str(round(time.time() - t0, 2)) + ' sek'
         console.print('\nConversion finished in ' + duration)
-        conds, params = db.get_conditions(finished=True, original=True)
-        count_finished = db.get_row_count(conds, params)
+        conds, params = store.get_conditions(finished=True, original=True)
+        count_finished = store.get_row_count(conds, params)
         console.print(f"{count_finished} files converted",
                       style="bold green")
         if count['failed'].value > 0:
             console.print(f"{count['failed'].value} conversions failed",
                           style="bold red")
-            console.print(f"See database {db_path} for details")
+            console.print(f"See database {db} for details")
 
 
 def convert_folder(
@@ -177,7 +173,7 @@ def convert_folder(
     dest_dir: str,
     debug: bool,
     orig_ext: bool,
-    db_path: str,
+    db: str,
     subpath: str,
     multi: bool,
     mime: str,
@@ -194,12 +190,12 @@ def convert_folder(
 ) -> tuple[str, str]:
     """Convert all files in folder"""
 
-    with Storage(db_path) as db:
-        conds, params = db.get_conditions(mime=mime, puid=puid, status=status,
-                                          reconvert=(reconvert or identify_only),
-                                          subpath=subpath, from_path=from_path,
-                                          to_path=to_path, timestamp=timestamp)
-        table = db.get_rows(conds, params)
+    with Storage(db) as store:
+        conds, params = store.get_conditions(mime=mime, puid=puid, status=status,
+                                             reconvert=(reconvert or identify_only),
+                                             subpath=subpath, from_path=from_path,
+                                             to_path=to_path)
+        table = store.get_rows(conds, params)
 
         # loop through all files and run conversion:
         # unpacked files are added to and converted in main loop
@@ -222,7 +218,7 @@ def convert_folder(
                 reconvert and row['dest_path'] and
                 os.path.isfile(Path(dest_dir, row['dest_path']))
             ):
-                db.delete_descendants(row['id'])
+                store.delete_descendants(row['id'])
 
             print(end='\x1b[2K')  # clear line
             print(f"\r{percent}% | "
@@ -235,7 +231,7 @@ def convert_folder(
 
             if identify_only and set_source_ext:
                 mime_ext = mimetypes.guess_extension(src_file.mime)
-                new_path = str(Path(src_file.parent, src_file.stem + mime_ext))
+                new_path = str(Path(src_file._parent, src_file._stem + mime_ext))
                 shutil.move(src_file.path, new_path)
                 src_file.path = new_path
 
@@ -265,30 +261,30 @@ def convert_folder(
                     filelist_path = filelist_dir.rstrip('/') + '-filelist.txt'
                     make_filelist(os.path.join(dest_dir, norm_path),
                                   filelist_path)
-                    n = write_id_file_to_storage(filelist_path, dest_dir, db,
+                    n = write_id_file_to_storage(filelist_path, dest_dir, store,
                                                  norm_path, source_id=source_id)
 
                     nrows += n
                     count['remains'].value += n
 
                 else:
-                    db.add_row({'path': norm_path, 'status': 'new',
-                                'status_ts': datetime.datetime.now(),
-                                'source_id': source_id})
+                    store.add_row({'path': norm_path, 'status': 'new',
+                                   'status_ts': datetime.datetime.now(),
+                                   'source_id': source_id})
                     nrows += 1
                     count['remains'].value += 1
 
             src_file.status_ts = datetime.datetime.now()
             if src_file.source_id is None or src_file.kept:
-                db.update_row(src_file.__dict__)
+                store.update_row(src_file.__dict__)
             else:
-                db.delete_row(src_file.__dict__)
+                store.delete_row(src_file.__dict__)
             nrows -= 1
             count['remains'].value -= 1
 
 
 def write_id_file_to_storage(tsv_source_path: str, source_dir: str,
-                             db: Storage, unpacked_path: str,
+                             store: Storage, unpacked_path: str,
                              source_id: int = None) -> int:
 
     table = etl.fromtext(tsv_source_path, header=['filename'], strip="\n")
@@ -324,24 +320,24 @@ def write_id_file_to_storage(tsv_source_path: str, source_dir: str,
         table = etl.convert(table, 'path',
                             lambda v: os.path.join(unpacked_path, v))
 
-    db.append_rows(table)
+    store.append_rows(table)
     row_count = etl.nrows(table)
     remove_file(tsv_source_path)
     return row_count
 
 
-def check_files(source_dir, db):
+def check_files(source_dir, store):
     """ Check if files in database match files on disk """
 
     files_count = sum([len(files) for r, d, files in os.walk(source_dir)])
-    conds, params = db.get_conditions(original=True)
-    total_row_count = db.get_row_count(conds, params)
+    conds, params = store.get_conditions(original=True)
+    total_row_count = store.get_row_count(conds, params)
 
     if files_count != total_row_count:
         console.print(f"Row count: {str(total_row_count)}", style="red")
         console.print(f"File count: {str(files_count)}", style="red")
         db_files = []
-        table = db.get_all_rows('')
+        table = store.get_all_rows('')
         for row in etl.dicts(table):
             db_files.append(row['path'])
         print("Following files don't exist in database:")
@@ -355,7 +351,7 @@ def check_files(source_dir, db):
                     extra_files.append({'path': relpath, 'status': 'new'})
                     print('- ' + relpath)
 
-        answ = input(f"Files listed in {db.path} doesn't match "
+        answ = input(f"Files listed in database doesn't match "
                      "files on disk. Continue? [y]es, [n]o, [a]dd, [d]elete ")
         if answ == 'd':
             for file_ in extra_files:
@@ -363,7 +359,7 @@ def check_files(source_dir, db):
             return 'deleted'
         elif answ == 'a':
             table = etl.fromdicts(extra_files)
-            db.append_rows(table)
+            store.append_rows(table)
             return 'added'
         elif answ != 'y':
             return 'cancelled'

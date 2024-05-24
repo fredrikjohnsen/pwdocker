@@ -1,17 +1,19 @@
 import os
 import sqlite3
+import pymysql
 import datetime
 from sqlite3 import Connection
 from typing import Optional
 
 import petl
 from petl import appenddb, fromdb, todb
+from config import cfg
 
 
 class Storage:
     _create_table_str = """
     CREATE TABLE file(
-        id integer primary key,
+        id integer auto_increment primary key,
         path varchar(255) not null,
         size decimal,
         puid varchar(10),
@@ -28,7 +30,7 @@ class Storage:
 
     _create_view_file_root = """
     create view file_root as
-    with cte as (
+    with recursive cte as (
         select id, path, source_id, id as root_id
         from file
         where source_id is null
@@ -43,26 +45,10 @@ class Storage:
     order by path;
     """
 
-    _update_str = """
-        UPDATE file
-        SET path = :path, size = :size, puid = :puid, format = :format,
-            version = :version, mime = :mime, encoding = :encoding, ext = :ext,
-            status = :status, status_ts = :status_ts, kept = :kept
-        WHERE id = :id
-        """
-
-    _add_converted_file_str = """
-    insert into file (path, status, source_id)
-    values (:path, :status, :source_id)
-    """
-
-    _delete_str = """
-    delete from file where id = :id
-    """
-
     def __init__(self, path: str):
         self._conn = Optional[Connection]
         self.path = path
+        self.system = 'sqlite' if '.' in path else 'mysql'
 
     def __enter__(self):
         self.load_data_source()
@@ -73,63 +59,125 @@ class Storage:
 
     def load_data_source(self):
         storage_dir = os.path.dirname(self.path)
-        if not os.path.isdir(storage_dir):
-            os.makedirs(storage_dir)
+        if '.' in self.path:
+            if not os.path.isdir(storage_dir):
+                os.makedirs(storage_dir)
 
-        self._conn = sqlite3.connect(self.path)
-        query = """
-            SELECT name FROM sqlite_master 
-            WHERE type='table' AND name='file'        
-        """
-        table = self._conn.execute(query)
-        if len(table.fetchall()) <= 0:
-            self._conn.execute(self._create_table_str)
-            self._conn.execute(self._create_view_file_root)
-            self._conn.commit()
+            self._conn = sqlite3.connect(self.path)
+
+            query = """
+                SELECT name FROM sqlite_master 
+                WHERE type='table' AND name='file'        
+            """
+
+            cursor = self._conn.cursor()
+
+            cursor.execute(query)
+
+        else:
+            self._conn = pymysql.connect(host=cfg['db']['host'],
+                                         user=cfg['db']['user'],
+                                         password=cfg['db']['pass'])
+
+            query = f"""
+                create database if not exists {self.path}
+            """
+
+            cursor = self._conn.cursor()
+            cursor.execute(query)
+            cursor.execute(f'use {self.path}')
+            cursor.execute('SET SQL_MODE=ANSI_QUOTES')
+
+            query = f"""
+            SELECT *
+            FROM information_schema.tables
+            WHERE table_schema = '{self.path}'
+            AND table_name = 'file'
+            """
+
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        if len(rows) == 0:
+            sql = self._create_table_str
+            if self.system == 'sqlite':
+                sql = sql.replace('auto_increment', '')
+            cursor.execute(sql)
+            cursor.execute(self._create_view_file_root)
+        self._conn.commit()
 
     def close_data_source(self):
         if self._conn:
             self._conn.close()
 
     def import_rows(self, table):
-        # import rows
         todb(table, self._conn, "file")
 
     def append_rows(self, table):
         # select the first row (primary key) and filter away rows that already exist
-        self._conn.row_factory = lambda cursor, row: row[0]
-        file_names = self._conn.execute("SELECT path FROM file").fetchall()
+
+        cursor = self._conn.cursor()
+
+        cursor.execute("SELECT path FROM file")
+        rows = cursor.fetchall()
+        file_names = [row[0] for row in rows]
         table = petl.select(
             table,
             lambda rec: (rec.path not in file_names)
         )
         # append new rows
         appenddb(table, self._conn, "file")
-        self._conn.row_factory = None
 
     def update_row(self, data: dict):
-        self._conn.execute(self._update_str, data)
+        id = data['id']
+        sql = 'UPDATE file SET {}'.format(', '.join('{}=?'.format(k) for k in data
+                                                    if k != 'id' and not k.startswith('_')))
+        if self.system == 'mysql':
+            sql = sql.replace('?', '%s')
+        sql += ' WHERE id = ' + str(id)
+        cursor = self._conn.cursor()
+        cursor.execute(sql, tuple(v for k, v in data.items()
+                                  if k != 'id' and not k.startswith('_')))
         self._conn.commit()
 
     def add_row(self, data: dict):
-        self._conn.execute(self._add_converted_file_str, data)
+        ph = '%s' if self.system == 'mysql' else '?'
+        sql = "insert into file ({})".format(', '.join('{}'.format(k) for k in data))
+        sql += " values ({})".format(', '.join('?'.format(k) for k in data))
+        if self.system == 'mysql':
+            sql = sql.replace('?', '%s')
+
+        cursor = self._conn.cursor()
+        cursor.execute(sql, tuple(data.values()))
         # This gets commmited when `update_row` is called
         # Got 'unable to open database file' when calling this
         # and `update_row` rigth after in convert.py
 
     def delete_row(self, data: dict):
-        self._conn.execute(self._delete_str, data)
+        sql = "delete from file where id = ?"
+        if self.system == 'mysql':
+            sql = sql.replace('?', '%s')
+        cursor = self._conn.cursor()
+        cursor.execute(sql, (data['id'],))
         self._conn.commit()
 
     def get_subfolders(self, conds, params):
         cursor = self._conn.cursor()
-        query = """
-        SELECT DISTINCT substr(path, 0, instr(path, '/')) as dir
-        FROM   file
-        """
+        if self.system == 'sqlite':
+            query = """
+            SELECT DISTINCT substr(path, 0, instr(path, '/')) as dir
+            FROM   file
+            """
+        else:
+            query = """
+            SELECT DISTINCT substr(path, 1, instr(path, '/')-1) as dir
+            FROM   file
+            """
 
         if len(conds):
             query += "\nwhere " + ' AND '.join(conds)
+
+            if self.system == 'mysql':
+                query = query.replace('?', '%s')
 
         cursor.execute(query, params)
 
@@ -140,16 +188,20 @@ class Storage:
 
         return folders
 
-    def get_row_count(self, conds, params):
+    def get_row_count(self, conds=[], params=[]):
         cursor = self._conn.cursor()
         query = "SELECT COUNT(*) FROM file"
 
         if len(conds):
             query += " where " + ' AND '.join(conds)
 
-        cursor.execute(query, params)
+        if self.system == 'mysql':
+            query = query.replace('?', '%s')
 
-        return cursor.fetchone()[0]
+        cursor.execute(query, params)
+        count = cursor.fetchone()[0]
+
+        return count
 
     def get_all_rows(self, unpacked_path):
 
@@ -240,6 +292,9 @@ class Storage:
         if len(conds):
             select += " WHERE " + ' AND '.join(conds)
 
+        if self.system == 'mysql':
+            select = select.replace('?', '%s')
+
         return fromdb(self._conn, select, params)
 
     def get_failed_rows(self, mime: str = None):
@@ -253,6 +308,9 @@ class Storage:
             select += " AND mime = ?"
             params.append(mime)
 
+        if self.system == 'mysql':
+            select = select.replace('?', '%s')
+
         return fromdb(self._conn, select, params)
 
     def get_skipped_rows(self, mime: str = None):
@@ -265,6 +323,9 @@ class Storage:
         if mime:
             select += " AND mime = ?"
             params.append(mime)
+
+        if self.system == 'mysql':
+            select = select.replace('?', '%s')
 
         return fromdb(self._conn, select, params)
 
@@ -293,17 +354,21 @@ class Storage:
 
     def delete_descendants(self, id):
         sql = """
-        with recur as (
+        with recursive descendant as (
         select a.id, a.id as orig, a.source_id from file a
         where a.id = ?
         union all
         select b.id, c.orig as orig, b.source_id from file b
-        inner join recur c on c.id = b.source_id
+        inner join descendant c on c.id = b.source_id
         )
         delete from file
-        where id in (select id from recur where source_id is not null)
+        where id in (select id from descendant where source_id is not null)
         """
 
+        if self.system == 'mysql':
+            sql = sql.replace('?', '%s')
+
         params = [id]
-        self._conn.execute(sql, params)
+        with self._conn.cursor() as cursor:
+            cursor.execute(sql, params)
         self._conn.commit()

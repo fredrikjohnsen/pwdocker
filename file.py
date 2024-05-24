@@ -24,8 +24,7 @@ class File:
         pwconv_path: Path,
         unidentify: bool
     ):
-        self.pwconv_path = pwconv_path
-        self.row = row
+        self._pwconv_path = pwconv_path
         self.id = row['id']
         self.path = row['path']
         self.encoding = row['encoding']
@@ -36,8 +35,8 @@ class File:
         self.size = row['size']
         self.puid = None if unidentify else row['puid']
         self.source_id = row['source_id']
-        self.parent = Path(self.path).parent
-        self.stem = Path(self.path).stem
+        self._parent = Path(self.path).parent
+        self._stem = Path(self.path).stem
         self.ext = Path(self.path).suffix
         self.kept = False
 
@@ -120,7 +119,7 @@ class File:
             source_path = os.path.join(dest_dir, self.path)
         else:
             source_path = os.path.join(source_dir, self.path)
-        dest_path = os.path.join(dest_dir, self.parent, self.stem)
+        dest_path = os.path.join(dest_dir, self._parent, self._stem)
         # temp_path = os.path.join(dest_dir.rstrip('/') + '-temp',  self.path)
         temp_path = os.path.join('/tmp/convert',  self.path)
         dest_path = os.path.abspath(dest_path)
@@ -177,7 +176,7 @@ class File:
             returncode = 0
             if (not os.path.exists(dest_path) or source_path == dest_path) and cmd:
 
-                returncode, out, err = run_shell_cmd(cmd, cwd=self.pwconv_path,
+                returncode, out, err = run_shell_cmd(cmd, cwd=self._pwconv_path,
                                                      shell=True, timeout=timeout)
 
             if cmd and source_path == dest_path and os.path.getsize(dest_path) == self.size:

@@ -5,3 +5,8 @@ keep-original-ext: False
 debug: False
 # set timeout in seconds for file converters
 timeout: 60
+# connection to mysql database
+db:
+    host: localhost
+    user: root
+    pass: root
