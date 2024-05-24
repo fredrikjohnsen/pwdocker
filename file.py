@@ -89,6 +89,7 @@ class File:
                               quote(str(Path(source_path).parent)))
             cmd = cmd.replace("<dest-parent>",
                               quote(str(Path(dest_path).parent)))
+            cmd = cmd.replace("<pid>", str(os.getpid()))
 
         return cmd
 

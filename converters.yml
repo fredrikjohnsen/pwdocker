@@ -9,10 +9,10 @@ application/gzip:
   dest-ext: null
   source-ext:
     .emz:
-      command: soffice --convert-to png --outdir <dest-parent> <source>
+      command: soffice -env:UserInstallation=file:///tmp/test<pid> --convert-to png --outdir <dest-parent> <source>
       dest-ext: png
     .wmz:
-      command: soffice --convert-to png --outdir <dest-parent> <source>
+      command: soffice -env:UserInstallation=file:///tmp/test<pid> --convert-to png --outdir <dest-parent> <source>
       dest-ext: png
 application/javascript:
   accept: true
@@ -50,11 +50,11 @@ application/vnd.microsoft.portable-executable:
   remove: true
 application/vnd.ms-excel:
   # Excel files are accepted by Library of Congress
-  command: soffice --headless  --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <dest-parent> <source>
+  command: soffice -env:UserInstallation=file:///tmp/test<pid> --headless  --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <dest-parent> <source>
   dest-ext: pdf
   keep: true
 application/vnd.ms-excel.sheet.macroEnabled.12:
-  command: soffice --headless --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <dest-parent> <source>
+  command: soffice -env:UserInstallation=file:///tmp/test<pid> --headless --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <dest-parent> <source>
   dest-ext: pdf
   keep: true
 application/vnd.ms-outlook:
@@ -68,31 +68,31 @@ application/vnd.ms-project:
   dest-ext: pdf
   keep: true
 application/vnd.ms-visio.drawing.main+xml:
-  command: soffice --headless --convert-to pdf --outdir <dest-parent> <source>
+  command: soffice -env:UserInstallation=file:///tmp/test<pid> --headless --convert-to pdf --outdir <dest-parent> <source>
   dest-ext: pdf
 application/vnd.ms-word.document.macroEnabled.12:
   command: python3 -m bin.office2pdf <source> <dest>
   dest-ext: pdf
 application/vnd.oasis.opendocument.spreadsheet:
-  command: soffice --headless --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <dest-parent> <source>
+  command: soffice -env:UserInstallation=file:///tmp/test<pid> --headless --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <dest-parent> <source>
   dest-ext: pdf
   keep: true
 application/vnd.oasis.opendocument.text:
-  command: soffice --headless --convert-to pdf --outdir <dest-parent> <source>
+  command: soffice -env:UserInstallation=file:///tmp/test<pid> --headless --convert-to pdf --outdir <dest-parent> <source>
   dest-ext: pdf
 application/vnd.openxmlformats-officedocument.presentationml.presentation:
-  command: soffice --headless --convert-to pdf --outdir <dest-parent> <source>
+  command: soffice -env:UserInstallation=file:///tmp/test<pid> --headless --convert-to pdf --outdir <dest-parent> <source>
   dest-ext: pdf
 application/vnd.openxmlformats-officedocument.presentationml.slideshow:
-  command: soffice --headless --convert-to pdf --outdir <dest-parent> <source>
+  command: soffice -env:UserInstallation=file:///tmp/test<pid> --headless --convert-to pdf --outdir <dest-parent> <source>
   dest-ext: pdf
 application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
   # Excel files are accepted by Library of Congress
-  command: soffice --headless  --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <dest-parent> <source>
+  command: soffice -env:UserInstallation=file:///tmp/test<pid> --headless  --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <dest-parent> <source>
   keep: true
   dest-ext: pdf
 application/vnd.openxmlformats-officedocument.wordprocessingml.document:
-  command: python3 -m bin.office2pdf <source> <dest> || soffice --headless --convert-to pdf --outdir <dest-parent> <source>
+  command: python3 -m bin.office2pdf <source> <dest> || soffice -env:UserInstallation=file:///tmp/test<pid> --headless --convert-to pdf --outdir <dest-parent> <source>
   dest-ext: pdf
 application/vnd.openxmlformats-officedocument.wordprocessingml.template:
   command: python3 -m bin.office2pdf <source> <dest>
@@ -100,7 +100,7 @@ application/vnd.openxmlformats-officedocument.wordprocessingml.template:
 application/vnd.rar:
   command: unar -k skip -D <source> -o <dest>
 application/vnd.wordperfect:
-  command: soffice --headless --convert-to pdf --outdir <dest-parent> <source>
+  command: soffice -env:UserInstallation=file:///tmp/test<pid> --headless --convert-to pdf --outdir <dest-parent> <source>
   dest-ext: pdf
 application/x-7z-compressed:
   command: unar -k skip -D <source> -o <dest>
@@ -108,7 +108,7 @@ application/x-cdf:
   # .cda files that tells where a CD track starts and stops
   remove: true
 application/x-dbf:
-  command: soffice --headless  --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <dest-parent> <source>
+  command: soffice -env:UserInstallation=file:///tmp/test<pid> --headless  --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <dest-parent> <source>
   keep: true
   dest-ext: pdf
 application/x-msaccess:
@@ -154,7 +154,7 @@ image/bmp:
   command: convert <source> <dest>
   dest-ext: pdf
 image/emf:
-  command: soffice --headless --convert-to png --outdir <dest-parent> <source>
+  command: soffice -env:UserInstallation=file:///tmp/test<pid> --headless --convert-to png --outdir <dest-parent> <source>
   dest-ext: png
 image/gif:
   accept: true
