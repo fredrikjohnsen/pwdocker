@@ -156,7 +156,7 @@ def convert(
         pool.close()
         pool.join()
 
-        duration = str(round(time.time() - t0, 2)) + ' sek'
+        duration = str(datetime.timedelta(seconds=round(time.time() - t0)))
         console.print('\nConversion finished in ' + duration)
         conds, params = store.get_conditions(finished=True, original=True)
         count_finished = store.get_row_count(conds, params)
