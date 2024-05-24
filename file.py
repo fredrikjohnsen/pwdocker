@@ -123,6 +123,7 @@ class File:
         # temp_path = os.path.join(dest_dir.rstrip('/') + '-temp',  self.path)
         temp_path = os.path.join('/tmp/convert',  self.path)
         dest_path = os.path.abspath(dest_path)
+        os.makedirs(os.path.dirname(dest_path), exist_ok=True)
 
         if self.mime in ['', 'None', None]:
             self.set_metadata(source_path, source_dir)
@@ -163,7 +164,6 @@ class File:
 
             dest_ext = self.get_dest_ext(converter, dest_path, orig_ext)
             dest_path = dest_path + dest_ext
-            os.makedirs(os.path.dirname(dest_path), exist_ok=True)
 
             cmd = self.get_conversion_cmd(converter, from_path, dest_path,
                                           temp_path)
