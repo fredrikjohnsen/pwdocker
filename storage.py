@@ -23,7 +23,7 @@ class Storage:
         encoding varchar(30),
         ext varchar(10),
         status varchar(10),
-        status_ts datetime default current_timestamp,
+        status_ts datetime,
         kept boolean,
         source_id int
     );"""
@@ -280,7 +280,7 @@ class Storage:
             params.append(to_path)
 
         if timestamp:
-            conds.append("status_ts < ?")
+            conds.append("(status_ts is null or status_ts < ?)")
             params.append(timestamp)
 
         return conds, params

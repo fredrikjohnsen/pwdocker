@@ -194,7 +194,7 @@ def convert_folder(
         conds, params = store.get_conditions(mime=mime, puid=puid, status=status,
                                              reconvert=(reconvert or identify_only),
                                              subpath=subpath, from_path=from_path,
-                                             to_path=to_path)
+                                             to_path=to_path, timestamp=timestamp)
         table = store.get_rows(conds, params)
 
         # loop through all files and run conversion:
