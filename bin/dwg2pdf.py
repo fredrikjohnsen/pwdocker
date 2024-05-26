@@ -1,16 +1,16 @@
 import os
-import shutil
 import ezdxf
 from ezdxf.addons import odafc
 from ezdxf.addons.drawing import Frontend, RenderContext
 from ezdxf.addons.drawing import layout, pymupdf, config
 import typer
 
-def dwg2pdf(src_path: str, dest_path: str, dark_bg: bool=False):
+
+def dwg2pdf(src_path: str, dest_path: str, dark_bg: bool = False):
 
     tmp_path = '/tmp/file.dxf'
     if os.path.exists(tmp_path):
-       os.remove(tmp_path) 
+        os.remove(tmp_path)
 
     odafc.convert(src_path, tmp_path, version='R2018')
 
@@ -36,6 +36,7 @@ def dwg2pdf(src_path: str, dest_path: str, dark_bg: bool=False):
 
     with open(dest_path, "wb") as fp:
         fp.write(backend.get_pdf_bytes(layout.Page(0, 0)))
+
 
 if __name__ == "__main__":
     typer.run(dwg2pdf)

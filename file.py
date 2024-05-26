@@ -84,7 +84,6 @@ class File:
 
             cmd = cmd.replace("<source>", quote(source_path))
             cmd = cmd.replace("<dest>", quote(dest_path))
-            cmd = cmd.replace("<mime-type>", self.mime)
             cmd = cmd.replace("<source-parent>",
                               quote(str(Path(source_path).parent)))
             cmd = cmd.replace("<dest-parent>",

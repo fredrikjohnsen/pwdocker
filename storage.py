@@ -140,7 +140,6 @@ class Storage:
         self._conn.commit()
 
     def add_row(self, data: dict):
-        ph = '%s' if self.system == 'mysql' else '?'
         sql = "insert into file ({})".format(', '.join('{}'.format(k) for k in data))
         sql += " values ({})".format(', '.join('?'.format(k) for k in data))
         if self.system == 'mysql':
