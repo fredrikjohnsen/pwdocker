@@ -1,3 +1,9 @@
+# Supported placeholders:
+# - <source> : source path of file to convert
+# - <dest> : destination path for converted file
+# - <source-parent> : parent directory of file to convert
+# - <dest-parent> : parent directory of convertered file
+# - <pid> : process id when using multiprocessing
 application/CDFV2:
   # Thumbs.db is among these
   remove: true

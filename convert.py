@@ -77,7 +77,7 @@ def convert(
     """
     Convert all files in SOURCE folder
 
-    --db:        Name of MySQL base.
+    --db:        Name of MySQL base.\n
     ..           If not set, it uses a SQLite base with path `dest + .db`
 
     --filecheck: Check if files in source match files in database
@@ -88,6 +88,8 @@ def convert(
     --from-path: Convert files where path is larger than or the same as this value
 
     --to-path:   Convert files where path is smaller than this value
+
+    --multi:     Use multiprocessing to convert each subfolder in its own process
 
     """
 
