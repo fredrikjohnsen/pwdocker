@@ -269,7 +269,6 @@ def convert_folder(
 
                 else:
                     store.add_row({'path': norm_path, 'status': 'new',
-                                   'status_ts': datetime.datetime.now(),
                                    'source_id': source_id})
                     nrows += 1
                     count['remains'].value += 1
