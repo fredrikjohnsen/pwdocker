@@ -237,7 +237,7 @@ class File:
                 filename = frame.filename
                 line = frame.lineno
                 print(filename + ':' + str(line), e)
-        elif norm_path or self.status == 'removed':
+        elif norm_path:
             # Remove file previously moved to dest because it could
             # not be converted
 
