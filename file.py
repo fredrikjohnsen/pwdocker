@@ -8,6 +8,7 @@ from inspect import currentframe, getframeinfo
 from pathlib import Path
 from typing import Any, Type, Dict
 from shlex import quote
+import time
 
 import magic
 
@@ -188,6 +189,9 @@ class File:
                 if os.path.exists(dest_path):
                     # Remove possibel corrupted file
                     os.remove(dest_path)
+                    # Pause to let the file be actually deleted
+                    # so that we don't get errors in subsequent code
+                    time.sleep(0.1)
                 if 'file requires a password for access' in out:
                     self.status = 'protected'
                 elif out == 'timeout':
