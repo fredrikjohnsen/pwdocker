@@ -150,8 +150,6 @@ class File:
         if accept:
             self.status = 'accepted'
             self.kept = True
-        elif converter.get('remove', False):
-            self.status = 'removed'
         elif self.mime == 'application/encrypted':
             self.status = 'protected'
             self.kept = True
@@ -212,6 +210,8 @@ class File:
 
             if os.path.exists(temp_path):
                 os.remove(temp_path)
+        elif 'keep' in converter and converter['keep'] is False:
+            self.status = 'removed'
 
         # Copy file from `dest_dir` if it's an original file and
         # it should be kept, accepted or if conversion failed

@@ -6,7 +6,7 @@
 # - <pid> : process id when using multiprocessing
 application/CDFV2:
   # Thumbs.db is among these
-  remove: true
+  keep: false
 application/encrypted:
   # These are given result 'password' in database
   command: null
@@ -32,7 +32,7 @@ application/msword:
 application/octet-stream:
   puid:
     fmt/394: # .DS_Store
-      remove: true
+      keep: false
 application/oxps:
   # Convert xps to pdf/a. This requires installation of GhostPDL from source.
   command: gxps -sDEVICE=pdfwrite -dPDFA=2 -dNOPAUSE -sOutputFile=<dest> <source>
@@ -50,10 +50,10 @@ application/pdf:
     version: [1a, 1b, 2a, 2b]
 application/vnd.microsoft.windows.thumbnail-cache:
   # Thumbs.db files
-  remove: true
+  keep: false
 application/vnd.microsoft.portable-executable:
   # .dll and .exe files
-  remove: true
+  keep: false
 application/vnd.ms-excel:
   # Excel files are accepted by Library of Congress
   command: soffice -env:UserInstallation=file:///tmp/test<pid> --headless  --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <dest-parent> <source>
@@ -112,7 +112,7 @@ application/x-7z-compressed:
   command: unar -k skip -D <source> -o <dest>
 application/x-cdf:
   # .cda files that tells where a CD track starts and stops
-  remove: true
+  keep: false
 application/x-dbf:
   command: soffice -env:UserInstallation=file:///tmp/test<pid> --headless  --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <dest-parent> <source>
   keep: true
@@ -207,12 +207,12 @@ image/x-tga:
   command: convert -auto-orient <source> <dest>
   dest-ext: png
 inode/x-empty:
-  remove: true
+  keep: false
 message/rfc822:
   accept: true
 multipart/appledouble:
   # Resource fork files from apple Mac OS operating system
-  remove: true
+  keep: false
 multipart/related:
   # Web archive format supported in Chrome
   accept: true
@@ -258,7 +258,7 @@ video/quicktime:
   command: vlc -I dummy <source> --sout=#std{access=file,mux=mp4,dst=<dest>} vlc://quit
   dest-ext: mp4
 video/x-ifo:
-  remove: true
+  keep: false
 video/x-ms-wmv:
   command: vlc -I dummy <source> --sout=#transcode{vcodec=h264,vb=1024,acodec=mp4a,ab=192,channels=2,deinterlace}:standard{access=file,mux=ts,dst=<dest>} vlc://quit
   dest-ext: mp4
