@@ -38,7 +38,7 @@ class File:
         self._parent = Path(self.path).parent
         self._stem = Path(self.path).stem
         self.ext = Path(self.path).suffix
-        self.kept = False
+        self.kept = row['kept'] or False
 
     def set_metadata(self, source_path, source_dir):
         cmd = ['sf', '-json', source_path]
@@ -94,7 +94,9 @@ class File:
 
     def is_accepted(self, converter):
         accept = False
-        if 'accept' in converter:
+        if self.status == 'new' and self.kept:
+            accept = True
+        elif 'accept' in converter:
             if converter['accept'] is True:
                 accept = True
             elif 'version' in converter['accept'] and self.version:
@@ -153,7 +155,7 @@ class File:
         elif self.mime == 'application/encrypted':
             self.status = 'protected'
             self.kept = True
-        else:
+        elif 'command' in converter:
             from_path = source_path
             if converter.get('keep', False):
                 self.kept = True
@@ -175,17 +177,13 @@ class File:
                        else cfg['timeout'])
 
             returncode = 0
-            if (not os.path.exists(dest_path) or source_path == dest_path) and cmd:
+            # Don't run convert command if file is converted manually
+            if (not os.path.exists(dest_path) or os.path.getsize(dest_path) == self.size):
 
                 returncode, out, err = run_shell_cmd(cmd, cwd=self._pwconv_path,
                                                      shell=True, timeout=timeout)
 
-            if cmd and source_path == dest_path and os.path.getsize(dest_path) == self.size:
-                # Accepts pdf -> pdfa/a even if conversion fails 
-                self.status = 'accepted'
-                self.kept = True
-                norm_path = False
-            elif cmd and (returncode or not os.path.exists(dest_path)):
+            if returncode or not os.path.exists(dest_path):
                 if out != 'timeout':
                     print('out', out)
                     print('err', err)

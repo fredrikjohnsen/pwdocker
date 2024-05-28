@@ -288,8 +288,17 @@ def convert_folder(
                     count['remains'].value += n
 
                 else:
-                    store.add_row({'path': norm_path, 'status': 'new',
-                                   'source_id': source_id})
+                    status = 'new'
+                    data = {'path': norm_path, 'status': status, 'source_id': source_id}
+
+                    # If the file is converted again with the same extension,
+                    # we should accept it. This happens when a pdf can't be
+                    # converted to pdf/a. Files with `status:new` and `kept:True`
+                    # are accepted in `File.convert`
+                    if norm_path == src_file.path and src_file.source_id is not None:
+                        data['kept'] = True
+
+                    store.add_row(data)
                     nrows += 1
                     count['remains'].value += 1
 
