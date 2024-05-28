@@ -205,7 +205,9 @@ class File:
                 # Move the file back from temp if it was moved there
                 # prior to conversion
                 if from_path != source_path:
-                    shutil.move(from_path, source_path)
+                    # use shutil.copyfile to not get any file permission error
+                    shutil.copyfile(from_path, source_path)
+                    os.remove(from_path)
 
                 norm_path = False
             else:
