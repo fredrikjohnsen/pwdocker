@@ -135,9 +135,9 @@ class File:
 
         if self.mime not in converters:
             self.status = 'skipped'
-            return None
-
-        converter = converters[self.mime]
+            converter = {}
+        else:
+            converter = converters[self.mime]
 
         if 'puid' in converter and self.puid in converter['puid']:
             converter.update(converter['puid'][self.puid])
@@ -212,6 +212,8 @@ class File:
                 os.remove(temp_path)
         elif 'keep' in converter and converter['keep'] is False:
             self.status = 'removed'
+        else:
+            self.status = 'skipped'
 
         # Copy file from `dest_dir` if it's an original file and
         # it should be kept, accepted or if conversion failed
@@ -219,6 +221,7 @@ class File:
         if self.source_id is None and (
             converter.get('keep', False) or
             accept or
+            self.status == 'skipped' or
             norm_path is False  # conversion failed
         ):
             try:
