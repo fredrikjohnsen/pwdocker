@@ -149,11 +149,10 @@ def convert(
                         from_path, to_path, count)
                 pool.apply_async(convert_folder, args=args, error_callback=handle_error)
         else:
-            args = (source, dest, debug, orig_ext, db, '', True,
-                    mime, puid, status, reconvert,
-                    identify_only, filecheck, timestamp, set_source_ext,
-                    from_path, to_path, count)
-            pool.apply_async(convert_folder, args=args, error_callback=handle_error)
+            convert_folder(source, dest, debug, orig_ext, db, '', True,
+                           mime, puid, status, reconvert,
+                           identify_only, filecheck, timestamp, set_source_ext,
+                           from_path, to_path, count)
 
         pool.close()
         pool.join()
