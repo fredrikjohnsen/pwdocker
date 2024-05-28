@@ -159,12 +159,31 @@ def convert(
 
         duration = str(datetime.timedelta(seconds=round(time.time() - t0)))
         console.print('\nConversion finished in ' + duration)
-        conds, params = store.get_conditions(finished=True, original=True)
-        count_finished = store.get_row_count(conds, params)
-        console.print(f"{count_finished} files converted",
+        conds, params = store.get_conditions(finished=True, original=True,
+                                             status='converted')
+        count_converted = store.get_row_count(conds, params)
+        console.print(f"{count_converted} files converted",
                       style="bold green")
+        conds, params = store.get_conditions(finished=True, original=True,
+                                             status='accepted')
+        count_accepted = store.get_row_count(conds, params)
+        if count_accepted:
+            console.print(f"{count_accepted} files accepted",
+                          style="bold green")
+        conds, params = store.get_conditions(finished=True, original=True,
+                                             status='skipped')
+        count_skipped = store.get_row_count(conds, params)
+        if count_skipped:
+            console.print(f"{count_skipped} files skipped",
+                          style="bold orange1")
+        conds, params = store.get_conditions(finished=True, original=True,
+                                             status='removed')
+        count_removed = store.get_row_count(conds, params)
+        if count_removed:
+            console.print(f"{count_removed} files removed",
+                          style="bold orange1")
         if count['failed'].value > 0:
-            console.print(f"{count['failed'].value} conversions failed",
+            console.print(f"{count['failed'].value} files failed",
                           style="bold red")
             console.print(f"See database {db} for details")
 

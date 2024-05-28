@@ -248,11 +248,6 @@ class Storage:
             params.append('converted')
             params.append('accepted')
             params.append('removed')
-        elif finished:
-            conds.append('status in (?, ?, ?)')
-            params.append('converted')
-            params.append('accepted')
-            params.append('removed')
 
         if mime:
             conds.append("mime = ?")
