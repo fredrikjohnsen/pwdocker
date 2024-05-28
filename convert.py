@@ -100,7 +100,7 @@ def convert(
         shutil.rmtree('/tmp/convert')
 
     if not db:
-        db = dest + '.db'
+        db = dest.rstrip('/') + '.db'
 
     with Storage(db) as store:
         filelist_path = dest.rstrip('/') + '-filelist.txt'
