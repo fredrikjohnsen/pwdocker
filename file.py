@@ -187,11 +187,14 @@ class File:
                 if out != 'timeout':
                     print('out', out)
                     print('err', err)
-                if os.path.exists(dest_path):
+                if os.path.isfile(dest_path):
                     # Remove possibel corrupted file
                     os.remove(dest_path)
                     # Pause to let the file be actually deleted
                     # so that we don't get errors in subsequent code
+                    time.sleep(0.1)
+                elif os.path.isdir(dest_path):
+                    shutil.rmtree(dest_path)
                     time.sleep(0.1)
                 if 'file requires a password for access' in out:
                     self.status = 'protected'
@@ -215,8 +218,10 @@ class File:
                 self.status = 'converted'
                 norm_path = relpath(dest_path, start=dest_dir)
 
-            if os.path.exists(temp_path):
+            if os.path.isfile(temp_path):
                 os.remove(temp_path)
+            elif os.path.isdir(temp_path):
+                shutil.rmtree(temp_path)
         elif 'keep' in converter and converter['keep'] is False:
             self.status = 'removed'
         else:
