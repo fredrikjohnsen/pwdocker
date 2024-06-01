@@ -1,6 +1,7 @@
-import subprocess
 from shlex import quote
 import typer
+
+from util import run_shell_cmd
 
 
 def unzip(zipfile, to_dir):
@@ -8,7 +9,7 @@ def unzip(zipfile, to_dir):
     encoding = None
     for enc in ['IBM850', 'windows-1252']:
         cmd = [f"lsar -e {enc} {quote(zipfile)}"]
-        out = run_process(cmd)
+        result, out, err = run_shell_cmd(cmd, shell=True)
         if 'æ' in out or 'ø' in out or 'å' in out:
             encoding = enc
             break
@@ -18,19 +19,13 @@ def unzip(zipfile, to_dir):
     else:
         cmd = [f"unar -k skip -D {quote(zipfile)} -o {quote(to_dir)}"]
 
-    run_process(cmd)
+    result, out, err = run_shell_cmd(cmd, shell=True)
 
-    return 0
+    if result:
+        print(out)
+        raise typer.Exit(code=1)
 
-
-def run_process(cmd, cwd=None, shell=False):
-
-    try:
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-    except Exception as e:
-        return e
-
-    return result.stdout
+    return None
 
 
 if __name__ == '__main__':
