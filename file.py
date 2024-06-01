@@ -82,6 +82,7 @@ class File:
         if cmd:
             if '<temp>' in cmd:
                 Path(Path(temp_path).parent).mkdir(parents=True, exist_ok=True)
+                cmd = cmd.replace("<temp>", quote(temp_path))
 
             cmd = cmd.replace("<source>", quote(source_path))
             cmd = cmd.replace("<dest>", quote(dest_path))
