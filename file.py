@@ -184,9 +184,6 @@ class File:
                                                      shell=True, timeout=timeout)
 
             if returncode or not os.path.exists(dest_path):
-                if out != 'timeout':
-                    print('out', out)
-                    print('err', err)
                 if os.path.isfile(dest_path):
                     # Remove possibel corrupted file
                     os.remove(dest_path)
@@ -205,6 +202,9 @@ class File:
 
                 if debug:
                     print("\nCommand: " + cmd + f" ({returncode})", end="")
+                    if out != 'timeout':
+                        print('out', out)
+                        print('err', err)
 
                 # Move the file back from temp if it was moved there
                 # prior to conversion
