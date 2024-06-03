@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, Type, Dict
 from shlex import quote
 import time
+import mimetypes
 
 import magic
 
@@ -152,6 +153,11 @@ class File:
         if accept:
             self.status = 'accepted'
             self.kept = True
+            if not self.ext:
+                mime_ext = mimetypes.guess_extension(self.mime)
+                shutil.move(source_path, source_path + mime_ext)
+                self.path = self.path + mime_ext
+
         elif self.mime == 'application/encrypted':
             self.status = 'protected'
             self.kept = True
