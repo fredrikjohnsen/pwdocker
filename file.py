@@ -165,13 +165,14 @@ class File:
             from_path = source_path
             if converter.get('keep', False):
                 self.kept = True
-            elif self.source_id:
-                os.makedirs(os.path.dirname(temp_path), exist_ok=True)
-                shutil.move(source_path, temp_path)
-                from_path = temp_path
 
             dest_ext = self.get_dest_ext(converter, dest_path, orig_ext)
             dest_path = dest_path + dest_ext
+
+            if self.source_id and self.ext == dest_ext:
+                os.makedirs(os.path.dirname(temp_path), exist_ok=True)
+                shutil.move(source_path, temp_path)
+                from_path = temp_path
 
             cmd = self.get_conversion_cmd(converter, from_path, dest_path,
                                           temp_path)
