@@ -1,9 +1,19 @@
 # Supported placeholders:
 # - <source> : source path of file to convert
-# - <dest> : destination path for converted file
+# - <dest> : destination path for output file
+# - <temp> : temporary path for output file
 # - <source-parent> : parent directory of file to convert
-# - <dest-parent> : parent directory of convertered file
+# - <dest-parent> : parent directory of output file
 # - <pid> : process id when using multiprocessing
+# Supported attributes:
+# - command: conversion command with placeholders
+# - dest-ext: extension of output file
+# - source-ext: allows defining special conversion for certain file extensions
+# - puid: allows defining special conversion for certain puid
+# - accept: if the file should be accepted as archive format
+# - keep: if the original file should be kept
+#         If set to `false` then the original file is removed
+# - timeout: set special timeout for the mime type
 application/CDFV2:
   # Thumbs.db is among these
   keep: false
