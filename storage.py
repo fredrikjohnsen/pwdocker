@@ -249,6 +249,9 @@ class Storage:
             params.append('accepted')
             params.append('removed')
 
+        if reconvert:
+            conds.append('source_id is null')
+
         if mime:
             conds.append("mime = ?")
             params.append(mime)
@@ -346,6 +349,38 @@ class Storage:
             ['converted']
         )
 
+    def update_status(self, conds, params, status):
+        sql = """
+        update file set status = ?
+        """
+
+        if len(conds):
+            sql += " WHERE " + ' AND '.join(conds)
+
+        params.insert(0, status)
+
+        cursor = self._conn.cursor()
+        cursor.execute(sql, params)
+        self._conn.commit()
+
+    def get_descendants(self, id):
+        sql = """
+        with recursive descendant as (
+        select a.id, a.id as orig, a.source_id from file a
+        where a.id = ?
+        union all
+        select b.id, c.orig as orig, b.source_id from file b
+        inner join descendant c on c.id = b.source_id
+        )
+        select * from file
+        where id in (select id from descendant where source_id is not null)
+        """
+
+        cursor = self._conn.cursor()
+        params = [id]
+        cursor.execute(sql, params)
+        return cursor.fetchall()
+
     def delete_descendants(self, id):
         sql = """
         with recursive descendant as (
@@ -363,6 +398,6 @@ class Storage:
             sql = sql.replace('?', '%s')
 
         params = [id]
-        with self._conn.cursor() as cursor:
-            cursor.execute(sql, params)
+        cursor = self._conn.cursor()
+        cursor.execute(sql, params)
         self._conn.commit()

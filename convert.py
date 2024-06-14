@@ -211,10 +211,18 @@ def convert_folder(
     """Convert all files in folder"""
 
     with Storage(db) as store:
-        conds, params = store.get_conditions(mime=mime, puid=puid, status=status,
-                                             reconvert=(reconvert or identify_only),
-                                             subpath=subpath, from_path=from_path,
-                                             to_path=to_path, timestamp=timestamp)
+        if reconvert:
+            conds, params = store.get_conditions(
+                mime=mime, puid=puid, status=status, subpath=subpath,
+                reconvert=(reconvert or identify_only),
+                from_path=from_path, to_path=to_path, timestamp=timestamp
+            )
+            store.update_status(conds, params, 'new')
+
+        conds, params = store.get_conditions(
+            mime=mime, puid=puid, status=status, subpath=subpath,
+            from_path=from_path, to_path=to_path, timestamp=timestamp,
+        )
         table = store.get_rows(conds, params)
 
         # loop through all files and run conversion:
@@ -234,10 +242,11 @@ def convert_folder(
             new_percent = round((1 - n/(n + count['finished'].value)) * 100)
             percent = percent if percent > new_percent else new_percent
 
-            if (
-                reconvert and row['dest_path'] and
-                os.path.isfile(Path(dest_dir, row['dest_path']))
-            ):
+            if reconvert and row['source_id'] is None:
+                rows = store.get_descendants(row['id'])
+                for file_row in rows:
+                    remove_file(Path(dest_dir, file_row[1]))
+
                 store.delete_descendants(row['id'])
 
             print(end='\x1b[2K')  # clear line
