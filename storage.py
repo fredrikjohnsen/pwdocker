@@ -244,10 +244,11 @@ class Storage:
             conds.append("source_id IS NULL")
 
         if not finished and not reconvert:
-            conds.append('(status is null or status not in (?, ?, ?))')
+            conds.append('(status is null or status not in (?, ?, ?, ?))')
             params.append('converted')
             params.append('accepted')
             params.append('removed')
+            params.append('renamed')
 
         if reconvert:
             conds.append('source_id is null')

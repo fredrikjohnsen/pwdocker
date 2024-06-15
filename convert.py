@@ -167,6 +167,10 @@ def convert(
         conds, params = store.get_conditions(finished=True, original=True,
                                              status='accepted')
         count_accepted = store.get_row_count(conds, params)
+        conds, params = store.get_conditions(finished=True, original=True,
+                                             status='renamed')
+        count_accepted = count_accepted + store.get_row_count(conds, params)
+
         if count_accepted:
             console.print(f"{count_accepted} files accepted",
                           style="bold green")
