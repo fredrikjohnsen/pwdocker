@@ -64,6 +64,7 @@ def convert(
     debug: bool = cfg['debug'],
     mime: str = None,
     puid: str = None,
+    ext: str = None,
     status: str = None,
     db: str = None,
     reconvert: bool = False,
@@ -116,7 +117,7 @@ def convert(
         conds, params = store.get_conditions(mime=mime, puid=puid, status=status,
                                              reconvert=(reconvert or identify_only),
                                              from_path=from_path, to_path=to_path,
-                                             timestamp=timestamp)
+                                             timestamp=timestamp, ext=ext)
 
         count_remains = store.get_row_count(conds, params)
         m = Manager()
@@ -144,13 +145,13 @@ def convert(
             for dir in dirs:
                 dir = Path(dir).name
                 args = (source, dest, debug, orig_ext, db, dir, True,
-                        mime, puid, status, reconvert,
+                        mime, puid, ext, status, reconvert,
                         identify_only, filecheck, timestamp, set_source_ext,
                         from_path, to_path, count)
                 pool.apply_async(convert_folder, args=args, error_callback=handle_error)
         else:
             convert_folder(source, dest, debug, orig_ext, db, '', True,
-                           mime, puid, status, reconvert,
+                           mime, puid, ext, status, reconvert,
                            identify_only, filecheck, timestamp, set_source_ext,
                            from_path, to_path, count)
 
@@ -202,6 +203,7 @@ def convert_folder(
     multi: bool,
     mime: str,
     puid: str,
+    ext: str,
     status: str,
     reconvert: bool,
     identify_only: bool,
@@ -218,14 +220,15 @@ def convert_folder(
         if reconvert:
             conds, params = store.get_conditions(
                 mime=mime, puid=puid, status=status, subpath=subpath,
-                reconvert=(reconvert or identify_only),
+                reconvert=(reconvert or identify_only), ext=ext,
                 from_path=from_path, to_path=to_path, timestamp=timestamp
             )
             store.update_status(conds, params, 'new')
 
         conds, params = store.get_conditions(
-            mime=mime, puid=puid, status=status, subpath=subpath,
+            mime=mime, puid=puid, status=status, subpath=subpath, ext=ext,
             from_path=from_path, to_path=to_path, timestamp=timestamp,
+            reconvert=identify_only
         )
         table = store.get_rows(conds, params)
 

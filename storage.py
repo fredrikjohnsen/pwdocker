@@ -235,7 +235,7 @@ class Storage:
 
     def get_conditions(self, mime=None, puid=None, status=None, reconvert=False,
                        finished=False, subpath=None, from_path=None, to_path=None,
-                       timestamp=None, original=False):
+                       timestamp=None, original=False, ext=None):
 
         conds = []
         params = []
@@ -276,6 +276,13 @@ class Storage:
         if to_path:
             conds.append("path < ?")
             params.append(to_path)
+
+        if ext:
+            conds.append("ext = ?")
+            params.append(ext)
+        elif ext == '':
+            conds.append("ext = ?")
+            params.append('')
 
         if timestamp:
             conds.append("(status_ts is null or status_ts < ?)")
