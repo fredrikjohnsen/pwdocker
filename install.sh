@@ -38,16 +38,6 @@ dpkg -s ca-certificates 2>/dev/null >/dev/null || apt-get -y install ca-certific
 dpkg -s apt-transport-https 2>/dev/null >/dev/null || apt-get -y install apt-transport-https;
 recho $?;
 
-if [ $(cat /etc/apt/sources.list | grep -c "http://download.onlyoffice.com/repo/debian") -eq 0 ]; then
-    cecho "CYAN" "Adding Onlyoffice repo..";
-    curl -sL 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xe09ca29f6e178040ef22b4098320ca65cb2de8e5' \
-        | gpg --dearmor > /usr/share/keyrings/onlyoffice-keyring.gpg;
-    echo "deb [signed-by=/usr/share/keyrings/onlyoffice-keyring.gpg] http://download.onlyoffice.com/repo/debian \
-    squeeze main" >> /etc/apt/sources.list;
-    recho $?;
-    if [[ $? -eq 0 ]]; then UPDATE=true; fi
-fi
-
 if [ $(cat /etc/apt/sources.list | grep -c "repos/CollaboraOnline/CODE-ubuntu") -eq 0 ]; then
     cecho "CYAN" "Adding Collabora Office repo..";
     CODE=2004
@@ -83,8 +73,7 @@ fi
 cecho "CYAN" "Installing apt-gettable dependencies..";
 echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | debconf-set-selections;
 apt-get install -y ttf-mscorefonts-installer pandoc abiword sqlite3 uchardet \
-    libreoffice python3-wheel tesseract-ocr ghostscript unar \
-    onlyoffice-desktopeditors onlyoffice-documentbuilder texlive-latex-extra \
+    libreoffice python3-wheel tesseract-ocr ghostscript unar texlive-latex-extra \
     icc-profiles-free clamtk  php-cli wkhtmltopdf texlive-xetex librsvg2-bin \
     clamav-daemon clamav-unofficial-sigs clamdscan libclamunrar9 wimtools vlc \
     ruby-dev  imagemagick cabextract dos2unix \
@@ -101,6 +90,9 @@ if [[ $UPDATE = true ]]; then
     # Test: curl --insecure -F "data=@test.docx" http://localhost:9980/lool/convert-to/pdf > out.pdf
     recho $?;
 fi
+
+cecho "CYAN" "Installing onlyoffice-documentbuilder"
+curl -LOs https://github.com/ONLYOFFICE/DocumentBuilder/releases/download/v8.0.0/onlyoffice-documentbuilder_amd64.deb && apt install ./onlyoffice-documentbuilder_amd64.deb && rm -f onlyoffice-documentbuilder_amd64.deb;
 
 cecho "CYAN" "Enable clamav..";
 systemctl enable clamav-daemon;
