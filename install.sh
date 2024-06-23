@@ -39,21 +39,6 @@ dpkg -s ca-certificates 2>/dev/null >/dev/null || apt-get -y install ca-certific
 dpkg -s apt-transport-https 2>/dev/null >/dev/null || apt-get -y install apt-transport-https;
 recho $?;
 
-if [ $(cat /etc/apt/sources.list | grep -c "repos/CollaboraOnline/CODE-ubuntu") -eq 0 ]; then
-    cecho "CYAN" "Adding Collabora Office repo..";
-    CODE=2004
-    if [[ $DISTRO = jammy ]]; then CODE=2204; fi
-    wget https://collaboraoffice.com/downloads/gpg/collaboraonline-release-keyring.gpg -O \
-        /usr/share/keyrings/collaboraonline-release-keyring.gpg;
-    #curl -sL 'http://keyserver.ubuntu.com/pks/lookup?op=get&search=0x0C54D189F4BA284D' \
-        #| gpg --dearmor > /usr/share/keyrings/collabora-keyring.gpg;
-    echo "deb [signed-by=/usr/share/keyrings/collaboraonline-release-keyring.gpg] \
-    http://www.collaboraoffice.com/repos/CollaboraOnline/CODE-ubuntu${CODE} ./" >> /etc/apt/sources.list;
-    # apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 0C54D189F4BA284D;
-    recho $?;
-    if [[ $? -eq 0 ]]; then UPDATE=true; fi
-fi
-
 if [[ "$UPDATE" = true ]]; then
     cecho "CYAN" "Updating repo info..";
     apt-get update;
@@ -67,19 +52,9 @@ apt-get install -y ttf-mscorefonts-installer pandoc abiword sqlite3 uchardet \
     icc-profiles-free clamtk  php-cli wkhtmltopdf texlive-xetex librsvg2-bin \
     clamav-daemon clamav-unofficial-sigs clamdscan libclamunrar9 wimtools vlc \
     ruby-dev  imagemagick cabextract dos2unix \
-    fontforge python3-pgmagick graphicsmagick graphviz img2pdf golang coolwsd \
-    code-brand php-xml libtiff-tools;
+    fontforge python3-pgmagick graphicsmagick graphviz img2pdf golang \
+    php-xml libtiff-tools;
 recho $?;
-
-if [[ $UPDATE = true ]]; then
-    cecho "CYAN" "Configuring Collabora Office..";
-    coolconfig set ssl.enable false;
-    coolconfig set ssl.termination true;
-    systemctl enable coolwsd;
-    systemctl restart coolwsd;
-    # Test: curl --insecure -F "data=@test.docx" http://localhost:9980/lool/convert-to/pdf > out.pdf
-    recho $?;
-fi
 
 cecho "CYAN" "Installing onlyoffice-documentbuilder"
 curl -LOs https://github.com/ONLYOFFICE/DocumentBuilder/releases/download/v8.0.0/onlyoffice-documentbuilder_amd64.deb && apt install ./onlyoffice-documentbuilder_amd64.deb && rm -f onlyoffice-documentbuilder_amd64.deb;
