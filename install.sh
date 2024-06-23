@@ -53,17 +53,6 @@ if [ $(cat /etc/apt/sources.list | grep -c "repos/CollaboraOnline/CODE-ubuntu") 
     if [[ $? -eq 0 ]]; then UPDATE=true; fi
 fi
 
-if [ $(cat /etc/apt/sources.list | grep -c "https://www.itforarchivists.com/") -eq 0 ]; then
-    cecho "CYAN" "Adding Siegfried repo..";
-    rm /etc/apt/sources.list.d/siegfried.list 2> /dev/null; # In case installed to separate source list
-    curl -sL 'http://keyserver.ubuntu.com/pks/lookup?op=get&search=0x20F802FE798E6857' \
-        | gpg --dearmor > /usr/share/keyrings/siegfried-archive-keyring.gpg;
-    echo "deb [signed-by=/usr/share/keyrings/siegfried-archive-keyring.gpg] https://www.itforarchivists.com/ \
-    buster main" >> /etc/apt/sources.list;
-    recho $?;
-    if [[ $? -eq 0 ]]; then UPDATE=true; fi
-fi
-
 if [[ "$UPDATE" = true ]]; then
     cecho "CYAN" "Updating repo info..";
     apt-get update;
@@ -78,7 +67,7 @@ apt-get install -y ttf-mscorefonts-installer pandoc abiword sqlite3 uchardet \
     clamav-daemon clamav-unofficial-sigs clamdscan libclamunrar9 wimtools vlc \
     ruby-dev  imagemagick cabextract dos2unix \
     fontforge python3-pgmagick graphicsmagick graphviz img2pdf golang coolwsd \
-    code-brand siegfried php-xml libtiff-tools;
+    code-brand php-xml libtiff-tools;
 recho $?;
 
 if [[ $UPDATE = true ]]; then
@@ -93,6 +82,9 @@ fi
 
 cecho "CYAN" "Installing onlyoffice-documentbuilder"
 curl -LOs https://github.com/ONLYOFFICE/DocumentBuilder/releases/download/v8.0.0/onlyoffice-documentbuilder_amd64.deb && apt install ./onlyoffice-documentbuilder_amd64.deb && rm -f onlyoffice-documentbuilder_amd64.deb;
+
+cecho "CYAN" "Installing Siegfried"
+curl -LOs https://github.com/richardlehane/siegfried/releases/download/v1.11.0/siegfried_1.11.0-1_amd64.deb && apt install ./siegfried_1.11.0-1_amd64.deb && rm -f siegfried_1.11.0-1_amd64.deb
 
 cecho "CYAN" "Enable clamav..";
 systemctl enable clamav-daemon;
