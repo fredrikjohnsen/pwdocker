@@ -52,7 +52,7 @@ apt-get install -y ttf-mscorefonts-installer pandoc abiword sqlite3 uchardet \
     icc-profiles-free clamtk  php-cli wkhtmltopdf texlive-xetex librsvg2-bin \
     ruby-dev  imagemagick cabextract dos2unix libclamunrar9 wimtools vlc \
     fontforge python3-pgmagick graphicsmagick graphviz img2pdf golang \
-    php-xml libtiff-tools;
+    php-xml libtiff-tools xvfb;
 recho $?;
 
 cecho "CYAN" "Installing onlyoffice-documentbuilder"
@@ -76,12 +76,8 @@ if [ ! -f $EMAILCONVERTPATH/emailconverter.jar ]; then
 fi
 
 cecho "CYAN" "Installing ODAFileConverter..";
-if [ ! -f /home/$OWNER/bin/ODAFileConverter ]; then
-    sudo -H -u $OWNER bash -c "curl -o /home/$OWNER/bin/ODAFileConverter -L \
-    https://download.opendesign.com/guestfiles/Demo/ODAFileConverter_QT5_lnxX64_8.3dll_24.10.AppImage"
-    chmod a+x /home/$OWNER/bin/ODAFileConverter
-    recho $?
-fi
+curl -LOs https://download.opendesign.com/guestfiles/Demo/ODAFileConverter_QT6_lnxX64_8.3dll_25.5.deb && apt install ./ODAFileConverter_QT6_lnxX64_8.3dll_25.5.deb && rm -f ODAFileConverter_QT6_lnxX64_8.3dll_25.5.deb;
+recho $?;
 
 cecho "CYAN" "Fix fuse permissions..";
 sed -i -e 's/#user_allow_other/user_allow_other/' /etc/fuse.conf;
