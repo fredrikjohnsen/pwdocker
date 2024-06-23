@@ -153,13 +153,14 @@ class File:
         if accept:
             self.status = 'accepted'
             self.kept = True
-            if not self.ext:
+            mime, encoding = mimetypes.guess_type(self.path)
+            if not self.ext or (mime is not None and mime != self.mime):
                 mime_ext = mimetypes.guess_extension(self.mime)
                 shutil.copyfile(source_path, dest_path + mime_ext)
                 accept = False
                 self.status = 'renamed'
                 self.kept = None
-                norm_path = self.path + mime_ext
+                norm_path = self._stem + mime_ext
 
         elif self.mime == 'application/encrypted':
             self.status = 'protected'
