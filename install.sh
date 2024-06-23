@@ -96,7 +96,3 @@ if [ $(fc-list | grep -c Calibri) -eq 0 ]; then
     recho $?;
 fi
 
-cecho "CYAN" "Install or update python dependencies.."
-sudo -H -u $OWNER bash -c "pip3 install -r requirements.txt";
-recho $?
-
