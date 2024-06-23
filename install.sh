@@ -62,6 +62,8 @@ cecho "CYAN" "Installing Siegfried"
 curl -LOs https://github.com/richardlehane/siegfried/releases/download/v1.11.0/siegfried_1.11.0-1_amd64.deb && apt install ./siegfried_1.11.0-1_amd64.deb && rm -f siegfried_1.11.0-1_amd64.deb
 
 cecho "CYAN" "Install mail converter..";
+gem install nokogiri -v 1.15.6;
+gem install net-imap -v 0.3.7;
 gem install eml_to_pdf;
 recho $?;
 
