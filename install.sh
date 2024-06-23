@@ -50,8 +50,7 @@ echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select tr
 apt-get install -y ttf-mscorefonts-installer pandoc abiword sqlite3 uchardet \
     libreoffice python3-wheel tesseract-ocr ghostscript unar texlive-latex-extra \
     icc-profiles-free clamtk  php-cli wkhtmltopdf texlive-xetex librsvg2-bin \
-    clamav-daemon clamav-unofficial-sigs clamdscan libclamunrar9 wimtools vlc \
-    ruby-dev  imagemagick cabextract dos2unix \
+    ruby-dev  imagemagick cabextract dos2unix libclamunrar9 wimtools vlc \
     fontforge python3-pgmagick graphicsmagick graphviz img2pdf golang \
     php-xml libtiff-tools;
 recho $?;
@@ -61,11 +60,6 @@ curl -LOs https://github.com/ONLYOFFICE/DocumentBuilder/releases/download/v8.0.0
 
 cecho "CYAN" "Installing Siegfried"
 curl -LOs https://github.com/richardlehane/siegfried/releases/download/v1.11.0/siegfried_1.11.0-1_amd64.deb && apt install ./siegfried_1.11.0-1_amd64.deb && rm -f siegfried_1.11.0-1_amd64.deb
-
-cecho "CYAN" "Enable clamav..";
-systemctl enable clamav-daemon;
-systemctl start clamav-daemon;
-recho $?;
 
 cecho "CYAN" "Install mail converter..";
 gem install eml_to_pdf;
