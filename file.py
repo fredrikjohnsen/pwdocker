@@ -153,15 +153,6 @@ class File:
         if accept:
             self.status = 'accepted'
             self.kept = True
-            mime, encoding = mimetypes.guess_type(self.path)
-            if not self.ext or (mime is not None and mime != self.mime):
-                mime_ext = mimetypes.guess_extension(self.mime)
-                shutil.copyfile(source_path, dest_path + mime_ext)
-                accept = False
-                self.status = 'renamed'
-                self.kept = None
-                norm_path = self._stem + mime_ext
-
         elif self.mime == 'application/encrypted':
             self.status = 'protected'
             self.kept = True
@@ -245,8 +236,16 @@ class File:
             converter.get('keep', False) or
             accept or
             self.status == 'skipped' or
+            self.status == 'protected' or
             norm_path is False  # conversion failed
         ):
+            mime, encoding = mimetypes.guess_type(self.path)
+            if not self.ext or (mime is not None and mime != self.mime):
+                mime_ext = mimetypes.guess_extension(self.mime)
+                self.status = 'renamed'
+                self.kept = None
+                norm_path = self._stem + mime_ext
+                copy_path = Path(dest_dir, norm_path)
             try:
                 shutil.copyfile(Path(source_dir, self.path), copy_path)
             except Exception as e:
