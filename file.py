@@ -228,7 +228,7 @@ class File:
         # Copy file from `dest_dir` if it's an original file and
         # it should be kept, accepted or if conversion failed
         copy_path = Path(dest_dir, self.path)
-        if self.source_id is None and (
+        if (
             converter.get('keep', False) or
             accept or
             self.status == 'skipped' or
@@ -236,20 +236,21 @@ class File:
             norm_path is False  # conversion failed
         ):
             self.kept = True
-            mime, encoding = mimetypes.guess_type(self.path)
-            if not self.ext or (mime is not None and mime != self.mime):
-                mime_ext = mimetypes.guess_extension(self.mime)
-                self.status = 'renamed'
-                self.kept = None
-                norm_path = self._stem + mime_ext
-                copy_path = Path(dest_dir, norm_path)
-            try:
-                shutil.copyfile(Path(source_dir, self.path), copy_path)
-            except Exception as e:
-                frame = getframeinfo(currentframe())
-                filename = frame.filename
-                line = frame.lineno
-                print(filename + ':' + str(line), e)
+            if self.source_id is None:
+                mime, encoding = mimetypes.guess_type(self.path)
+                if not self.ext or (mime is not None and mime != self.mime):
+                    mime_ext = mimetypes.guess_extension(self.mime)
+                    self.status = 'renamed'
+                    self.kept = None
+                    norm_path = self._stem + mime_ext
+                    copy_path = Path(dest_dir, norm_path)
+                try:
+                    shutil.copyfile(Path(source_dir, self.path), copy_path)
+                except Exception as e:
+                    frame = getframeinfo(currentframe())
+                    filename = frame.filename
+                    line = frame.lineno
+                    print(filename + ':' + str(line), e)
         elif norm_path:
             # Remove file previously moved to dest because it could
             # not be converted
