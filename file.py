@@ -152,14 +152,10 @@ class File:
         norm_path = None
         if accept:
             self.status = 'accepted'
-            self.kept = True
         elif self.mime == 'application/encrypted':
             self.status = 'protected'
-            self.kept = True
         elif 'command' in converter:
             from_path = source_path
-            if converter.get('keep', False):
-                self.kept = True
 
             dest_ext = self.get_dest_ext(converter, dest_path, orig_ext)
             dest_path = dest_path + dest_ext
@@ -239,6 +235,7 @@ class File:
             self.status == 'protected' or
             norm_path is False  # conversion failed
         ):
+            self.kept = True
             mime, encoding = mimetypes.guess_type(self.path)
             if not self.ext or (mime is not None and mime != self.mime):
                 mime_ext = mimetypes.guess_extension(self.mime)
