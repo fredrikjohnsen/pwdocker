@@ -242,8 +242,8 @@ class File:
                     mime_ext = mimetypes.guess_extension(self.mime)
                     self.status = 'renamed'
                     self.kept = None
-                    norm_path = self._stem + mime_ext
-                    copy_path = Path(dest_dir, norm_path)
+                    dest_name = self._stem + ('' if not mime_ext else mime_ext)
+                    copy_path = Path(dest_dir, self._parent, dest_name)
                 try:
                     shutil.copyfile(Path(source_dir, self.path), copy_path)
                 except Exception as e:
