@@ -43,24 +43,25 @@ class File:
         self.kept = row['kept'] or False
 
     def set_metadata(self, source_path, source_dir):
-        cmd = ['sf', '-json', source_path]
-        p = subprocess.Popen(cmd, cwd=source_dir, stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
-        out, err = p.communicate()
+        if cfg['use_siegfried']:
+            cmd = ['sf', '-json', source_path]
+            p = subprocess.Popen(cmd, cwd=source_dir, stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE)
+            out, err = p.communicate()
 
-        self.encoding = None
-        if not err:
-            fileinfo = json.loads(out)
-            self.mime = fileinfo['files'][0]['matches'][0]['mime']
-            self.format = fileinfo['files'][0]['matches'][0]['format']
-            self.version = fileinfo['files'][0]['matches'][0]['version']
-            self.size = fileinfo['files'][0]['filesize']
-            self.puid = fileinfo['files'][0]['matches'][0]['id']
-            if self.mime.startswith('text/'):
-                blob = open(source_path, 'rb').read()
-                m = magic.open(magic.MAGIC_MIME_ENCODING)
-                m.load()
-                self.encoding = m.buffer(blob)
+            self.encoding = None
+            if not err:
+                fileinfo = json.loads(out)
+                self.mime = fileinfo['files'][0]['matches'][0]['mime']
+                self.format = fileinfo['files'][0]['matches'][0]['format']
+                self.version = fileinfo['files'][0]['matches'][0]['version']
+                self.size = fileinfo['files'][0]['filesize']
+                self.puid = fileinfo['files'][0]['matches'][0]['id']
+                if self.mime.startswith('text/'):
+                    blob = open(source_path, 'rb').read()
+                    m = magic.open(magic.MAGIC_MIME_ENCODING)
+                    m.load()
+                    self.encoding = m.buffer(blob)
 
         if self.mime in ['', 'None', None]:
             self.mime = magic.from_file(source_path, mime=True)

@@ -1,8 +1,10 @@
 # keep original extension in file name, e.g. test.doc -> test.doc.pdf
-keep-original-ext: False
+keep-original-ext: false
   # This avoids overwriting files with same name but different extension,
   # e.g. test.doc and test.xls both becoming test.pdf
-debug: False
+debug: false
+# Use Siegfried to identify file type
+use_siegfried: true
 # set timeout in seconds for file converters
 timeout: 60
 # connection to mysql database
