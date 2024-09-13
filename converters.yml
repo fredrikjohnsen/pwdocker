@@ -7,6 +7,7 @@
 # - <pid> : process id when using multiprocessing
 # Supported attributes:
 # - command: conversion command with placeholders
+# - ext: standard extension for the mime-type
 # - dest-ext: extension of output file
 # - source-ext: allows defining special conversion for certain file extensions
 # - puid: allows defining special conversion for certain puid

@@ -110,8 +110,8 @@ class File:
 
         return accept
 
-    def convert(self, source_dir: str, dest_dir: str, orig_ext: bool,
-                debug: bool, identify_only: bool) -> dict[str, Type[str]]:
+    def convert(self, source_dir: str, dest_dir: str, orig_ext: bool, debug: bool,
+                set_source_ext: bool, identify_only: bool) -> dict[str, Type[str]]:
         """
         Convert file to archive format
 
@@ -134,14 +134,27 @@ class File:
         if self.mime in ['', 'None', None]:
             self.set_metadata(source_path, source_dir)
 
-        if identify_only:
-            return None
-
         if self.mime not in converters:
             self.status = 'skipped'
             converter = {}
         else:
             converter = converters[self.mime]
+
+        mime_ext = converter.get('ext')
+        mime_ext = '.' + mime_ext.lstrip('.') if mime_ext else None
+        if not mime_ext:
+            mime_ext = mimetypes.guess_extension(self.mime)
+
+        if set_source_ext and self.source_id is None:
+            old_path = str(Path(source_dir, self.path))
+            new_path = str(Path(source_dir, self._parent, self._stem + mime_ext))
+            shutil.move(old_path, new_path)
+            self.ext = mime_ext
+            self.path = str(Path(self._parent, self._stem + mime_ext))
+            source_path = os.path.join(source_dir, self.path)
+
+        if identify_only:
+            return None
 
         if 'puid' in converter and self.puid in converter['puid']:
             converter.update(converter['puid'][self.puid])
@@ -239,12 +252,15 @@ class File:
             self.kept = True
             if self.source_id is None:
                 mime, encoding = mimetypes.guess_type(self.path)
-                if not self.ext or (mime is not None and mime != self.mime):
-                    mime_ext = mimetypes.guess_extension(self.mime)
+                if not self.ext or (
+                    mime is not None and mime != self.mime and
+                    self.ext != mime_ext
+                ):
                     self.status = 'renamed'
                     self.kept = None
                     dest_name = self._stem + ('' if not mime_ext else mime_ext)
                     copy_path = Path(dest_dir, self._parent, dest_name)
+                    norm_path = relpath(copy_path, start=dest_dir)
                 try:
                     shutil.copyfile(Path(source_dir, self.path), copy_path)
                 except Exception as e:

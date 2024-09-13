@@ -263,16 +263,7 @@ def convert_folder(
             unidentify = reconvert or identify_only
             src_file = File(row, pwconv_path, unidentify)
             norm_path = src_file.convert(source_dir, dest_dir, orig_ext,
-                                         debug, identify_only)
-
-            if identify_only and set_source_ext:
-                dir = dest_dir if src_file.kept else source_dir
-                mime_ext = mimetypes.guess_extension(src_file.mime)
-                old_path = str(Path(dir, src_file.path))
-                new_path = str(Path(dir, src_file._parent, src_file._stem + mime_ext))
-                shutil.move(old_path, new_path)
-                src_file.ext = mime_ext
-                src_file.path = str(Path(src_file._parent, src_file._stem + mime_ext))
+                                         debug, set_source_ext, identify_only)
 
             # If conversion failed
             if norm_path is False:
