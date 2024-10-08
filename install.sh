@@ -3,7 +3,7 @@ export DEBIAN_FRONTEND=noninteractive
 SCRIPTPATH=$(dirname $(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null||echo $0))
 OWNER=$(stat -c '%U' $SCRIPTPATH)
 UPDATE=false
-EMAILCONVERTPATH=/home/$OWNER/bin/emailconvert
+EMAILCONVERTPATH=/home/$OWNER/.local/bin/emailconvert
 # USERID=$(id -u $OWNER)
 # export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$USERID/bus";
 
@@ -73,6 +73,16 @@ if [ ! -f $EMAILCONVERTPATH/emailconverter.jar ]; then
     curl -o $EMAILCONVERTPATH/emailconverter.jar -L \
     https://github.com/nickrussler/email-to-pdf-converter/releases/download/2.5.3/emailconverter-2.5.3-all.jar;
     recho $?;  
+fi
+
+cecho "CYAN" "Installing pdfcpu..";
+if [ ! -f /home/$OWNER/.local/bin/pdfcpu]; then
+    curl -o /home/$OWNER/pdfcpu_0.8.1_Linux_x86_64.tar.xz -L \
+    https://github.com/pdfcpu/pdfcpu/releases/download/v0.8.1/pdfcpu_0.8.1_Linux_x86_64.tar.xz;
+    tar -xf /home/$OWNER/pdfcpu_0.8.1_Linux_x86_64.tar.xz -C /home/$OWNER/;
+    mv /home/$OWNER/pdfcpu_0.8.1_Linux_x86_64/pdfcpu /home/$OWNER/.local/bin/;
+    rm /home/$OWNER/pdfcpu_0.8.1_Linux_x86_64.tar.xz;
+    rm -r /home/$OWNER/pdfcpu_0.8.1_Linux_x86_64;
 fi
 
 cecho "CYAN" "Installing ODAFileConverter..";

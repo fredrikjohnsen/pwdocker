@@ -51,15 +51,15 @@ application/oxps:
 application/postscript:
   command: ps2pdf -dPDFA=2 <source> <dest>
   dest-ext: pdf
-application/rtf:
-  command: python3 -m bin.office2pdf <source> <dest>
-  dest-ext: pdf
 application/pdf:
-  command: bin/pdf2pdfa.sh <source> <dest>
+  command: bin/pdf2pdfa.sh <source> <dest> && pdfcpu validate <dest>
   dest-ext: pdf
   timeout: 300
   accept:
     version: [1a, 1b, 2a, 2b]
+application/rtf:
+  command: python3 -m bin.office2pdf <source> <dest>
+  dest-ext: pdf
 application/vnd.microsoft.windows.thumbnail-cache:
   # Thumbs.db files
   keep: false
