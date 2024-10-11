@@ -160,28 +160,19 @@ def convert(
 
         duration = str(datetime.timedelta(seconds=round(time.time() - t0)))
         console.print('\nConversion finished in ' + duration)
-        conds, params = store.get_conditions(finished=True, original=True,
-                                             status='converted')
-        count_converted = store.get_row_count(conds, params)
-        console.print(f"{count_converted} files converted",
-                      style="bold green")
-        conds, params = store.get_conditions(finished=True, original=True,
+        conds, params = store.get_conditions(finished=True,
                                              status='accepted')
         count_accepted = store.get_row_count(conds, params)
-        conds, params = store.get_conditions(finished=True, original=True,
-                                             status='renamed')
-        count_accepted = count_accepted + store.get_row_count(conds, params)
-
         if count_accepted:
             console.print(f"{count_accepted} files accepted",
                           style="bold green")
-        conds, params = store.get_conditions(finished=True, original=True,
+        conds, params = store.get_conditions(finished=True,
                                              status='skipped')
         count_skipped = store.get_row_count(conds, params)
         if count_skipped:
             console.print(f"{count_skipped} files skipped",
                           style="bold orange1")
-        conds, params = store.get_conditions(finished=True, original=True,
+        conds, params = store.get_conditions(finished=True,
                                              status='removed')
         count_removed = store.get_row_count(conds, params)
         if count_removed:
