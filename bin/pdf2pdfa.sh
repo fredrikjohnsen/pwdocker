@@ -9,5 +9,5 @@ for f in "${@:1:$#-1}"; do
         out="$2"
     fi
 
-    gs -q -dPDFA=2 -dBATCH -dNOPAUSE -sProcessColorModel=DeviceRGB -sDEVICE=pdfwrite -dPDFACompatibilityPolicy=1 -sOutputFile="$out" "$f"
+    gs -q -dPDFA=2 -dBATCH -dNOPAUSE -sColorConversionStrategy=RGB -sDEVICE=pdfwrite -dPDFACompatibilityPolicy=1 -sOutputFile="$out" "$f"
 done
