@@ -235,7 +235,7 @@ class Storage:
 
     def get_conditions(self, mime=None, puid=None, status=None, reconvert=False,
                        finished=False, subpath=None, from_path=None, to_path=None,
-                       timestamp=None, original=False, ext=None):
+                       timestamp=None, original=False, ext=None, retry=False):
 
         conds = []
         params = []
@@ -252,6 +252,9 @@ class Storage:
 
         if reconvert:
             conds.append('source_id is null')
+
+        if not retry:
+            conds.append('status_ts is null')
 
         if mime:
             conds.append("mime = ?")

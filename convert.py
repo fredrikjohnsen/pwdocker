@@ -73,7 +73,8 @@ def convert(
     set_source_ext: bool = False,
     from_path: str = None,
     to_path: str = None,
-    multi: bool = False
+    multi: bool = False,
+    retry: bool = False
 ) -> None:
     """
     Convert all files in SOURCE folder
@@ -91,6 +92,8 @@ def convert(
     --to-path:   Convert files where path is smaller than this value
 
     --multi:     Use multiprocessing to convert each subfolder in its own process
+
+    --retry:     Try to convert files where conversion previously failed
 
     """
 
@@ -145,13 +148,13 @@ def convert(
             for dir in dirs:
                 dir = Path(dir).name
                 args = (source, dest, debug, orig_ext, db, dir, True,
-                        mime, puid, ext, status, reconvert,
+                        mime, puid, ext, status, reconvert, retry,
                         identify_only, filecheck, timestamp, set_source_ext,
                         from_path, to_path, count)
                 pool.apply_async(convert_folder, args=args, error_callback=handle_error)
         else:
             convert_folder(source, dest, debug, orig_ext, db, '', True,
-                           mime, puid, ext, status, reconvert,
+                           mime, puid, ext, status, reconvert, retry,
                            identify_only, filecheck, timestamp, set_source_ext,
                            from_path, to_path, count)
 
@@ -197,6 +200,7 @@ def convert_folder(
     ext: str,
     status: str,
     reconvert: bool,
+    retry: bool,
     identify_only: bool,
     filecheck: bool,
     timestamp: datetime.datetime,
@@ -219,7 +223,7 @@ def convert_folder(
         conds, params = store.get_conditions(
             mime=mime, puid=puid, status=status, subpath=subpath, ext=ext,
             from_path=from_path, to_path=to_path, timestamp=timestamp,
-            reconvert=identify_only
+            reconvert=identify_only, retry=retry
         )
         table = store.get_rows(conds, params)
 
