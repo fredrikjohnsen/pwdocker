@@ -300,6 +300,10 @@ class Storage:
         if len(conds):
             select += " WHERE " + ' AND '.join(conds)
 
+        # Since the selection is run for every file, limit the result.
+        # If not the query takes too long on MySQL for large number of files
+        select += " LIMIT 1"
+
         if self.system == 'mysql':
             select = select.replace('?', '%s')
 
