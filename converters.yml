@@ -13,7 +13,7 @@
 # - puid: allows defining special conversion for certain puid
 # - accept: if the file should be accepted as archive format
 # - keep: if the original file should be kept
-#         If set to `false` then the original file is removed
+#   - If set to `false` then the original file is removed
 # - timeout: set special timeout for the mime type
 application/CDFV2:
   # Thumbs.db is among these
@@ -256,8 +256,11 @@ text/plain:
     encoding: [utf-8, us-ascii]
 text/rtf:
   # The file command identifies rtf as text/rtf.
+  # The file command also identifies illegal rtf files which Siegfried doesn't
+  # recognize. Pandoc catches errors in such files, and doesn't convert them.
   command: pandoc --pdf-engine=xelatex <source> -f rtf -t pdf -o <dest>
   dest-ext: pdf
+  # mimetypes.guess_extension doesn't recognize text/rtf, only application/rtf
   ext: rtf
 text/vnd.sosi:
   accept: true

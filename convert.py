@@ -84,7 +84,7 @@ def convert(
     --filecheck: Check if files in source match files in database
 
     --status:    Filter on status: accepted, converted, deleted, failed,\n
-    ..           protected, skipped, timeout
+    ..           protected, skipped, timeout, new
 
     --from-path: Convert files where path is larger than or the same as this value
 
