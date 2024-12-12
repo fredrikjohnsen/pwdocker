@@ -76,7 +76,7 @@ if [ ! -f $EMAILCONVERTPATH/emailconverter.jar ]; then
 fi
 
 cecho "CYAN" "Installing pdfcpu..";
-if [ ! -f /home/$OWNER/.local/bin/pdfcpu]; then
+if [ ! -f /home/$OWNER/.local/bin/pdfcpu ]; then
     curl -o /home/$OWNER/pdfcpu_0.8.1_Linux_x86_64.tar.xz -L \
     https://github.com/pdfcpu/pdfcpu/releases/download/v0.8.1/pdfcpu_0.8.1_Linux_x86_64.tar.xz;
     tar -xf /home/$OWNER/pdfcpu_0.8.1_Linux_x86_64.tar.xz -C /home/$OWNER/;
