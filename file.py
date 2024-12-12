@@ -254,7 +254,8 @@ class File:
                 mime, encoding = mimetypes.guess_type(self.path)
                 if not self.ext or (
                     mime is not None and mime != self.mime and
-                    self.ext != mime_ext
+                    self.ext != mime_ext and
+                    self.mime != 'application/octet-stream'
                 ):
                     self.status = 'renamed'
                     self.kept = None
