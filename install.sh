@@ -85,9 +85,10 @@ if [ ! -f /home/$OWNER/.local/bin/pdfcpu ]; then
     rm -r /home/$OWNER/pdfcpu_0.8.1_Linux_x86_64;
 fi
 
-cecho "CYAN" "Installing ODAFileConverter..";
-curl -LOs https://download.opendesign.com/guestfiles/Demo/ODAFileConverter_QT6_lnxX64_8.3dll_25.5.deb && apt install ./ODAFileConverter_QT6_lnxX64_8.3dll_25.5.deb && rm -f ODAFileConverter_QT6_lnxX64_8.3dll_25.5.deb;
-recho $?;
+# The link doesn't work anymore (2024-12-12)
+# cecho "CYAN" "Installing ODAFileConverter..";
+# curl -LOs https://download.opendesign.com/guestfiles/Demo/ODAFileConverter_QT6_lnxX64_8.3dll_25.5.deb && apt install ./ODAFileConverter_QT6_lnxX64_8.3dll_25.5.deb && rm -f ODAFileConverter_QT6_lnxX64_8.3dll_25.5.deb;
+# recho $?;
 
 cecho "CYAN" "Fix fuse permissions..";
 sed -i -e 's/#user_allow_other/user_allow_other/' /etc/fuse.conf;

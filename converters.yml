@@ -189,17 +189,20 @@ image/png:
 image/tiff:
   command: tiff2pdf -o <dest> <source>
   dest-ext: pdf
-image/vnd.dwg:
-  # Use option --dark-bg for dark background
-  command: python3 -m bin.dwg2pdf <source> <dest>
-  dest-ext: pdf
-  keep: true
-  timeout: 90
-image/vnd.dxf:
-  command: python3 -m bin.dxf2pdf <source> <dest>
-  dest-ext: pdf
-  keep: true
-  timeout: 90
+
+# To convert dwg and dxf, download and install the ODAFileConverter
+# https://www.opendesign.com/guestfiles/oda_file_converter
+# image/vnd.dwg:
+#   # Use option --dark-bg for dark background
+#   command: python3 -m bin.dwg2pdf <source> <dest>
+#   dest-ext: pdf
+#   keep: true
+#   timeout: 90
+# image/vnd.dxf:
+#   command: python3 -m bin.dxf2pdf <source> <dest>
+#   dest-ext: pdf
+#   keep: true
+#   timeout: 90
 image/vnd.microsoft.icon:
   accept: true
   dest-ext: ico
