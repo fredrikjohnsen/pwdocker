@@ -274,7 +274,7 @@ class File:
             # not be converted
 
             dest_path = Path(dest_dir, norm_path)
-            if copy_path.is_file() and dest_path != copy_path:
+            if os.path.isfile(copy_path) and str(dest_path).lower() != str(copy_path).lower():
                 copy_path.unlink()
 
         return norm_path
