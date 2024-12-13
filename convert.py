@@ -232,7 +232,7 @@ def convert_folder(
         table.row_count = 0
         i = 0
         percent = 0
-        nrows = etl.nrows(table)
+        nrows = count['remains'].value
         while nrows > 0:
             i += 1
             count['finished'].value += 1
