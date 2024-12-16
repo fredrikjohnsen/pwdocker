@@ -232,11 +232,10 @@ def convert_folder(
         table.row_count = 0
         i = 0
         percent = 0
-        nrows = store.get_row_count(conds, params)
-        while nrows > 0:
+        while tbl := etl.dicts(table):
             i += 1
             count['finished'].value += 1
-            row = etl.dicts(table)[0]
+            row = tbl[0]
             if row['source_id'] is None:
                 table.row_count += 1
 
@@ -289,7 +288,6 @@ def convert_folder(
                     n = write_id_file_to_storage(filelist_path, dest_dir, store,
                                                  norm_path, source_id=source_id)
 
-                    nrows += n
                     count['remains'].value += n
 
                 else:
@@ -304,7 +302,6 @@ def convert_folder(
                         data['kept'] = True
 
                     store.add_row(data)
-                    nrows += 1
                     count['remains'].value += 1
 
             src_file.status_ts = datetime.datetime.now()
@@ -312,7 +309,6 @@ def convert_folder(
                 store.update_row(src_file.__dict__)
             else:
                 store.delete_row(src_file.__dict__)
-            nrows -= 1
             count['remains'].value -= 1
 
 
