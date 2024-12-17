@@ -120,7 +120,7 @@ def convert(
         conds, params = store.get_conds(mime=mime, puid=puid, status=status,
                                         reconvert=(reconvert or identify_only),
                                         from_path=from_path, to_path=to_path,
-                                        timestamp=timestamp, ext=ext)
+                                        timestamp=timestamp, ext=ext, retry=retry)
 
         count_remains = store.get_row_count(conds, params)
         m = Manager()
@@ -213,7 +213,8 @@ def convert_folder(
             conds, params = store.get_conds(
                 mime=mime, puid=puid, status=status, subpath=subpath,
                 reconvert=(reconvert or identify_only), ext=ext,
-                from_path=from_path, to_path=to_path, timestamp=timestamp
+                from_path=from_path, to_path=to_path, timestamp=timestamp,
+                retry=retry
             )
             store.update_status(conds, params, 'new')
 
