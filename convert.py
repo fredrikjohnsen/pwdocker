@@ -253,59 +253,38 @@ def convert_folder(
 
             unidentify = reconvert or identify_only
             src_file = File(row, pwconv_path, unidentify)
-            norm_path = src_file.convert(source_dir, dest_dir, orig_ext,
-                                         debug, set_source_ext, identify_only)
+            norm = src_file.convert(source_dir, dest_dir, orig_ext,
+                                    debug, set_source_ext, identify_only)
 
             # If conversion failed
-            if norm_path is False:
-                if src_file.status == 'accepted':
-                    console.print('file accepted', style="bold orange1")
-                else:
-                    console.print('  ' + src_file.status, style="bold red")
-                    count['failed'].value += 1
-            elif norm_path:
-                dest_path = Path(dest_dir, norm_path)
+            if norm is False:
+                console.print('  ' + src_file.status, style="bold red")
+                count['failed'].value += 1
+            elif type(norm) is str:
+                dest_path = Path(dest_dir, norm)
+                unpacked_count = sum([len(files) for r, d, files
+                                      in os.walk(dest_path)])
+                console.print(f'Unpacked {unpacked_count} files',
+                              style="bold cyan", end=' ')
 
-                if src_file.source_id is None or src_file.kept:
-                    source_id = src_file.id
-                else:
-                    source_id = src_file.source_id
+                # Write new files to database
+                filelist_dir = os.path.join(dest_dir, norm)
+                filelist_path = filelist_dir.rstrip('/') + '-filelist.txt'
+                make_filelist(os.path.join(dest_dir, norm),
+                              filelist_path)
+                n = write_id_file_to_storage(filelist_path, dest_dir, store,
+                                             norm, source_id=src_file.id)
 
-                if os.path.isdir(dest_path):
-                    unpacked_count = sum([len(files) for r, d, files
-                                          in os.walk(dest_path)])
-                    console.print(f'Unpacked {unpacked_count} files',
-                                  style="bold cyan", end=' ')
+                count['remains'].value += n
 
-                    # Write new files to database
-                    filelist_dir = os.path.join(dest_dir, norm_path)
-                    filelist_path = filelist_dir.rstrip('/') + '-filelist.txt'
-                    make_filelist(os.path.join(dest_dir, norm_path),
-                                  filelist_path)
-                    n = write_id_file_to_storage(filelist_path, dest_dir, store,
-                                                 norm_path, source_id=source_id)
-
-                    count['remains'].value += n
-
-                else:
-                    status = 'new'
-                    data = {'path': norm_path, 'status': status, 'source_id': source_id}
-
-                    # If the file is converted again with the same extension,
-                    # we should accept it. This happens when a pdf can't be
-                    # converted to pdf/a. Files with `status:new` and `kept:True`
-                    # are accepted in `File.convert`
-                    if norm_path == src_file.path and src_file.source_id is not None:
-                        data['kept'] = True
-
-                    store.add_row(data)
-                    count['remains'].value += 1
+            else:
+                if norm.status == 'failed' and norm.kept is True:
+                    console.print('converted file kept', style="bold orange1")
+                norm.status_ts = datetime.datetime.now()
+                store.add_row(norm.__dict__)
 
             src_file.status_ts = datetime.datetime.now()
-            if src_file.source_id is None or src_file.kept:
-                store.update_row(src_file.__dict__)
-            else:
-                store.delete_row(src_file.__dict__)
+            store.update_row(src_file.__dict__)
             count['remains'].value -= 1
 
 

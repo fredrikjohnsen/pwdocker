@@ -141,13 +141,16 @@ class Storage:
         self._conn.commit()
 
     def add_row(self, data: dict):
-        sql = "insert into file ({})".format(', '.join('{}'.format(k) for k in data))
-        sql += " values ({})".format(', '.join('?'.format(k) for k in data))
+        sql = "insert into file ({})".format(', '.join('{}'.format(k) for k in data
+                                                       if k != 'id' and not k.startswith('_')))
+        sql += " values ({})".format(', '.join('?'.format(k) for k in data
+                                               if k != 'id' and not k.startswith('_')))
         if self.system == 'mysql':
             sql = sql.replace('?', '%s')
 
         cursor = self._conn.cursor()
-        cursor.execute(sql, tuple(data.values()))
+        cursor.execute(sql, tuple(v for k, v in data.items()
+                                  if k != 'id' and not k.startswith('_')))
         # This gets commmited when `update_row` is called
         # Got 'unable to open database file' when calling this
         # and `update_row` rigth after in convert.py

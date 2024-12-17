@@ -98,9 +98,7 @@ class File:
 
     def is_accepted(self, converter):
         accept = False
-        if self.status == 'new' and self.kept:
-            accept = True
-        elif 'accept' in converter:
+        if 'accept' in converter:
             if converter['accept'] is True:
                 accept = True
             elif 'version' in converter['accept'] and self.version:
@@ -269,6 +267,9 @@ class File:
                     filename = frame.filename
                     line = frame.lineno
                     print(filename + ':' + str(line), e)
+
+            return False
+
         elif norm_path:
             # Remove file previously moved to dest because it could
             # not be converted
@@ -277,5 +278,30 @@ class File:
             if os.path.isfile(copy_path) and str(dest_path).lower() != str(copy_path).lower():
                 copy_path.unlink()
 
-        return norm_path
+            if os.path.isdir(dest_path):
+                return norm_path
 
+            row = {
+                'id': None,
+                'path': norm_path,
+                'encoding': None,
+                'status': 'new',
+                'size': None,
+                'source_id': self.id or self.source_id,
+                'kept': False
+            }
+            new_file = File(row, self._pwconv_path, True)
+            new_file.set_metadata(str(dest_path), dest_dir)
+
+            # If the file is converted again with the same extension,
+            # we should accept it. This happens when a pdf can't be
+            # converted to pdf/a. Ghostscript writes an ordinary pdf
+            if self.id is None and new_file.format == self.format:
+                new_file.status = 'failed'
+                new_file.kept = True
+                norm_file = False
+            else:
+                norm_file = new_file.convert(source_dir, dest_dir, orig_ext,
+                                             debug, set_source_ext, identify_only)
+
+            return norm_file if norm_file else new_file
