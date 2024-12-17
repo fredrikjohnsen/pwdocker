@@ -117,10 +117,10 @@ def convert(
             write_id_file_to_storage(filelist_path, source, store, '')
             status = 'new'
 
-        conds, params = store.get_conditions(mime=mime, puid=puid, status=status,
-                                             reconvert=(reconvert or identify_only),
-                                             from_path=from_path, to_path=to_path,
-                                             timestamp=timestamp, ext=ext)
+        conds, params = store.get_conds(mime=mime, puid=puid, status=status,
+                                        reconvert=(reconvert or identify_only),
+                                        from_path=from_path, to_path=to_path,
+                                        timestamp=timestamp, ext=ext)
 
         count_remains = store.get_row_count(conds, params)
         m = Manager()
@@ -163,20 +163,17 @@ def convert(
 
         duration = str(datetime.timedelta(seconds=round(time.time() - t0)))
         console.print('\nConversion finished in ' + duration)
-        conds, params = store.get_conditions(finished=True,
-                                             status='accepted')
+        conds, params = store.get_conds(finished=True, status='accepted')
         count_accepted = store.get_row_count(conds, params)
         if count_accepted:
             console.print(f"{count_accepted} files accepted",
                           style="bold green")
-        conds, params = store.get_conditions(finished=True,
-                                             status='skipped')
+        conds, params = store.get_conds(finished=True, status='skipped')
         count_skipped = store.get_row_count(conds, params)
         if count_skipped:
             console.print(f"{count_skipped} files skipped",
                           style="bold orange1")
-        conds, params = store.get_conditions(finished=True,
-                                             status='removed')
+        conds, params = store.get_conds(finished=True, status='removed')
         count_removed = store.get_row_count(conds, params)
         if count_removed:
             console.print(f"{count_removed} files removed",
@@ -213,14 +210,14 @@ def convert_folder(
 
     with Storage(db) as store:
         if reconvert:
-            conds, params = store.get_conditions(
+            conds, params = store.get_conds(
                 mime=mime, puid=puid, status=status, subpath=subpath,
                 reconvert=(reconvert or identify_only), ext=ext,
                 from_path=from_path, to_path=to_path, timestamp=timestamp
             )
             store.update_status(conds, params, 'new')
 
-        conds, params = store.get_conditions(
+        conds, params = store.get_conds(
             mime=mime, puid=puid, status=status, subpath=subpath, ext=ext,
             from_path=from_path, to_path=to_path, timestamp=timestamp,
             reconvert=identify_only, retry=retry
@@ -359,7 +356,7 @@ def check_files(source_dir, store):
     """ Check if files in database match files on disk """
 
     files_count = sum([len(files) for r, d, files in os.walk(source_dir)])
-    conds, params = store.get_conditions(original=True)
+    conds, params = store.get_conds(original=True)
     total_row_count = store.get_row_count(conds, params)
 
     if files_count != total_row_count:

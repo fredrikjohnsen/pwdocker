@@ -26,7 +26,8 @@ class Storage:
         status_ts datetime,
         kept boolean,
         source_id int
-    );"""
+    );
+    """
 
     _create_view_file_root = """
     create view file_root as
@@ -233,9 +234,9 @@ class Storage:
             sql,
         )
 
-    def get_conditions(self, mime=None, puid=None, status=None, reconvert=False,
-                       finished=False, subpath=None, from_path=None, to_path=None,
-                       timestamp=None, original=False, ext=None, retry=False):
+    def get_conds(self, mime=None, puid=None, status=None, reconvert=False,
+                  finished=False, subpath=None, from_path=None, to_path=None,
+                  timestamp=None, original=False, ext=None, retry=False):
 
         conds = []
         params = []
