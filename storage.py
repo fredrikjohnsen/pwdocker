@@ -103,6 +103,8 @@ class Storage:
             if self.system == 'sqlite':
                 sql = sql.replace('auto_increment', '')
             cursor.execute(sql)
+            cursor.execute("CREATE INDEX file_status on file(status)")
+            cursor.execute("CREATE INDEX file_status_ts on file(status_ts)")
             cursor.execute(self._create_view_file_root)
         self._conn.commit()
 
