@@ -268,9 +268,7 @@ class File:
                     line = frame.lineno
                     print(filename + ':' + str(line), e)
 
-            return False
-
-        elif norm_path:
+        if norm_path:
             # Remove file previously moved to dest because it could
             # not be converted
 
