@@ -259,7 +259,7 @@ class Storage:
         if reconvert:
             conds.append('source_id is null')
 
-        if not retry:
+        if not retry and not reconvert:
             conds.append('status_ts is null')
 
         if mime:
@@ -383,6 +383,7 @@ class Storage:
         cursor = self._conn.cursor()
         cursor.execute(sql, params)
         self._conn.commit()
+        params.pop(0)
 
     def get_descendants(self, id):
         sql = """
