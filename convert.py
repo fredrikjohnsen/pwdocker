@@ -163,17 +163,20 @@ def convert(
 
         duration = str(datetime.timedelta(seconds=round(time.time() - t0)))
         console.print('\nConversion finished in ' + duration)
-        conds, params = store.get_conds(finished=True, status='accepted')
+        conds, params = store.get_conds(finished=True, status='accepted',
+                                        timestamp=timestamp)
         count_accepted = store.get_row_count(conds, params)
         if count_accepted:
             console.print(f"{count_accepted} files accepted",
                           style="bold green")
-        conds, params = store.get_conds(finished=True, status='skipped')
+        conds, params = store.get_conds(finished=True, status='skipped',
+                                        timestamp=timestamp)
         count_skipped = store.get_row_count(conds, params)
         if count_skipped:
             console.print(f"{count_skipped} files skipped",
                           style="bold orange1")
-        conds, params = store.get_conds(finished=True, status='removed')
+        conds, params = store.get_conds(finished=True, status='removed',
+                                        timestamp=timestamp)
         count_removed = store.get_row_count(conds, params)
         if count_removed:
             console.print(f"{count_removed} files removed",
@@ -261,7 +264,8 @@ def convert_folder(
             # If conversion failed
             if norm is False:
                 console.print('  ' + src_file.status, style="bold red")
-                count['failed'].value += 1
+                if src_file.status not in ['accepted', 'removed']:
+                    count['failed'].value += 1
             elif type(norm) is str:
                 dest_path = Path(dest_dir, norm)
                 unpacked_count = sum([len(files) for r, d, files

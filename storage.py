@@ -259,7 +259,7 @@ class Storage:
         if reconvert:
             conds.append('source_id is null')
 
-        if not retry and not reconvert:
+        if not retry and not reconvert and not finished:
             conds.append('status_ts is null')
 
         if mime:
@@ -294,7 +294,10 @@ class Storage:
             params.append('')
 
         if timestamp:
-            conds.append("(status_ts is null or status_ts < ?)")
+            if not finished:
+                conds.append("(status_ts is null or status_ts < ?)")
+            else:
+                conds.append("status_ts > ?")
             params.append(timestamp)
 
         return conds, params
