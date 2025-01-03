@@ -65,6 +65,7 @@ class File:
 
         if self.mime in ['', 'None', None]:
             self.mime = magic.from_file(source_path, mime=True)
+            self.format = magic.from_file(source_path)
 
     def get_dest_ext(self, converter, dest_path, orig_ext):
         if 'dest-ext' not in converter:
