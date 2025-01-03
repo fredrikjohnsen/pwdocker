@@ -305,3 +305,6 @@ class File:
                                              debug, set_source_ext, identify_only)
 
             return norm_file if norm_file else new_file
+
+        else:
+            return False
