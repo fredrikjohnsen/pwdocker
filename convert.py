@@ -126,8 +126,7 @@ def convert(
         m = Manager()
         count = {
             'remains': m.Value('i', count_remains),
-            'finished': m.Value('i', 0),
-            'failed': m.Value('i', 0)
+            'finished': m.Value('i', 0)
         }
 
         if input(f"Converts {count_remains} files. Continue? [y/n] ") != 'y':
@@ -181,10 +180,14 @@ def convert(
         if count_removed:
             console.print(f"{count_removed} files removed",
                           style="bold orange1")
-        if count['failed'].value > 0:
-            console.print(f"{count['failed'].value} files failed",
+
+        conds, params = store.get_conds(finished=True, status='failed',
+                                        timestamp=timestamp)
+        count_failed = store.get_row_count(conds, params)
+        if count_failed:
+            console.print(f"{count_failed} files failed",
                           style="bold red")
-            console.print(f"See database {db} for details")
+        console.print(f"See database {db} for details")
 
 
 def convert_folder(
@@ -264,8 +267,6 @@ def convert_folder(
             # If conversion failed
             if norm is False:
                 console.print('  ' + src_file.status, style="bold red")
-                if src_file.status not in ['accepted', 'removed']:
-                    count['failed'].value += 1
             elif type(norm) is str:
                 dest_path = Path(dest_dir, norm)
                 unpacked_count = sum([len(files) for r, d, files
