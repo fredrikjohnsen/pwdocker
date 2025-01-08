@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import typer
-import cchardet as chardet
+import chardet
 
 
 def text2utf8(input_file: str, output_file: str):
