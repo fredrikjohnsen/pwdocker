@@ -1,9 +1,13 @@
 # NOTE: Don't edit this file for local changes, but create
 #       application.local.yml to override settings
+
 # keep original extension in file name, e.g. test.doc -> test.doc.pdf
-keep-original-ext: false
+keep-original-ext: true
   # This avoids overwriting files with same name but different extension,
   # e.g. test.doc and test.xls both becoming test.pdf
+  # It also avoids deletion of pars of file names when the file has a dot
+  # but there is no real extension:
+  # e.g. file.without.extension -> file.without.pdf
 debug: false
 # Use Siegfried to identify file type
 use_siegfried: true
