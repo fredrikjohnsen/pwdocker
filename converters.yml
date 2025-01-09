@@ -1,3 +1,6 @@
+# NOTE: Don't edit this file for local changes, but create
+#       converters.local.yml to override conversion commands
+#       for specific mime types
 # Supported placeholders:
 # - <source> : source path of file to convert
 # - <dest> : destination path for output file

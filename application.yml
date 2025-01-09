@@ -1,3 +1,5 @@
+# NOTE: Don't edit this file for local changes, but create
+#       application.local.yml to override settings
 # keep original extension in file name, e.g. test.doc -> test.doc.pdf
 keep-original-ext: false
   # This avoids overwriting files with same name but different extension,
