@@ -2,7 +2,7 @@
 #       application.local.yml to override settings
 
 # keep original extension in file name, e.g. test.doc -> test.doc.pdf
-keep-original-ext: true
+keep-original-ext: false
   # This avoids overwriting files with same name but different extension,
   # e.g. test.doc and test.xls both becoming test.pdf
   # It also avoids deletion of pars of file names when the file has a dot
