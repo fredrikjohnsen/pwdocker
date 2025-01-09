@@ -38,7 +38,7 @@ application/json:
 application/mp4:
   acccept: true
 application/msword:
-  command: python3 -m bin.office2pdf <source> <dest>
+  command: python3 -m bin.office2pdf <source> <dest> || soffice -env:UserInstallation=file:///tmp/test<pid> --convert-to pdf --outdir <dest-parent> <source>
   dest-ext: pdf
 application/octet-stream:
   puid:
