@@ -272,9 +272,12 @@ class File:
         if norm_path:
             # Remove file previously moved to dest because it could
             # not be converted
-
             dest_path = Path(dest_dir, norm_path)
-            if os.path.isfile(copy_path) and str(dest_path).lower() != str(copy_path).lower():
+            if (
+                not converter.get('keep', False) and os.path.isfile(copy_path)
+                and str(dest_path).lower() != str(copy_path).lower()
+            ):
+                print('unlinker fil', str(copy_path))
                 copy_path.unlink()
 
             if os.path.isdir(dest_path):
