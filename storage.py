@@ -426,3 +426,38 @@ class Storage:
         cursor = self._conn.cursor()
         cursor.execute(sql, params)
         self._conn.commit()
+
+    def set_status_new_on_overwritten(self):
+        """
+        Set status 'new' on source files where converted
+        files are overwritten by other converted files, because
+        original file extension wasn't kept
+        """
+
+        sql = """
+        update file
+        set status = 'new'
+        where id in (select file2.source_id from file
+                     join file file2 on file2.path = file.path and file2.id > file.id
+                     where file.source_id is not null and file2.source_id is not null)
+        """
+
+        cursor = self._conn.cursor()
+        cursor.execute(sql)
+        self._conn.commit()
+
+    def get_converted_files(self):
+
+        sql = """
+        select file.id, file.path, file.size, source.path as source_path,
+               source.id as source_id, source.status as source_status
+        from   file
+        join   file source on source.id = file.source_id
+        """
+
+        # cursor = self._conn.cursor()
+        # rows = cursor.execute(sql)
+
+        # return rows
+        return fromdb(self._conn, sql)
+
