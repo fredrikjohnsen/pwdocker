@@ -252,6 +252,9 @@ def convert_folder(
             percent = percent if percent > new_percent else new_percent
 
             if reconvert and row['source_id'] is None:
+                # Remove any copied original files
+                remove_file(Path(dest_dir, row['path']))
+
                 rows = store.get_descendants(row['id'])
                 for file_row in rows:
                     remove_file(Path(dest_dir, file_row[1]))
