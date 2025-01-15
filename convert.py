@@ -95,6 +95,9 @@ def convert(
 
     --retry:     Try to convert files where conversion previously failed
 
+    --puid:      Filter on Pronom Unique Identifier, f.ex fmt/39 for \n
+    ..           Microsoft Word 6.0/95
+
     """
 
     Path(dest).mkdir(parents=True, exist_ok=True)
