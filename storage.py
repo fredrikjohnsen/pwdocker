@@ -15,7 +15,7 @@ class Storage:
     CREATE TABLE file(
         id integer auto_increment primary key,
         path varchar(255) not null,
-        size decimal,
+        size integer,
         puid varchar(10),
         format varchar(100),
         version varchar(32),
