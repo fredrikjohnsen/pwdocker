@@ -302,7 +302,7 @@ class Storage:
 
         return conds, params
 
-    def get_rows(self, conds, params):
+    def get_rows(self, conds, params, limit=None):
 
         select = "SELECT * from file"
 
@@ -311,7 +311,8 @@ class Storage:
 
         # Since the selection is run for every file, limit the result.
         # If not the query takes too long on MySQL for large number of files
-        select += " LIMIT 1"
+        if limit:
+            select += " LIMIT " + str(limit)
 
         if self.system == 'mysql':
             select = select.replace('?', '%s')

@@ -233,7 +233,7 @@ def convert_folder(
                 from_path=from_path, to_path=to_path, timestamp=timestamp,
                 reconvert=identify_only, retry=retry
             )
-        table = store.get_rows(conds, params)
+        table = store.get_rows(conds, params, limit=1)
 
         # loop through all files and run conversion:
         # unpacked files are added to and converted in main loop
