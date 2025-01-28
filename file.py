@@ -57,15 +57,16 @@ class File:
                 self.version = fileinfo['files'][0]['matches'][0]['version']
                 self.size = fileinfo['files'][0]['filesize']
                 self.puid = fileinfo['files'][0]['matches'][0]['id']
-                if self.mime.startswith('text/'):
-                    blob = open(source_path, 'rb').read()
-                    m = magic.open(magic.MAGIC_MIME_ENCODING)
-                    m.load()
-                    self.encoding = m.buffer(blob)
 
         if self.mime in ['', 'None', None]:
             self.mime = magic.from_file(source_path, mime=True)
             self.format = magic.from_file(source_path)
+
+        if self.mime.startswith('text/'):
+            blob = open(source_path, 'rb').read()
+            m = magic.open(magic.MAGIC_MIME_ENCODING)
+            m.load()
+            self.encoding = m.buffer(blob)
 
     def get_dest_ext(self, converter, dest_path, orig_ext):
         if 'dest-ext' not in converter:
@@ -277,7 +278,6 @@ class File:
                 not converter.get('keep', False) and os.path.isfile(copy_path)
                 and str(dest_path).lower() != str(copy_path).lower()
             ):
-                print('unlinker fil', str(copy_path))
                 copy_path.unlink()
 
             if os.path.isdir(dest_path):
