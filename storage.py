@@ -14,7 +14,7 @@ class Storage:
     _create_table_str = """
     CREATE TABLE file(
         id integer auto_increment primary key,
-        path varchar(255) not null,
+        path varchar(1000) not null,
         size integer,
         puid varchar(10),
         format varchar(100),
