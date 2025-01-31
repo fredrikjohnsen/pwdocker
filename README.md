@@ -3,6 +3,29 @@
 contains scripts to convert files of different formats to archivable formats specified
 in this link https://www.digdir.no/standarder/arkivstandarder/1482
 
+# Install (WSL)
+
+1. Start WSL
+  * Supported distros:
+    * uma
+    * Ulyana
+    * Focal
+    * jammy
+    * Ulyssa
+    * una
+    * Vanessa
+    * Virginia
+2. Clone repo to desired location
+   >git clone https://github.com/Preservation-Workbench/PWConvert
+3. cd into cloned repo
+4. Make sure Ptyhon is installed, with both pip package installer and npm package manager.
+5. Install packages listet in requirements.txt
+   >pip install -r requirements
+6. Run install-script
+   >sudo ./install.sh
+7. Start program
+   >python3 convert.py
+
 # How to use
 
 * Add your desired configuration to application.yml
