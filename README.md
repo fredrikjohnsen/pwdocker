@@ -5,7 +5,10 @@ in this link https://www.digdir.no/standarder/arkivstandarder/1482
 
 # Install (WSL)
 
-1. Start WSL
+1. Clone repo to desired location
+   >git clone https://github.com/Preservation-Workbench/PWConvert
+2. cd into cloned repo
+3. Start WSL
   * Supported distros:
     * uma
     * Ulyana
@@ -15,9 +18,6 @@ in this link https://www.digdir.no/standarder/arkivstandarder/1482
     * una
     * Vanessa
     * Virginia
-2. Clone repo to desired location
-   >git clone https://github.com/Preservation-Workbench/PWConvert
-3. cd into cloned repo
 4. Make sure Ptyhon is installed, with both pip package installer and npm package manager.
 5. Install packages listet in requirements.txt
    >pip install -r requirements
