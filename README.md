@@ -20,7 +20,7 @@ in this link https://www.digdir.no/standarder/arkivstandarder/1482
     * Virginia
 4. Make sure Ptyhon is installed, with both pip package installer and npm package manager.
 5. Install packages listet in requirements.txt
-   >pip install -r requirements
+   >pip install -r requirements.txt
 6. Run install-script
    >sudo ./install.sh
 7. Start program
