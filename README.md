@@ -26,7 +26,7 @@ in this link https://www.digdir.no/standarder/arkivstandarder/1482
    git clone https://github.com/Preservation-Workbench/PWConvert
    ```
 3. cd into cloned repo
-4. Make sure Python is installed, with both pip package installer and npm package manager.
+4. Make sure Python is installed, with pip package installer.
    * Install Python
    ```sh
    sudo apt install python3
@@ -39,16 +39,6 @@ in this link https://www.digdir.no/standarder/arkivstandarder/1482
    python3 --version  # Check Python version
    pip3 --version     # Check pip version
    ```
-   *Install npm (Node.js Package Manager)
-   ```sh
-   sudo apt update
-   sudo apt install nodejs
-   sudo apt install npm
-   ```
-   ```sh
-   node --version   # Check Node.js version
-   npm --version    # Check npm version
-   ``` 
 5. Install packages listet in requirements.txt
    ```sh
    pip install -r requirements.txt
