@@ -1,30 +1,66 @@
 # Python conversion project
 
+![Pw-Convert](https://i.imgur.com/hDoBZuk.png)
+
 contains scripts to convert files of different formats to archivable formats specified
 in this link https://www.digdir.no/standarder/arkivstandarder/1482
 
-# Install (WSL)
+# Install for WSL
 
-1. Clone repo to desired location
-   >git clone https://github.com/Preservation-Workbench/PWConvert
-2. cd into cloned repo
-3. Start WSL
+1. Start WSL
+     ```sh
+   wsl.exe
+   ```
   * Supported distros:
-    * uma
+    * Ubuntu
+    * Uma
     * Ulyana
     * Focal
-    * jammy
+    * Jammy
     * Ulyssa
-    * una
+    * Una
     * Vanessa
     * Virginia
-4. Make sure Ptyhon is installed, with both pip package installer and npm package manager.
+2. Clone repo to desired location
+   ```sh
+   git clone https://github.com/Preservation-Workbench/PWConvert
+   ```
+3. cd into cloned repo
+4. Make sure Python is installed, with both pip package installer and npm package manager.
+   * Install Python
+   ```sh
+   sudo apt install python3
+   ```
+   * Install pip
+   ```sh
+   sudo apt install python3-pip
+   ```
+   ```sh
+   python3 --version  # Check Python version
+   pip3 --version     # Check pip version
+   ```
+   *Install npm (Node.js Package Manager)
+   ```sh
+   sudo apt update
+   sudo apt install nodejs
+   sudo apt install npm
+   ```
+   ```sh
+   node --version   # Check Node.js version
+   npm --version    # Check npm version
+   ``` 
 5. Install packages listet in requirements.txt
-   >pip install -r requirements.txt
+   ```sh
+   pip install -r requirements.txt
+   ```
 6. Run install-script
-   >sudo ./install.sh
+   ```sh
+   sudo ./install.sh
+   ```
 7. Start program
-   >python3 convert.py
+   ```sh
+   python3 convert.py
+   ```
 
 # How to use
 
