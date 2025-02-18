@@ -5,49 +5,27 @@
 contains scripts to convert files of different formats to archivable formats specified
 in this link https://www.digdir.no/standarder/arkivstandarder/1482
 
-# Install for WSL
+# Install
 
-1. Start WSL
-     ```sh
-   wsl.exe
-   ```
-  * Supported distros:
-    * Ubuntu
-    * Uma
-    * Ulyana
-    * Focal
-    * Jammy
-    * Ulyssa
-    * Una
-    * Vanessa
-    * Virginia
-2. Clone repo to desired location
+1. Clone repo to desired location
    ```sh
    git clone https://github.com/Preservation-Workbench/PWConvert
    ```
-3. cd into cloned repo
-4. Make sure Python is installed, with pip package installer.
-   * Install Python
-   ```sh
-   sudo apt install python3
-   ```
-   * Install pip
-   ```sh
-   sudo apt install python3-pip
-   ```
+2. cd into cloned repo
+3. Make sure Python is installed, with pip package installer.
    ```sh
    python3 --version  # Check Python version
    pip3 --version     # Check pip version
    ```
-5. Install packages listet in requirements.txt
+4. Install packages listet in requirements.txt
    ```sh
    pip install -r requirements.txt
    ```
-6. Run install-script
+5. Run install-script
    ```sh
    sudo ./install.sh
    ```
-7. Start program
+6. Start program
    ```sh
    python3 convert.py
    ```
