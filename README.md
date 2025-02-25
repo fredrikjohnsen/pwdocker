@@ -1,7 +1,34 @@
 # Python conversion project
 
+![Pw-Convert](https://i.imgur.com/hDoBZuk.png)
+
 contains scripts to convert files of different formats to archivable formats specified
 in this link https://www.digdir.no/standarder/arkivstandarder/1482
+
+# Install
+
+1. Clone repo to desired location
+   ```sh
+   git clone https://github.com/Preservation-Workbench/PWConvert
+   ```
+2. cd into cloned repo
+3. Make sure Python is installed, with pip package installer.
+   ```sh
+   python3 --version  # Check Python version
+   pip3 --version     # Check pip version
+   ```
+4. Install packages listet in requirements.txt
+   ```sh
+   pip install -r requirements.txt
+   ```
+5. Run install-script
+   ```sh
+   sudo ./install.sh
+   ```
+6. Start program
+   ```sh
+   python3 convert.py
+   ```
 
 # How to use
 
