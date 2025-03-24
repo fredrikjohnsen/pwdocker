@@ -60,7 +60,7 @@ class File:
 
         if self.mime in ['', 'None', None]:
             self.mime = magic.from_file(source_path, mime=True)
-            self.format = magic.from_file(source_path)
+            self.format = magic.from_file(source_path).split(',')[0]
 
         if self.mime.startswith('text/'):
             blob = open(source_path, 'rb').read()
