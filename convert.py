@@ -271,8 +271,9 @@ def convert_folder(
                                     debug, set_source_ext, identify_only)
 
             # If conversion failed
-            if norm is False and src_file.status != 'accepted':
-                console.print('  ' + src_file.status, style="bold red")
+            if norm is False:
+                if src_file.status != 'accepted':
+                    console.print('  ' + src_file.status, style="bold red")
             elif type(norm) is str:
                 dest_path = Path(dest_dir, norm)
                 unpacked_count = sum([len(files) for r, d, files
