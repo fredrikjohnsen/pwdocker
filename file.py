@@ -68,6 +68,11 @@ class File:
             m.load()
             self.encoding = m.buffer(blob)
 
+        extensions = mimetypes.guess_all_extensions(self.mime, strict=False)
+        if extensions and self.ext not in extensions:
+            self._stem = self._stem + self.ext
+            self.ext = None
+
     def get_dest_ext(self, converter, dest_path, orig_ext):
         if 'dest-ext' not in converter:
             dest_ext = self.ext
@@ -125,11 +130,6 @@ class File:
             source_path = os.path.join(dest_dir, self.path)
         else:
             source_path = os.path.join(source_dir, self.path)
-        dest_path = os.path.join(dest_dir, self._parent, self._stem)
-        # temp_path = os.path.join(dest_dir.rstrip('/') + '-temp',  self.path)
-        temp_path = os.path.join('/tmp/convert',  self.path)
-        dest_path = os.path.abspath(dest_path)
-        os.makedirs(os.path.dirname(dest_path), exist_ok=True)
 
         if self.mime in ['', 'None', None]:
             self.set_metadata(source_path, source_dir)
@@ -163,6 +163,11 @@ class File:
 
         accept = self.is_accepted(converter)
 
+        dest_path = os.path.join(dest_dir, self._parent, self._stem)
+        # temp_path = os.path.join(dest_dir.rstrip('/') + '-temp',  self.path)
+        temp_path = os.path.join('/tmp/convert',  self.path)
+        dest_path = os.path.abspath(dest_path)
+        os.makedirs(os.path.dirname(dest_path), exist_ok=True)
         norm_path = None
         if accept:
             self.status = 'accepted'
