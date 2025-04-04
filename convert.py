@@ -74,7 +74,8 @@ def convert(
     from_path: str = None,
     to_path: str = None,
     multi: bool = False,
-    retry: bool = False
+    retry: bool = False,
+    keep_originals: bool = cfg['keep-original-files']
 ) -> None:
     """
     Convert all files in SOURCE folder
@@ -155,13 +156,13 @@ def convert(
                 args = (source, dest, debug, orig_ext, db, dir, True,
                         mime, puid, ext, status, reconvert, retry,
                         identify_only, filecheck, timestamp, set_source_ext,
-                        from_path, to_path, count)
+                        from_path, to_path, count, keep_originals)
                 pool.apply_async(convert_folder, args=args, error_callback=handle_error)
         else:
             convert_folder(source, dest, debug, orig_ext, db, '', True,
                            mime, puid, ext, status, reconvert, retry,
                            identify_only, filecheck, timestamp, set_source_ext,
-                           from_path, to_path, count)
+                           from_path, to_path, count, keep_originals)
 
         pool.close()
         pool.join()
@@ -216,7 +217,8 @@ def convert_folder(
     set_source_ext: bool,
     from_path: str,
     to_path: str,
-    count: dict
+    count: dict,
+    keep_originals: bool
 ) -> tuple[str, str]:
     """Convert all files in folder"""
 
@@ -271,7 +273,8 @@ def convert_folder(
             unidentify = reconvert or identify_only
             src_file = File(row, pwconv_path, unidentify)
             norm = src_file.convert(source_dir, dest_dir, orig_ext,
-                                    debug, set_source_ext, identify_only)
+                                    debug, set_source_ext, identify_only,
+                                    keep_originals)
 
             # If conversion failed
             if norm is False:

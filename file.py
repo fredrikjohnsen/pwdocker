@@ -115,8 +115,10 @@ class File:
 
         return accept
 
-    def convert(self, source_dir: str, dest_dir: str, orig_ext: bool, debug: bool,
-                set_source_ext: bool, identify_only: bool) -> dict[str, Type[str]]:
+    def convert(
+        self, source_dir: str, dest_dir: str, orig_ext: bool, debug: bool,
+        set_source_ext: bool, identify_only: bool, keep_originals: bool
+    ) -> dict[str, Type[str]]:
         """
         Convert file to archive format
 
@@ -252,6 +254,7 @@ class File:
         copy_path = Path(dest_dir, self.path)
         if (
             converter.get('keep', False) or
+            (keep_originals and converter.get('keep', True)) or
             accept or
             self.status == 'skipped' or
             self.status == 'protected' or
@@ -287,7 +290,9 @@ class File:
             # not be converted
             dest_path = Path(dest_dir, norm_path)
             if (
-                not converter.get('keep', False) and os.path.isfile(copy_path)
+                not converter.get('keep', False)
+                and not (keep_originals and converter.get('keep', True))
+                and os.path.isfile(copy_path)
                 and str(dest_path).lower() != str(copy_path).lower()
             ):
                 copy_path.unlink()
@@ -316,7 +321,8 @@ class File:
                 norm_file = False
             else:
                 norm_file = new_file.convert(source_dir, dest_dir, orig_ext,
-                                             debug, set_source_ext, identify_only)
+                                             debug, set_source_ext, identify_only,
+                                             keep_originals)
 
             return norm_file if norm_file else new_file
 

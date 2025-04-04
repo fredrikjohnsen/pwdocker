@@ -8,6 +8,7 @@ keep-original-ext: false
   # It also avoids deletion of pars of file names when the file has a dot
   # but there is no real extension:
   # e.g. file.without.extension -> file.without.pdf
+keep-original-files: false
 debug: false
 # Use Siegfried to identify file type
 use_siegfried: true
