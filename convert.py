@@ -59,7 +59,7 @@ def handle_error(error):
 
 def convert(
     source: str,
-    dest: str,
+    dest: str = None,
     orig_ext: bool = cfg['keep-original-ext'],
     debug: bool = cfg['debug'],
     mime: str = None,
@@ -99,6 +99,9 @@ def convert(
     ..           Microsoft Word 6.0/95
 
     """
+
+    if dest is None:
+        dest = source
 
     Path(dest).mkdir(parents=True, exist_ok=True)
     timestamp = datetime.datetime.now()

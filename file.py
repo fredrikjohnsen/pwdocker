@@ -179,7 +179,7 @@ class File:
             dest_ext = self.get_dest_ext(converter, dest_path, orig_ext)
             dest_path = dest_path + dest_ext
 
-            if self.source_id and self.ext == dest_ext:
+            if from_path == dest_path:
                 os.makedirs(os.path.dirname(temp_path), exist_ok=True)
                 shutil.move(source_path, temp_path)
                 from_path = temp_path
@@ -201,6 +201,9 @@ class File:
                                                      shell=True, timeout=timeout)
 
             if returncode or not os.path.exists(dest_path):
+                if from_path == dest_path:
+                    # Move file back when conversion failes
+                    shutil.copyfile(temp_path, source_path)
                 if os.path.isfile(dest_path):
                     # Remove possibel corrupted file
                     os.remove(dest_path)
@@ -244,7 +247,7 @@ class File:
         else:
             self.status = 'skipped'
 
-        # Copy file from `dest_dir` if it's an original file and
+        # Copy file from `source_dir` if it's an original file and
         # it should be kept, accepted or if conversion failed
         copy_path = Path(dest_dir, self.path)
         if (
@@ -254,7 +257,8 @@ class File:
             self.status == 'protected' or
             norm_path is False  # conversion failed
         ):
-            self.kept = True
+            if not (keep_originals and norm_path and source_path == dest_path):
+                self.kept = True
             if self.source_id is None:
                 mime, encoding = mimetypes.guess_type(self.path)
                 if not self.ext or (
@@ -267,13 +271,16 @@ class File:
                     dest_name = self._stem + ('' if not mime_ext else mime_ext)
                     copy_path = Path(dest_dir, self._parent, dest_name)
                     norm_path = relpath(copy_path, start=dest_dir)
-                try:
-                    shutil.copyfile(Path(source_dir, self.path), copy_path)
-                except Exception as e:
-                    frame = getframeinfo(currentframe())
-                    filename = frame.filename
-                    line = frame.lineno
-                    print(filename + ':' + str(line), e)
+                if source_dir != dest_dir:
+                    try:
+                        shutil.copyfile(Path(source_dir, self.path), copy_path)
+                    except Exception as e:
+                        frame = getframeinfo(currentframe())
+                        filename = frame.filename
+                        line = frame.lineno
+                        print(filename + ':' + str(line), e)
+                elif self.status == 'renamed':
+                    shutil.move(Path(source_dir, self.path), copy_path)
 
         if norm_path:
             # Remove file previously moved to dest because it could
