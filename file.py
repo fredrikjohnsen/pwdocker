@@ -40,7 +40,7 @@ class File:
         self._parent = Path(self.path).parent
         self._stem = Path(self.path).stem
         self.ext = Path(self.path).suffix
-        self.kept = row['kept'] or False
+        self.kept = None if unidentify else row['kept']
 
     def set_metadata(self, source_path, source_dir):
         if cfg['use_siegfried']:
