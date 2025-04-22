@@ -18,8 +18,8 @@ import os
 import shutil
 import datetime
 import time
+import textwrap
 from pathlib import Path
-import mimetypes
 from multiprocessing import Pool, Manager
 import typer
 
@@ -150,6 +150,13 @@ def convert(
             'remains': m.Value('i', count_remains),
             'finished': m.Value('i', 0)
         }
+
+        if dest == source and keep_originals is False:
+            msg = ("You have chosen to convert files within source folder "
+                   "and not keep original files. This deletes original files "
+                   "that are converted. Continue? [y/n] ")
+            if input(textwrap.dedent(msg)) != 'y':
+                return False
 
         if input(f"Converts {count_remains} files. Continue? [y/n] ") != 'y':
             return False
