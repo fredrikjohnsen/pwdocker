@@ -34,6 +34,7 @@ from config import cfg
 console = Console()
 pwconv_path = Path(__file__).parent.resolve()
 os.chdir(pwconv_path)
+app = typer.Typer(rich_markup_mode="markdown")
 
 
 def remove_fields(table, *args):
@@ -57,48 +58,62 @@ def handle_error(error):
     print(error, flush=True)
 
 
+@app.command()
 def convert(
     source: str,
-    dest: str = None,
-    orig_ext: bool = cfg['keep-original-ext'],
-    debug: bool = cfg['debug'],
-    mime: str = None,
-    puid: str = None,
-    ext: str = None,
-    status: str = None,
-    db: str = None,
-    reconvert: bool = False,
-    identify_only: bool = False,
-    filecheck: bool = False,
-    set_source_ext: bool = False,
-    from_path: str = None,
-    to_path: str = None,
-    multi: bool = False,
-    retry: bool = False,
-    keep_originals: bool = cfg['keep-original-files']
+    dest: str = typer.Option(default=None, help="Path to destination folder"),
+    orig_ext: bool = typer.Option(default=cfg['keep-original-ext'],
+                                  help="Keep original extension"),
+    debug: bool = typer.Option(default=cfg['debug'], help="Turn on debug"),
+    mime: str = typer.Option(default=None, help="Filter on mime-type"),
+    puid: str = typer.Option(default=None,
+                             help="Filter on PRONOM Unique Identifier"),
+    ext: str = typer.Option(default=None, help="Filter on file extension"),
+    status: str = typer.Option(
+        default=None,
+        help="Filter on conversion status"
+    ),
+    db: str = typer.Option(default=None, help="Name of MySQL base"),
+    reconvert: bool = typer.Option(default=False, help="Reconvert files"),
+    identify_only: bool = typer.Option(
+        default=False, help="Don't convert, only identify files"
+    ),
+    filecheck: bool = typer.Option(
+        default=False, help="Check if files in source match files in database"
+    ),
+    set_source_ext: bool = typer.Option(
+        default=False, help="Check if files in source match files in database"
+    ),
+    from_path: str = typer.Option(
+        default=None,
+        help="Convert files where path ≥ this value"
+    ),
+    to_path: str = typer.Option(
+        default=None,
+        help="Convert files where path < this value"
+    ),
+    multi: bool = typer.Option(
+        default=False,
+        help="Use multiprocessing to convert each subfolder in its own process"
+    ),
+    retry: bool = typer.Option(
+        default=False,
+        help="Try to convert files where conversion previously failed"
+    ),
+    keep_originals: bool = typer.Option(
+        default=cfg['keep-original-files'],
+        help="Keep original files"
+    )
 ) -> None:
     """
     Convert all files in SOURCE folder
 
-    --db:        Name of MySQL base.\n
-    ..           If not set, it uses a SQLite base with path `dest + .db`
-
-    --filecheck: Check if files in source match files in database
-
-    --status:    Filter on status: accepted, converted, deleted, failed,\n
-    ..           protected, skipped, timeout, new
-
-    --from-path: Convert files where path is larger than or the same as this value
-
-    --to-path:   Convert files where path is smaller than this value
-
-    --multi:     Use multiprocessing to convert each subfolder in its own process
-
-    --retry:     Try to convert files where conversion previously failed
-
-    --puid:      Filter on Pronom Unique Identifier, f.ex fmt/39 for \n
-    ..           Microsoft Word 6.0/95
-
+    If `--dest` is not set, then the conversion is done inside the `source`
+    folder (`dest=source`).
+    If `--db` is not set, it uses a SQLite base with path like `dest` and
+    .db extension.
+    `--status` can be one of: accepted, converted, deleted, failed, protected,
+    skipped, timeout, new.
     """
 
     if dest is None:
@@ -391,4 +406,4 @@ def check_files(source_dir, store):
 
 
 if __name__ == "__main__":
-    typer.run(convert)
+    app()
