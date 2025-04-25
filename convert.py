@@ -151,14 +151,17 @@ def convert(
             'finished': m.Value('i', 0)
         }
 
+        msg = f"Converts {count_remains} files. "
         if dest == source and keep_originals is False:
-            msg = ("You have chosen to convert files within source folder "
-                   "and not keep original files. This deletes original files "
-                   "that are converted. Continue? [y/n] ")
-            if input(textwrap.dedent(msg)) != 'y':
-                return False
+            msg += ("You have chosen to convert files within source folder "
+                    "and not keep original files. This deletes original files "
+                    "that are converted. ")
+        elif dest == source:
+            msg += "Files marked with `kept: false` will be deleted. "
 
-        if input(f"Converts {count_remains} files. Continue? [y/n] ") != 'y':
+        msg += "Continue? [y/n] "
+        
+        if input(textwrap.dedent(msg)) != 'y':
             return False
 
         if filecheck:
