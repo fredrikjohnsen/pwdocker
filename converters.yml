@@ -247,9 +247,7 @@ text/csv:
   accept:
     encoding: [utf-8, us-ascii]
 text/html:
-  # Timout for pandoc on http requests are 30 sec.
-  # So timeout for conversion should be set higher than this.
-  command: pandoc --resource-path <source-parent> -V geometry:margin=1in,landscape --pdf-engine=xelatex <source> -f html -t pdf -o <dest>
+  command: python3 -m bin.office2pdf <source> <dest>
   dest-ext: pdf
 text/markdown:
   command: python3 -m bin.text2utf8 <source> <dest>
