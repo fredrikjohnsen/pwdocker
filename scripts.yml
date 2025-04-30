@@ -1,11 +1,11 @@
 # This document describes scripts that can be used for conversion.
 # Those ending in .py are scripts distributed with PWConvert.
 text2utf8.py:
-  command: text2utf8.py <source> <target>
+  command: python3 -m bin.text2utf8 <source> <dest>
   comment: |
     Converts text files to utf8 with linux file endings.
 office2pdf.py:
-  command: office2pdf.py <source> <target>
+  command: python3 -m bin.office2pdf <source> <dest>
   comment: |
     Converts office files to pdf with OnlyOffice.
 
@@ -13,13 +13,19 @@ office2pdf.py:
     so the resulting pdf often looks better than conversion using
     unoconv2x. But the conversion is much slower than with unoconv2x.
 unoconv2x.py:
-  command: unoconv2x.py <source> <target>
+  command: python3 -m unoconv2x <source> <target>
   comment: | #todo might not be relevant anymore?
     Converts office files to pdf with LibreOffice.
 
     Much faster than office2pdf.py, which uses OnlyOffice,
     but compatibility with MS Office formats is not very good,
     so the resulting pdf is sometimes badly formatted.
+unzip.py:
+  command: python3 -m bin.unzip <source> <temp>
+  comment: |
+    Unpacks zip files and try to find the correct encoding
+    for file names. Uses config option `special_characters`
+    to test encoding.
 abiword:
   command: abiword --to=pdf --import-extension=rtf <source> -o <target>
   comment: |
@@ -30,12 +36,12 @@ wkhtmltopdf:
     Convert html to pdf using QT Webkit rendering engine.
 mhtml2pdf.py:
   # TODO: Test to see if working properly
-  command: mhtml2pdf.py <source> <target>
+  command: python3 -m bin.mhtml2pdf <source> <target>
   comment: |
     Convert archived web content to pdf.
 eml2pdf.py:
   # TODO: Probably not working
-  command: eml2pdf.py <source> <target>
+  command: python3 -m bin.eml2pdf <source> <target>
   comment: |
     Convert email to pdf
 convert:
@@ -45,22 +51,22 @@ convert:
     using ImageMagick. File extension of output
     file is decided by extension.
 pdf2pdfa.py:
-  command: pdf2pdfa.py <source> <target>
+  command: python3 -m bin.pdf2pdfa <source> <target>
   comment: |
-    Konverterer pdf til pdf/a med ocrmypdf.
-    OCR-leser samtidig dokumentet, og produserer en
-    tekstfil med samme navn som konvertert fil, som
-    lagres sammen med pdf-filen. Denne kan brukes i
-    fulltekstsøk.
+    Converts pdf to pdf/a with ocrmypdf.
+    Reads the document with OCR and produces a
+    text file with the same name as the pdf file
+    but with extension '.txt'. This can be used in
+    full text search.
 pdf2pdfa.sh:
   command: bin/pdf2pdfa.sh <source> <target>
   comment: |
-    Konverterer pdf til pdf/a med ghostscript.
-    Produserer versjon PDF/A-2.
+    Converts pdf to pdf/a with ghostscript.
+    Produces version PDF/A-2.
 pdf2text:
   command: pdf2text.py <source>
   comment: |
-    Bruker Ghostscript til å trekke ut tekst fra pdf og lagre som tekstfil
+    Uses Ghostscript to extract text from pdf and save as text file.
 html2pdf.py:
   command: html2pdf.py <source> <target>
   comment: |
