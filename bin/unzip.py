@@ -2,6 +2,7 @@ from shlex import quote
 import typer
 
 from util import run_shell_cmd
+from config import cfg
 
 
 def unzip(zipfile, to_dir):
@@ -10,9 +11,11 @@ def unzip(zipfile, to_dir):
     for enc in ['IBM850', 'windows-1252']:
         cmd = [f"lsar -e {enc} {quote(zipfile)}"]
         result, out, err = run_shell_cmd(cmd, shell=True)
-        if 'æ' in out or 'ø' in out or 'å' in out:
-            encoding = enc
-            break
+
+        for letter in cfg['special_characters']:
+            if letter in out:
+                encoding = enc
+                break
 
     if encoding:
         cmd = [f"unar -k skip -D -e {encoding} {quote(zipfile)} -o {quote(to_dir)}"]
