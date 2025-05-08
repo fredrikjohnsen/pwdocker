@@ -155,7 +155,8 @@ def convert(
         if dest == source and keep_originals is False:
             msg += ("You have chosen to convert files within source folder "
                     "and not keep original files. This deletes original files "
-                    "that are converted. ")
+                    "that are converted. Consider backing up folder before "
+                    "proceeding to safeguard agains data loss.")
         elif dest == source:
             msg += "Files marked with `kept: false` will be deleted. "
 
@@ -325,7 +326,8 @@ def convert_folder(
             else:
                 if norm.status == 'failed' and norm.kept is True:
                     console.print('converted file kept', style="bold orange1")
-                norm.status_ts = datetime.datetime.now()
+                if norm.status != 'new':
+                    norm.status_ts = datetime.datetime.now()
                 store.add_row(norm.__dict__)
 
             src_file.status_ts = datetime.datetime.now()
