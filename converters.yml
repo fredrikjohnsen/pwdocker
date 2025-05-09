@@ -29,10 +29,10 @@ application/gzip:
   dest-ext: null
   source-ext:
     .emz:
-      command: soffice -env:UserInstallation=file:///tmp/test<pid> --convert-to png --outdir <dest-parent> <source>
+      command: unoconvert --convert-to png <source> <dest>
       dest-ext: png
     .wmz:
-      command: soffice -env:UserInstallation=file:///tmp/test<pid> --convert-to png --outdir <dest-parent> <source>
+      command: unoconvert --convert-to png <source> <dest>
       dest-ext: png
 application/javascript:
   accept: true
@@ -41,7 +41,7 @@ application/json:
 application/mp4:
   acccept: true
 application/msword:
-  command: python3 -m bin.office2pdf <source> <dest> || soffice -env:UserInstallation=file:///tmp/test<pid> --convert-to pdf --outdir <dest-parent> <source>
+  command: unoconvert --convert-to pdf --filter-option SelectPdfVersion=2 <source> <dest>
   dest-ext: pdf
 application/octet-stream:
   puid:
@@ -63,7 +63,7 @@ application/pdf:
   accept:
     version: [1a, 1b, 2a, 2b]
 application/rtf:
-  command: python3 -m bin.office2pdf <source> <dest>
+  command: unoconvert --convert-to pdf --filter-option SelectPdfVersion=2 <source> <dest>
   dest-ext: pdf
 application/vnd.microsoft.windows.thumbnail-cache:
   # Thumbs.db files
@@ -73,57 +73,57 @@ application/vnd.microsoft.portable-executable:
   keep: false
 application/vnd.ms-excel:
   # Excel files are accepted by Library of Congress
-  command: soffice -env:UserInstallation=file:///tmp/test<pid> --headless  --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <dest-parent> <source>
+  command: unoconvert --convert-to pdf --filter-option SinglePageSheets=true --filter-option SelectPdfVersion=2 <source> <dest>
   dest-ext: pdf
   keep: true
 application/vnd.ms-excel.sheet.macroEnabled.12:
-  command: soffice -env:UserInstallation=file:///tmp/test<pid> --headless --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <dest-parent> <source>
+  command: unoconvert --convert-to pdf --filter-option SinglePageSheets=true --filter-option SelectPdfVersion=2 <source> <dest>
   dest-ext: pdf
   keep: true
 application/vnd.ms-outlook:
   # Library of Congress has no preferred format, but accepts both .msg and .pst
   accept: true
 application/vnd.ms-powerpoint:
-  command: python3 -m bin.office2pdf <source> <dest>
+  command: unoconvert --convert-to pdf --filter-option SelectPdfVersion=2 <source> <dest>
   dest-ext: pdf
 application/vnd.ms-project:
   # Can be manually converted with MS Project or ProjectLibre (freeware)
   dest-ext: pdf
   keep: true
 application/vnd.ms-visio.drawing.main+xml:
-  command: soffice -env:UserInstallation=file:///tmp/test<pid> --headless --convert-to pdf --outdir <dest-parent> <source>
+  command: unoconvert --convert-to pdf --filter-option SelectPdfVersion=2 <source> <dest>
   dest-ext: pdf
 application/vnd.ms-word.document.macroEnabled.12:
-  command: python3 -m bin.office2pdf <source> <dest>
+  command: unoconvert --convert-to pdf --filter-option SelectPdfVersion=2 <source> <dest>
   dest-ext: pdf
 application/vnd.oasis.opendocument.spreadsheet:
-  command: soffice -env:UserInstallation=file:///tmp/test<pid> --headless --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <dest-parent> <source>
+  command: unoconvert --convert-to pdf --filter-option SinglePageSheets=true --filter-option SelectPdfVersion=2 <source> <dest>
   dest-ext: pdf
   keep: true
 application/vnd.oasis.opendocument.text:
-  command: soffice -env:UserInstallation=file:///tmp/test<pid> --headless --convert-to pdf --outdir <dest-parent> <source>
+  command: unoconvert --convert-to pdf --filter-option SelectPdfVersion=2 <source> <dest>
   dest-ext: pdf
 application/vnd.openxmlformats-officedocument.presentationml.presentation:
-  command: soffice -env:UserInstallation=file:///tmp/test<pid> --headless --convert-to pdf --outdir <dest-parent> <source>
+  command: unoconvert --convert-to pdf --filter-option SelectPdfVersion=2 <source> <dest>
   dest-ext: pdf
 application/vnd.openxmlformats-officedocument.presentationml.slideshow:
-  command: soffice -env:UserInstallation=file:///tmp/test<pid> --headless --convert-to pdf --outdir <dest-parent> <source>
+  command: unoconvert --convert-to pdf --filter-option SelectPdfVersion=2 <source> <dest>
   dest-ext: pdf
 application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
   # Excel files are accepted by Library of Congress
-  command: soffice -env:UserInstallation=file:///tmp/test<pid> --headless  --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <dest-parent> <source>
+  command: unoconvert --convert-to pdf --filter-option SinglePageSheets=true --filter-option SelectPdfVersion=2 <source> <dest>
   keep: true
   dest-ext: pdf
 application/vnd.openxmlformats-officedocument.wordprocessingml.document:
-  command: python3 -m bin.office2pdf <source> <dest> || soffice -env:UserInstallation=file:///tmp/test<pid> --headless --convert-to pdf --outdir <dest-parent> <source>
+  command: unoconvert --convert-to pdf --filter-option SelectPdfVersion=2 <source> <dest>
   dest-ext: pdf
 application/vnd.openxmlformats-officedocument.wordprocessingml.template:
-  command: python3 -m bin.office2pdf <source> <dest>
+  command: unoconvert --convert-to pdf --filter-option SelectPdfVersion=2 <source> <dest>
   dest-ext: pdf
 application/vnd.rar:
   command: unar -k skip -D <source> -o <dest>
 application/vnd.wordperfect:
-  command: soffice -env:UserInstallation=file:///tmp/test<pid> --headless --convert-to pdf --outdir <dest-parent> <source>
+  command: unoconvert --convert-to pdf --filter-option SelectPdfVersion=2 <source> <dest>
   dest-ext: pdf
 application/x-7z-compressed:
   command: unar -k skip -D <source> -o <dest>
@@ -131,7 +131,7 @@ application/x-cdf:
   # .cda files that tells where a CD track starts and stops
   keep: false
 application/x-dbf:
-  command: soffice -env:UserInstallation=file:///tmp/test<pid> --headless  --convert-to 'pdf:calc_pdf_Export:{"SinglePageSheets":{"type":"boolean","value":"true"}}' --outdir <dest-parent> <source>
+  command: unoconvert --convert-to pdf --filter-option SinglePageSheets=true --filter-option SelectPdfVersion=2 <source> <dest>
   keep: true
   dest-ext: pdf
 application/x-msaccess:
@@ -177,7 +177,7 @@ image/bmp:
   command: convert <source> <dest>
   dest-ext: pdf
 image/emf:
-  command: soffice -env:UserInstallation=file:///tmp/test<pid> --headless --convert-to png --outdir <dest-parent> <source>
+  command: unoconvert --convert-to png --filter-option SelectPdfVersion=2 <source> <dest>
   dest-ext: png
 image/gif:
   accept: true
@@ -247,7 +247,7 @@ text/csv:
   accept:
     encoding: [utf-8, us-ascii]
 text/html:
-  command: python3 -m bin.office2pdf <source> <dest>
+  command: unoconvert --convert-to pdf --filter-option SelectPdfVersion=2 <source> <dest>
   dest-ext: pdf
 text/markdown:
   command: python3 -m bin.text2utf8 <source> <dest>

@@ -5,6 +5,8 @@ import subprocess
 import os
 import signal
 import zipfile
+import psutil
+import time
 from config import cfg
 
 
@@ -81,3 +83,34 @@ def extract_nested_zip(zipped_file: str, to_folder: str) -> None:
             if re.search(r"\.zip$", filename):
                 filespec = os.path.join(root, filename)
                 extract_nested_zip(filespec, root)
+
+
+def start_uno_server():
+    if uno_server_running():
+        return
+
+    cmd = [cfg['libreoffice_python'], '-m', 'unoserver.server']
+    started = False
+    subprocess.Popen(
+        cmd,
+        start_new_session=True,
+        close_fds=True,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.STDOUT,
+    )
+
+    print('starting unoserver ...')
+    while not started:
+        time.sleep(1)
+        if uno_server_running():
+            started = True
+
+    return
+
+
+def uno_server_running():
+    for process in psutil.process_iter():
+        if process.name() in ['soffice', 'soffice.bin']:
+            return True
+
+    return False

@@ -1,5 +1,6 @@
 # This document describes scripts that can be used for conversion.
 # Those ending in .py are scripts distributed with PWConvert.
+# Some of the others are also installed when running install.sh
 text2utf8.py:
   command: python3 -m bin.text2utf8 <source> <dest>
   comment: |
@@ -9,17 +10,23 @@ office2pdf.py:
   comment: |
     Converts office files to pdf with OnlyOffice.
 
-    Better compatibilty with with MS Office than LibreOffice,
+    Better compatibilty with MS Office than LibreOffice,
     so the resulting pdf often looks better than conversion using
-    unoconv2x. But the conversion is much slower than with unoconv2x.
-unoconv2x.py:
-  command: python3 -m unoconv2x <source> <target>
-  comment: | #todo might not be relevant anymore?
-    Converts office files to pdf with LibreOffice.
+    unoconvert. But the conversion is much slower than with unoconvert.
+
+    The version distributed wit PWConvert is free, but more recent
+    versions are not.
+unoconvert:
+  command: unoconvert --convert-to pdf <source> <target>
+  comment: |
+    Converts with LibreOffice all formats supported by this office suite.
+    It can convert directly to pdf/a.
+
+    This is the default converter for office files.
 
     Much faster than office2pdf.py, which uses OnlyOffice,
-    but compatibility with MS Office formats is not very good,
-    so the resulting pdf is sometimes badly formatted.
+    but compatibility with MS Office formats is not as good,
+    so the resulting pdf is sometimes poorly formatted.
 unzip.py:
   command: python3 -m bin.unzip <source> <temp>
   comment: |

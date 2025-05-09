@@ -28,8 +28,8 @@ import petl as etl
 
 from storage import Storage
 from file import File
-from util import make_filelist, remove_file
-from config import cfg
+from util import make_filelist, remove_file, start_uno_server
+from config import cfg, converters
 
 console = Console()
 pwconv_path = Path(__file__).parent.resolve()
@@ -151,6 +151,7 @@ def convert(
             'finished': m.Value('i', 0)
         }
 
+        start_uno_server()
         msg = f"Converts {count_remains} files. "
         if dest == source and keep_originals is False:
             msg += ("You have chosen to convert files within source folder "
@@ -161,9 +162,19 @@ def convert(
             msg += "Files marked with `kept: false` will be deleted. "
 
         msg += "Continue? [y/n] "
-        
+
         if input(textwrap.dedent(msg)) != 'y':
             return False
+
+        warning = ""
+        for converter in converters.values():
+            if converter.get('command') and 'unoconv2x' in converter['command']:
+                warning += "unoconv2x is deprecated and will be removed in a "
+                warning += "coming update. Use unoconvert instead. "
+                warning += "Continue? [y/n]"
+        if warning:
+            if input(warning) != 'y':
+                return False
 
         if filecheck:
             res = check_files(source, store)
