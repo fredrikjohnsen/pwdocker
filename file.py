@@ -69,7 +69,14 @@ class File:
             self.encoding = m.buffer(blob)
 
         extensions = mimetypes.guess_all_extensions(self.mime, strict=False)
-        if extensions and self.ext and self.ext.lower() not in extensions:
+        if (
+            extensions and self.ext and self.ext.lower() not in extensions and
+            self.mime not in [
+                'application/octet-stream',
+                'application/xml'
+                'text/plain'
+            ]
+        ):
             self._stem = self._stem + self.ext
             self.ext = None
 
