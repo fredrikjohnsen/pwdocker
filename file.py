@@ -152,7 +152,11 @@ class File:
         mime_ext = converter.get('ext')
         mime_ext = '.' + mime_ext.lstrip('.') if mime_ext else None
         if not mime_ext:
-            mime_ext = mimetypes.guess_extension(self.mime)
+            if self.mime == 'application/xml':
+                # mimetypes.guess_extesion returns '.xsl'
+                mime_ext = '.xml'
+            else:
+                mime_ext = mimetypes.guess_extension(self.mime)
 
         if set_source_ext and self.source_id is None:
             old_path = str(Path(source_dir, self.path))
