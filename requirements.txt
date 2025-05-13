@@ -44,5 +44,5 @@ six==1.16.0
 tomli==2.0.1
 typer==0.12.3
 typing_extensions==4.12.0
-unoserver==2.1
+unoserver==3.2
 wrapt==1.16.0
