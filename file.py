@@ -12,6 +12,7 @@ import time
 import mimetypes
 
 import magic
+import chardet
 
 from config import cfg, converters
 from util import run_shell_cmd
@@ -64,9 +65,7 @@ class File:
 
         if self.mime.startswith('text/'):
             blob = open(source_path, 'rb').read()
-            m = magic.open(magic.MAGIC_MIME_ENCODING)
-            m.load()
-            self.encoding = m.buffer(blob)
+            self.encoding = chardet.detect(blob)['encoding']
 
         extensions = mimetypes.guess_all_extensions(self.mime, strict=False)
         if (
