@@ -7,6 +7,7 @@
 # - <temp> : temporary path for output file
 # - <source-parent> : parent directory of file to convert
 # - <dest-parent> : parent directory of output file
+# - <stem> : file name without extension
 # - <pid> : process id when using multiprocessing
 # Supported attributes:
 # - command: conversion command with placeholders
