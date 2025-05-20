@@ -58,7 +58,7 @@ application/postscript:
   command: ps2pdf -dPDFA=2 <source> <dest>
   dest-ext: pdf
 application/pdf:
-  command: bin/pdf2pdfa.sh <source> <dest> && pdfcpu validate <dest>
+  command: pdfcpu validate <source> && bin/pdf2pdfa.sh <source> <dest>
   dest-ext: pdf
   timeout: 300
   accept:
