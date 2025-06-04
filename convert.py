@@ -424,46 +424,66 @@ def process_single_file(row, source_dir, dest_dir, orig_ext, debug,
               f"{display_path[0:100]}", end=" ", flush=True)
 
         unidentify = reconvert or identify_only
-        
+         
         # Handle encoding issues when creating File object
         try:
+
             src_file = File(row, pwconv_path, unidentify)
-        except UnicodeError as e:
-            console.print(f"Unicode error creating file object for {display_path}: {e}", style="bold red")
-            # Update file status to failed
+            console.print(f"File object created successfully", style="dim")
+        except Exception as e:
+            error_msg = f"Error creating File object for {display_path}: {e}"
+            console.print(error_msg, style="bold red")
+            
+            # Update file status to failed with detailed error
             if store and hasattr(store, 'update_file_status'):
-                store.update_file_status(row.get('id'), 'failed', f'Unicode error: {str(e)}')
+                try:
+                    store.update_file_status(row.get('id'), 'failed', str(e))
+                except Exception as db_err:
+                    console.print(f"Database update error: {db_err}", style="bold red")
             return
             
-        norm = src_file.convert(source_dir, dest_dir, orig_ext,
-                              debug, set_source_ext, identify_only,
-                              keep_originals)
+        try:
+            console.print(f"Starting conversion for: {display_path}", style="dim")
+            norm = src_file.convert(source_dir, dest_dir, orig_ext,
+                                  debug, set_source_ext, identify_only,
+                                  keep_originals)
+            console.print(f"Conversion completed for: {display_path}", style="dim")
+        except Exception as e:
+            error_msg = f"Error during conversion for {display_path}: {e}"
+            console.print(error_msg, style="bold red")
+            
+            # Update file status to failed
+            if store and hasattr(store, 'update_file_status'):
+                try:
+                    store.update_file_status(row.get('id'), 'failed', str(e))
+                except Exception as db_err:
+                    console.print(f"Database update error: {db_err}", style="bold red")
+            return
 
         # Handle conversion results
         if norm is False:
             if src_file.status != 'accepted':
-                console.print('  ' + src_file.status, style="bold red")
+                console.print(f"  {src_file.status}", style="bold red")
         elif type(norm) is str:
             handle_unpacked_files(norm, dest_dir, store, src_file, count)
         else:
             handle_converted_file(norm, store)
 
         # Update source file status
-        src_file.status_ts = datetime.datetime.now()
-        
-        # Ensure store is still valid before updating
-        if store and hasattr(store, 'update_row'):
-            try:
+        try:
+            src_file.status_ts = datetime.datetime.now()
+            
+            # Ensure store is still valid before updating
+            if store and hasattr(store, 'update_row'):
                 store.update_row(src_file.__dict__)
-            except Exception as db_err:
-                console.print(f"Database update error: {db_err}", style="bold red")
-                raise
+        except Exception as db_err:
+            console.print(f"Database update error for {display_path}: {db_err}", style="bold red")
         
         count['remains'].value -= 1
         
     except UnicodeError as e:
-        console.print(f"Unicode/encoding error processing file {row.get('path', 'unknown')}: {e}", 
-                     style="bold red")
+        error_msg = f"Unicode/encoding error processing file {row.get('path', 'unknown')}: {e}"
+        console.print(error_msg, style="bold red")
         # Update file status to failed
         if store and hasattr(store, 'update_file_status'):
             try:
@@ -472,8 +492,14 @@ def process_single_file(row, source_dir, dest_dir, orig_ext, debug,
                 pass
                 
     except Exception as e:
-        console.print(f"Error processing file {row.get('path', 'unknown')}: {e}", 
-                     style="bold red")
+        error_msg = f"Error processing file {row.get('path', 'unknown')}: {e}"
+        console.print(error_msg, style="bold red")
+        
+        # Print full traceback for debugging
+        if debug:
+            import traceback
+            traceback.print_exc()
+        
         # Update file status to failed - only if store is available
         if store and hasattr(store, 'update_file_status'):
             try:

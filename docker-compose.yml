@@ -36,18 +36,14 @@ services:
       - ./output:/app/output
       - ./config:/app/config
     environment:
+      - DB_HOST=mysql
+      - DB_USER=${MYSQL_USER}
+      - DB_PASSWORD=${MYSQL_PASSWORD}
+      - DB_NAME=${MYSQL_DATABASE}
+      - LANG=C.UTF-8
+      - LC_ALL=C.UTF-8
+      - PYTHONIOENCODING=utf-8
       - PYTHONUNBUFFERED=1
-      - DOCKER_ENV=true
-      - DB_HOST=${DB_HOST}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DB_NAME=${DB_NAME}
-      - DEBUG=${DEBUG}
-      - TIMEOUT=${TIMEOUT}
-      - KEEP_ORIGINAL_EXT=${KEEP_ORIGINAL_EXT}
-      - KEEP_ORIGINAL_FILES=${KEEP_ORIGINAL_FILES}
-      - USE_SIEGFRIED=${USE_SIEGFRIED}
-      - LIBREOFFICE_PYTHON=${LIBREOFFICE_PYTHON}
       # Database connection settings
       - DB_MAX_RETRIES=3
       - DB_RETRY_DELAY=1

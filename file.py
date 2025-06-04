@@ -27,9 +27,23 @@ class File:
         pwconv_path: Path,
         unidentify: bool
     ):
+        try:
+            # Ensure path is properly encoded
+            self.path = row.get('path', '')
+            if isinstance(self.path, bytes):
+                self.path = self.path.decode('utf-8', errors='replace')
+            elif not isinstance(self.path, str):
+                self.path = str(self.path)
+                
+            # Test if path is valid UTF-8
+            self.path.encode('utf-8')
+            
+            
+        except (UnicodeError, UnicodeDecodeError, UnicodeEncodeError) as e:
+            raise ValueError(f"encoding error in file path: {e}")
+
         self._pwconv_path = pwconv_path
         self.id = row['id']
-        self.path = row['path']
         self.encoding = row['encoding']
         self.status = row['status']
         self.mime = None if unidentify else row['mime']
