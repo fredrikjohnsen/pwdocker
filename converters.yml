@@ -1,0 +1,294 @@
+# NOTE: Don't edit this file for local changes, but create
+#       converters.local.yml to override conversion commands
+#       for specific mime types
+# Supported placeholders:
+# - <source> : source path of file to convert
+# - <dest> : destination path for output file
+# - <temp> : temporary path for output file
+# - <source-parent> : parent directory of file to convert
+# - <dest-parent> : parent directory of output file
+# - <stem> : file name without extension
+# - <pid> : process id when using multiprocessing
+# Supported attributes:
+# - command: conversion command with placeholders
+# - ext: standard extension for the mime-type
+# - dest-ext: extension of output file
+# - source-ext: allows defining special conversion for certain file extensions
+# - puid: allows defining special conversion for certain puid
+# - accept: if the file should be accepted as archive format
+# - keep: if the original file should be kept
+#   - If set to `false` then the original file is removed
+# - timeout: set special timeout for the mime type
+application/CDFV2:
+  # Thumbs.db is among these
+  keep: false
+application/encrypted:
+  # These are given result 'password' in database
+  command: null
+application/gzip:
+  command: gzip -dk --stdout <source> > <dest>
+  dest-ext: null
+  source-ext:
+    .emz:
+      command: unoconvert --convert-to png <source> <dest>
+      dest-ext: png
+    .wmz:
+      command: unoconvert --convert-to png <source> <dest>
+      dest-ext: png
+application/javascript:
+  accept: true
+application/json:
+  command: python3 -m bin.text2utf8 <source> <dest>
+application/mp4:
+  acccept: true
+application/msword:
+  command: unoconvert --convert-to pdf --filter-option SelectPdfVersion=2 <source> <dest>
+  dest-ext: pdf
+application/octet-stream:
+  puid:
+    fmt/394: # .DS_Store
+      keep: false
+    fmt/473: # MS Office Owner File
+      keep: false
+application/oxps:
+  # Convert xps to pdf/a. This requires installation of GhostPDL from source.
+  command: gxps -sDEVICE=pdfwrite -dPDFA=2 -dNOPAUSE -sOutputFile=<dest> <source>
+  dest-ext: pdf
+application/postscript:
+  command: ps2pdf -dPDFA=2 <source> <dest>
+  dest-ext: pdf
+application/pdf:
+  command: pdfcpu validate <source> && bin/pdf2pdfa.sh <source> <dest>
+  dest-ext: pdf
+  timeout: 300
+  accept:
+    version: [1a, 1b, 2a, 2b]
+application/rtf:
+  command: unoconvert --convert-to pdf --filter-option SelectPdfVersion=2 <source> <dest>
+  dest-ext: pdf
+application/vnd.microsoft.windows.thumbnail-cache:
+  # Thumbs.db files
+  keep: false
+application/vnd.microsoft.portable-executable:
+  # .dll and .exe files
+  keep: false
+application/vnd.ms-excel:
+  # Excel files are accepted by Library of Congress
+  command: unoconvert --convert-to pdf --filter-option SinglePageSheets=true --filter-option SelectPdfVersion=2 <source> <dest>
+  dest-ext: pdf
+  keep: true
+application/vnd.ms-excel.sheet.macroEnabled.12:
+  command: unoconvert --convert-to pdf --filter-option SinglePageSheets=true --filter-option SelectPdfVersion=2 <source> <dest>
+  dest-ext: pdf
+  keep: true
+application/vnd.ms-outlook:
+  # Library of Congress has no preferred format, but accepts both .msg and .pst
+  accept: true
+application/vnd.ms-powerpoint:
+  command: unoconvert --convert-to pdf --filter-option SelectPdfVersion=2 <source> <dest>
+  dest-ext: pdf
+application/vnd.ms-project:
+  # Can be manually converted with MS Project or ProjectLibre (freeware)
+  dest-ext: pdf
+  keep: true
+application/vnd.ms-visio.drawing.main+xml:
+  command: unoconvert --convert-to pdf --filter-option SelectPdfVersion=2 <source> <dest>
+  dest-ext: pdf
+application/vnd.ms-word.document.macroEnabled.12:
+  command: unoconvert --convert-to pdf --filter-option SelectPdfVersion=2 <source> <dest>
+  dest-ext: pdf
+application/vnd.oasis.opendocument.spreadsheet:
+  command: unoconvert --convert-to pdf --filter-option SinglePageSheets=true --filter-option SelectPdfVersion=2 <source> <dest>
+  dest-ext: pdf
+  keep: true
+application/vnd.oasis.opendocument.text:
+  command: unoconvert --convert-to pdf --filter-option SelectPdfVersion=2 <source> <dest>
+  dest-ext: pdf
+application/vnd.openxmlformats-officedocument.presentationml.presentation:
+  command: unoconvert --convert-to pdf --filter-option SelectPdfVersion=2 <source> <dest>
+  dest-ext: pdf
+application/vnd.openxmlformats-officedocument.presentationml.slideshow:
+  command: unoconvert --convert-to pdf --filter-option SelectPdfVersion=2 <source> <dest>
+  dest-ext: pdf
+application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+  # Excel files are accepted by Library of Congress
+  command: unoconvert --convert-to pdf --filter-option SinglePageSheets=true --filter-option SelectPdfVersion=2 <source> <dest>
+  keep: true
+  dest-ext: pdf
+application/vnd.openxmlformats-officedocument.wordprocessingml.document:
+  command: unoconvert --convert-to pdf --filter-option SelectPdfVersion=2 <source> <dest>
+  dest-ext: pdf
+application/vnd.openxmlformats-officedocument.wordprocessingml.template:
+  command: unoconvert --convert-to pdf --filter-option SelectPdfVersion=2 <source> <dest>
+  dest-ext: pdf
+application/vnd.rar:
+  command: unar -k skip -D <source> -o <dest>
+application/vnd.wordperfect:
+  command: unoconvert --convert-to pdf --filter-option SelectPdfVersion=2 <source> <dest>
+  dest-ext: pdf
+application/x-7z-compressed:
+  command: unar -k skip -D <source> -o <dest>
+application/x-cdf:
+  # .cda files that tells where a CD track starts and stops
+  keep: false
+application/x-dbf:
+  command: unoconvert --convert-to pdf --filter-option SinglePageSheets=true --filter-option SelectPdfVersion=2 <source> <dest>
+  keep: true
+  dest-ext: pdf
+application/x-msaccess:
+  # No acceptable converter for such files yet
+  accept: true
+application/x-sqlite3:
+  accept: true
+application/x-wine-extension-ini:
+  # file-command often identifies .ini-files with this mime-type
+  accept: true
+application/xml:
+  accept: true
+application/xhtml+xml:
+  command: pandoc --resource-path <source-parent> -V geometry:margin=1in,landscape --pdf-engine=xelatex <source> -f html -t pdf -o <dest>
+  dest-ext: pdf
+application/zip:
+  command: unar -k skip -D <source> -o <dest>
+  dest-ext: null
+  puid:
+    fmt1441: # iWork files
+      # iWork files have a preview file, so we remove other data
+      command: unzip <source> -d <dest> -x Index/* Metadata/* Data/*
+audio/3gpp:
+  # 3gpp is recognized as audio in Siegfried, but it's a video format
+  command: vlc -I dummy <source> --sout=#std{access=file,mux=mp4,dst=<dest>} vlc://quit
+  dest-ext: mp4
+audio/aac:
+  accept: true
+audio/mpeg:
+  accept: true
+audio/x-aiff:
+  command: vlc -I dummy <source> :sout=#transcode{acodec=mpga,ab=192}:std{dst=<dest>,access=file} vlc://quit
+  dest-ext: mp3
+audio/x-ms-wma:
+  command: vlc -I dummy <source> :sout=#transcode{acodec=mpga,ab=192}:std{dst=<dest>,access=file} vlc://quit
+  dest-ext: mp3
+audio/x-wav:
+  command: vlc -I dummy <source> :sout=#transcode{acodec=mpga,ab=192}:std{dst=<dest>,access=file} vlc://quit
+  dest-ext: mp3
+font/ttf:
+  accept: true
+image/bmp:
+  command: convert <source> <dest>
+  dest-ext: pdf
+image/emf:
+  command: unoconvert --convert-to png --filter-option SelectPdfVersion=2 <source> <dest>
+  dest-ext: png
+image/gif:
+  accept: true
+image/heif:
+  command: convert <source> <dest>
+  dest-ext: png
+image/jpeg:
+  accept: true
+image/jxr:
+  command: convert <source> <dest>
+  dest-ext: webp
+image/png:
+  accept: true
+image/tiff:
+  command: tiff2pdf -o <dest> <source>
+  dest-ext: pdf
+
+# To convert dwg and dxf, download and install the ODAFileConverter
+# https://www.opendesign.com/guestfiles/oda_file_converter
+# image/vnd.dwg:
+#   # Use option --dark-bg for dark background
+#   command: python3 -m bin.dwg2pdf <source> <dest>
+#   dest-ext: pdf
+#   keep: true
+#   timeout: 90
+# image/vnd.dxf:
+#   command: python3 -m bin.dxf2pdf <source> <dest>
+#   dest-ext: pdf
+#   keep: true
+#   timeout: 90
+image/vnd.microsoft.icon:
+  accept: true
+  dest-ext: ico
+image/vnd.ms-modi:
+  # Can be manually converted with mdi2tif
+  # https://www.microsoft.com/en-us/download/details.aspx?id=30328
+  dest-ext: pdf
+image/vnd.adobe.photoshop:
+  command: convert <source> <dest>
+  dest-ext: pdf
+image/webp:
+  accept: true
+image/x-pict:
+  command: convert <source> <dest>
+  dest-ext: png
+image/x-tga:
+  command: convert -auto-orient <source> <dest>
+  dest-ext: png
+inode/x-empty:
+  keep: false
+message/rfc822:
+  accept: true
+multipart/appledouble:
+  # Resource fork files from apple Mac OS operating system
+  keep: false
+multipart/related:
+  # Web archive format supported in Chrome
+  accept: true
+text/calendar:
+  accept: true
+text/css:
+  command: python3 -m bin.text2utf8 <source> <dest>
+  accept:
+    encoding: [utf-8, us-ascii]
+text/csv:
+  command: python3 -m bin.text2utf8 <source> <dest>
+  accept:
+    encoding: [utf-8, us-ascii]
+text/html:
+  command: unoconvert --convert-to pdf --filter-option SelectPdfVersion=2 <source> <dest>
+  dest-ext: pdf
+text/markdown:
+  command: python3 -m bin.text2utf8 <source> <dest>
+  dest-ext: md
+  accept:
+    encoding: [utf-8, us-ascii]
+text/x-msdos-batch:
+  accept: true
+text/plain:
+  command: python3 -m bin.text2utf8 <source> <dest>
+  accept:
+    encoding: [ascii, utf-8, us-ascii]
+text/rtf:
+  # The file command identifies rtf as text/rtf.
+  # The file command also identifies illegal rtf files which Siegfried doesn't
+  # recognize. Pandoc catches errors in such files, and doesn't convert them.
+  command: pandoc --pdf-engine=xelatex <source> -f rtf -t pdf -o <dest>
+  dest-ext: pdf
+  # mimetypes.guess_extension doesn't recognize text/rtf, only application/rtf
+  ext: rtf
+text/vnd.sosi:
+  accept: true
+text/x-vCalendar:
+  accept: true
+text/xml:
+  accept: true
+video/MP2T:
+  command: vlc -I dummy <source> --sout=#std{access=file,mux=mp4,dst=<dest>} vlc://quit
+  dest-ext: mp4
+video/mpeg:
+  command: vlc -I dummy <source> --sout=#std{access=file,mux=mp4,dst=<dest>} vlc://quit
+  dest-ext: mp4
+video/quicktime:
+  command: vlc -I dummy <source> --sout=#std{access=file,mux=mp4,dst=<dest>} vlc://quit
+  dest-ext: mp4
+video/x-ifo:
+  keep: false
+video/x-ms-wmv:
+  command: vlc -I dummy <source> --sout=#transcode{vcodec=h264,vb=1024,acodec=mp4a,ab=192,channels=2,deinterlace}:standard{access=file,mux=ts,dst=<dest>} vlc://quit
+  dest-ext: mp4
+video/x-msvideo:
+  command: vlc -I dummy <source> --sout=#transcode{vcodec=h264,vb=1024,acodec=mp4a,ab=192,channels=2,deinterlace}:standard{access=file,mux=ts,dst=<dest>} vlc://quit
+  dest-ext: mp4

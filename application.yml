@@ -1,0 +1,23 @@
+# NOTE: Don't edit this file for local changes, but create
+#       application.local.yml to override settings
+
+# Docker-specific configuration that uses environment variables
+
+# keep original extension in file name, e.g. test.doc -> test.doc.pdf
+keep-original-ext: true
+keep-original-files: false
+debug: false
+# Use Siegfried to identify file type
+use_siegfried: true
+# set timeout in seconds for file converters
+timeout: 60
+# Path to python version for LibreOffice, used by UnoServer
+libreoffice_python: python3
+# Characters in local language, used to find encoding in `bin/unzip.py`
+special_characters: []
+# connection to mysql database
+db:
+    host: ${DB_HOST}
+    user: ${DB_USER}
+    pass: ${DB_PASSWORD}
+    database: ${DB_NAME}

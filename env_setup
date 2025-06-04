@@ -1,0 +1,39 @@
+# .env
+# MySQL Configuration
+MYSQL_ROOT_PASSWORD=
+MYSQL_DATABASE=
+MYSQL_USER=
+MYSQL_PASSWORD=
+
+# Application Database Configuration
+DB_HOST=mysql
+DB_USER=
+DB_PASSWORD=
+DB_NAME=
+
+# Application Configuration
+DEBUG=false
+TIMEOUT=60
+KEEP_ORIGINAL_EXT=False
+KEEP_ORIGINAL_FILES=False
+USE_SIEGFRIED=true
+LIBREOFFICE_PYTHON=python3
+
+# Port Configuration
+MYSQL_PORT=3306
+APP_PORT=8000
+
+# Database connection settings
+DB_MAX_RETRIES=3
+DB_RETRY_DELAY=1
+DB_CONNECTION_TIMEOUT=30
+DB_POOL_SIZE=5
+
+export LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+export PYTHONIOENCODING=utf-8
+
+# Port Configuration
+MYSQL_PORT=3306
+APP_PORT=8000
+STREAMLIT_PORT=8501
