@@ -1,0 +1,7 @@
+docker exec -it mysql1 /bin/bash
+ALTER USER 'root'@'localhost' IDENTIFIED BY 'password';
+docker build -t washer_image .
+$ docker run --name wash-container -p 80:80 washer_image
+docker run --name wash-container -p 80:80 -d -v $(pwd):/code washer_image
+cat /etc/hosts
+docker network ls

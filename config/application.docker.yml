@@ -1,0 +1,20 @@
+# Docker-specific configuration that uses environment variables
+
+# keep original extension in file name, e.g. test.doc -> test.doc.pdf
+keep-original-ext: ${KEEP_ORIGINAL_EXT:-false}
+keep-original-files: ${KEEP_ORIGINAL_FILES:-false}
+debug: ${DEBUG:-false}
+# Use Siegfried to identify file type
+use_siegfried: ${USE_SIEGFRIED:-true}
+# set timeout in seconds for file converters
+timeout: ${TIMEOUT:-60}
+# Path to python version for LibreOffice, used by UnoServer
+libreoffice_python: ${LIBREOFFICE_PYTHON:-python3}
+# Characters in local language, used to find encoding in `bin/unzip.py`
+special_characters: []
+# connection to mysql database
+db:
+    host: ${DB_HOST:-mysql}
+    user: ${DB_USER:-pwconvert}
+    pass: ${DB_PASSWORD:-pwconvert123}
+    database: ${DB_NAME:-pwconvert}

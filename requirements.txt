@@ -46,3 +46,7 @@ typer==0.13.1
 typing_extensions==4.13.2
 unoserver==3.2
 wrapt==1.17.2
+mysql-connector-python==8.4.0
+dotenv==0.9.9
+python-dotenv==1.1.0
+

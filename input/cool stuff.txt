@@ -1,0 +1,17 @@
+import requests
+
+headers = {
+    # requests won't add a boundary if this header is set when you pass files=
+    # 'Content-Type': 'multipart/form-data',
+}
+
+files = {
+    'file': open('/path/to/your/file.xlsx', 'rb'),
+    'convert-to': (None, 'pdf'),
+    'opts[]': (None, '--landscape'),
+}
+
+response = requests.post('http://127.0.0.1:2004/request', headers=headers, files=files)
+
+with open('file.pdf', 'wb') as f:
+    f.write(response.content)

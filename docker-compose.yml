@@ -1,0 +1,87 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: pwconvert_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./sql:/docker-entrypoint-initdb.d
+    networks:
+      - pwconvert-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  app:
+    build: .
+    container_name: pwconvert
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - /home/fredrik/development/PWConvert:/app             # Map the entire project directory to /app
+      - ./data:/app/data
+      - ./input:/app/input
+      - ./output:/app/output
+      - ./config:/app/config
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DOCKER_ENV=true
+      - DB_HOST=${DB_HOST}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - DEBUG=${DEBUG}
+      - TIMEOUT=${TIMEOUT}
+      - KEEP_ORIGINAL_EXT=${KEEP_ORIGINAL_EXT}
+      - KEEP_ORIGINAL_FILES=${KEEP_ORIGINAL_FILES}
+      - USE_SIEGFRIED=${USE_SIEGFRIED}
+      - LIBREOFFICE_PYTHON=${LIBREOFFICE_PYTHON}
+      # Database connection settings
+      - DB_MAX_RETRIES=3
+      - DB_RETRY_DELAY=1
+      - DB_CONNECTION_TIMEOUT=30
+    stdin_open: true
+    tty: true
+    command: /bin/bash
+    networks:
+      - pwconvert-network
+
+  streamlit:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: streamlit
+    volumes:
+      - ./frontend:/app
+      - ./.env:/app/.env:ro
+      - ./storage.py:/app/storage.py:ro 
+    environment:
+      - DB_HOST=mysql
+      - DB_USER=${MYSQL_USER}
+      - DB_PASSWORD=${MYSQL_PASSWORD}
+      - DB_NAME=${MYSQL_DATABASE}
+    ports:
+      - "8501:8501"
+    depends_on:
+      - mysql
+    networks:
+      - pwconvert-network
+
+volumes:
+  mysql_data:
+
+networks:
+  pwconvert-network:
+    driver: bridge

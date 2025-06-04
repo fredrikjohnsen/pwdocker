@@ -1,464 +1,318 @@
 import os
-import sqlite3
-import pymysql
-import datetime
-from sqlite3 import Connection
-from typing import Optional
-
-import petl
-from petl import appenddb, fromdb, todb
-from config import cfg
+import logging
+from pathlib import Path
+import petl as etl
 
 
 class Storage:
-    _create_table_str = """
-    CREATE TABLE file(
-        id integer auto_increment primary key,
-        path varchar(1000) not null,
-        size integer,
-        puid varchar(10),
-        format varchar(100),
-        version varchar(32),
-        mime varchar(100),
-        encoding varchar(30),
-        ext varchar(10),
-        status varchar(10),
-        status_ts datetime,
-        kept boolean,
-        source_id int
-    );
-    """
+    def __init__(self, db_path):
+        self.db_path = db_path
+        self.connection = None
+        self.is_mysql = self._is_mysql()
 
-    _create_view_file_root = """
-    create view file_root as
-    with recursive cte as (
-        select id, path, source_id, id as root_id
-        from file
-        where source_id is null
-        union
-        select f.id, f.path, f.source_id, h.root_id as root_id
-        from file f
-        join cte h
-        on h.id = f.source_id
-        where f.id != f.source_id
-    )
-    select * from cte
-    order by path;
-    """
-
-    def __init__(self, path: str):
-        self._conn = Optional[Connection]
-        self.path = path
-        self.system = 'sqlite' if '.' in path else 'mysql'
+    def _is_mysql(self):
+        """Check if we should use MySQL based on environment or db_path"""
+        return (os.getenv('DB_HOST') or
+                self.db_path == 'mysql' or
+                'mysql' in str(self.db_path).lower())
 
     def __enter__(self):
-        self.load_data_source()
+        self.connect()
+        self._ensure_tables_exist()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close_data_source()
+        self.close()
 
-    def load_data_source(self):
-        storage_dir = os.path.dirname(self.path)
-        if '.' in self.path:
-            if not os.path.isdir(storage_dir):
-                os.makedirs(storage_dir)
+    def connect(self):
+        """Establish database connection"""
+        try:
+            if self.is_mysql:
+                try:
+                    import mysql.connector
+                except ImportError:
+                    logging.error("mysql-connector-python not installed. Install with: pip install mysql-connector-python")
+                    raise ImportError("mysql-connector-python package is required for MySQL connections")
+                    
+                self.connection = mysql.connector.connect(
+                    host=os.getenv('DB_HOST', 'mysql'),
+                    user=os.getenv('DB_USER', 'pwconvert'),
+                    password=os.getenv('DB_PASSWORD', 'pwconvert123'),
+                    database=os.getenv('DB_NAME', 'pwconvert'),
+                    autocommit=True,
+                    connection_timeout=30
+                )
+                logging.info("Connected to MySQL database")
+            else:
+                import sqlite3
+                # Create directory if it doesn't exist
+                Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
+                self.connection = sqlite3.connect(
+                    self.db_path,
+                    timeout=30,
+                    check_same_thread=False
+                )
+                self.connection.row_factory = sqlite3.Row
+                logging.info(f"Connected to SQLite database: {self.db_path}")
 
-            self._conn = sqlite3.connect(self.path)
+            return self.connection
+        except Exception as e:
+            logging.error(f"Database connection failed: {e}")
+            raise
 
-            query = """
-                SELECT name FROM sqlite_master 
-                WHERE type='table' AND name='file'        
-            """
+    def _ensure_tables_exist(self):
+        """Create tables if they don't exist"""
+        try:
+            cursor = self.connection.cursor()
 
-            cursor = self._conn.cursor()
+            if self.is_mysql:
+                # MySQL table creation
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS file (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        path VARCHAR(1000) NOT NULL,
+                        size BIGINT,
+                        mime VARCHAR(255),
+                        version VARCHAR(100),
+                        status ENUM('new', 'processing', 'converted', 'failed', 'accepted', 'skipped', 'protected', 'timeout', 'deleted', 'removed') DEFAULT 'new',
+                        puid VARCHAR(50),
+                        source_id INT,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        status_ts TIMESTAMP NULL,
+                        error_message TEXT,
+                        target_path VARCHAR(1000),
+                        kept BOOLEAN DEFAULT TRUE,
+                        original BOOLEAN DEFAULT TRUE,
+                        finished BOOLEAN DEFAULT FALSE,
+                        subpath VARCHAR(500),
+                        INDEX idx_status (status),
+                        INDEX idx_path (path(255)),
+                        INDEX idx_source_id (source_id)
+                    )
+                """)
+            else:
+                # SQLite table creation
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS file (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        path TEXT NOT NULL,
+                        size INTEGER,
+                        mime TEXT,
+                        version TEXT,
+                        status TEXT DEFAULT 'new',
+                        puid TEXT,
+                        source_id INTEGER,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        status_ts TIMESTAMP,
+                        error_message TEXT,
+                        target_path TEXT,
+                        kept BOOLEAN DEFAULT 1,
+                        original BOOLEAN DEFAULT 1,
+                        finished BOOLEAN DEFAULT 0,
+                        subpath TEXT
+                    )
+                """)
 
-            cursor.execute(query)
+            # Create indexes for SQLite
+            if not self.is_mysql:
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_status ON file(status)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_path ON file(path)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_source_id ON file(source_id)")
 
-        else:
-            self._conn = pymysql.connect(host=cfg['db']['host'],
-                                         user=cfg['db']['user'],
-                                         password=cfg['db']['pass'])
-
-            query = f"""
-                create database if not exists {self.path}
-            """
-
-            cursor = self._conn.cursor()
-            cursor.execute(query)
-            cursor.execute(f'use {self.path}')
-            cursor.execute('SET SQL_MODE=ANSI_QUOTES')
-
-            query = f"""
-            SELECT *
-            FROM information_schema.tables
-            WHERE table_schema = '{self.path}'
-            AND table_name = 'file'
-            """
-
-        cursor.execute(query)
-        rows = cursor.fetchall()
-        if len(rows) == 0:
-            sql = self._create_table_str
-            if self.system == 'sqlite':
-                sql = sql.replace('auto_increment', '')
-            cursor.execute(sql)
-            cursor.execute("CREATE INDEX file_status on file(status)")
-            cursor.execute("CREATE INDEX file_status_ts on file(status_ts)")
-            cursor.execute(self._create_view_file_root)
-        self._conn.commit()
-
-    def close_data_source(self):
-        if self._conn:
-            self._conn.close()
-
-    def import_rows(self, table):
-        todb(table, self._conn, "file")
+            cursor.close()
+            logging.info("Database tables ensured")
+        except Exception as e:
+            logging.error(f"Error creating tables: {e}")
+            raise
 
     def append_rows(self, table):
-        # select the first row (primary key) and filter away rows that already exist
+        """Insert rows from petl table into database"""
+        try:
+            cursor = self.connection.cursor()
+            rows = list(etl.dicts(table))
 
-        cursor = self._conn.cursor()
+            if not rows:
+                return 0
 
-        cursor.execute("SELECT path FROM file")
-        rows = cursor.fetchall()
-        file_names = [row[0] for row in rows]
-        table = petl.select(
-            table,
-            lambda rec: (rec.path not in file_names)
-        )
-        # append new rows
-        appenddb(table, self._conn, "file")
+            # Get column names from first row
+            columns = list(rows[0].keys())
 
-    def update_row(self, data: dict):
-        id = data['id']
-        sql = 'UPDATE file SET {}'.format(', '.join('{}=?'.format(k) for k in data
-                                                    if k != 'id' and not k.startswith('_')))
-        if self.system == 'mysql':
-            sql = sql.replace('?', '%s')
-        sql += ' WHERE id = ' + str(id)
-        cursor = self._conn.cursor()
-        cursor.execute(sql, tuple(v for k, v in data.items()
-                                  if k != 'id' and not k.startswith('_')))
-        self._conn.commit()
+            # Create INSERT statement
+            if self.is_mysql:
+                placeholders = ', '.join(['%s'] * len(columns))
+                insert_sql = f"INSERT INTO file ({', '.join(columns)}) VALUES ({placeholders})"
+            else:
+                placeholders = ', '.join(['?'] * len(columns))
+                insert_sql = f"INSERT INTO file ({', '.join(columns)}) VALUES ({placeholders})"
 
-    def add_row(self, data: dict):
-        sql = "insert into file ({})".format(', '.join('{}'.format(k) for k in data
-                                                       if k != 'id' and not k.startswith('_')))
-        sql += " values ({})".format(', '.join('?'.format(k) for k in data
-                                               if k != 'id' and not k.startswith('_')))
-        if self.system == 'mysql':
-            sql = sql.replace('?', '%s')
+            # Insert rows
+            for row in rows:
+                values = [row.get(col) for col in columns]
+                cursor.execute(insert_sql, values)
 
-        cursor = self._conn.cursor()
-        cursor.execute(sql, tuple(v for k, v in data.items()
-                                  if k != 'id' and not k.startswith('_')))
-        # This gets commmited when `update_row` is called
-        # Got 'unable to open database file' when calling this
-        # and `update_row` rigth after in convert.py
+            cursor.close()
+            logging.info(f"Inserted {len(rows)} rows into database")
+            return len(rows)
 
-    def delete_row(self, data: dict):
-        sql = "delete from file where id = ?"
-        if self.system == 'mysql':
-            sql = sql.replace('?', '%s')
-        cursor = self._conn.cursor()
-        cursor.execute(sql, (data['id'],))
-        self._conn.commit()
+        except Exception as e:
+            logging.error(f"Error inserting rows: {e}")
+            raise
 
-    def get_subfolders(self, conds, params):
-        cursor = self._conn.cursor()
-        if self.system == 'sqlite':
-            query = """
-            SELECT DISTINCT substr(path, 0, instr(path, '/')) as dir
-            FROM   file
-            """
-        else:
-            query = """
-            SELECT DISTINCT substr(path, 1, instr(path, '/')-1) as dir
-            FROM   file
-            """
+    def get_row_count(self, conds=None, params=None):
+        """Get count of rows matching conditions"""
+        try:
+            cursor = self.connection.cursor()
 
-        if len(conds):
-            query += "\nwhere " + ' AND '.join(conds)
+            if conds and params:
+                sql = f"SELECT COUNT(*) as count FROM file WHERE {conds}"
+                cursor.execute(sql, params)
+            else:
+                cursor.execute("SELECT COUNT(*) as count FROM file")
 
-            if self.system == 'mysql':
-                query = query.replace('?', '%s')
+            result = cursor.fetchone()
+            cursor.close()
 
-        cursor.execute(query, params)
+            if self.is_mysql:
+                return result[0]
+            else:
+                return result['count']
 
-        rows = cursor.fetchall()
-        folders = []
-        for row in rows:
-            folders.append(row[0])
+        except Exception as e:
+            logging.error(f"Error getting row count: {e}")
+            return 0
 
-        return folders
-
-    def get_row_count(self, conds=[], params=[]):
-        cursor = self._conn.cursor()
-        query = "SELECT COUNT(*) FROM file"
-
-        if len(conds):
-            query += " where " + ' AND '.join(conds)
-
-        if self.system == 'mysql':
-            query = query.replace('?', '%s')
-
-        cursor.execute(query, params)
-        count = cursor.fetchone()[0]
-
-        return count
-
-    def get_all_rows(self, unpacked_path):
-
-        if unpacked_path:
-            unpacked_path = os.path.join(unpacked_path, '')
-            unpacked_path = unpacked_path.replace("'", "''")
-
-        sql = f"""
-        SELECT * FROM file
-        where path like '{str(unpacked_path)}%'
-          and source_id IS NULL
-        """
+    def get_conds(self, mime=None, puid=None, status=None, subpath=None,
+                  ext=None, from_path=None, to_path=None, timestamp=None,
+                  reconvert=False, retry=False, finished=None, original=None):
+        """Build WHERE conditions and parameters"""
+        conditions = []
         params = []
-
-        return fromdb(
-            self._conn,
-            sql,
-            params
-        )
-
-    def get_new_rows(self):
-
-        sql = """
-        SELECT * FROM file
-        WHERE  status IS NULL
-        """
-
-        return fromdb(
-            self._conn,
-            sql,
-        )
-
-    def get_conds(self, mime=None, puid=None, status=None, reconvert=False,
-                  finished=False, subpath=None, from_path=None, to_path=None,
-                  timestamp=None, original=False, ext=None, retry=False):
-
-        conds = []
-        params = []
-
-        if original:
-            conds.append("source_id IS NULL")
-
-        if not finished and not reconvert:
-            conds.append('(status is null or status not in (?, ?, ?, ?))')
-            params.append('converted')
-            params.append('accepted')
-            params.append('removed')
-            params.append('renamed')
-
-        if reconvert:
-            conds.append('source_id is null')
-
-        if not retry and not reconvert and not finished:
-            conds.append('status_ts is null')
 
         if mime:
-            conds.append("mime = ?")
+            conditions.append("mime = %s" if self.is_mysql else "mime = ?")
             params.append(mime)
 
         if puid:
-            conds.append("puid = ?")
+            conditions.append("puid = %s" if self.is_mysql else "puid = ?")
             params.append(puid)
 
         if status:
-            conds.append("status = ?")
+            conditions.append("status = %s" if self.is_mysql else "status = ?")
             params.append(status)
 
         if subpath:
-            conds.append("path like ?")
-            params.append(subpath + '%')
+            conditions.append("subpath = %s" if self.is_mysql else "subpath = ?")
+            params.append(subpath)
 
         if from_path:
-            conds.append("path >= ?")
+            conditions.append("path >= %s" if self.is_mysql else "path >= ?")
             params.append(from_path)
 
         if to_path:
-            conds.append("path < ?")
+            conditions.append("path < %s" if self.is_mysql else "path < ?")
             params.append(to_path)
 
-        if ext:
-            conds.append("ext = ?")
-            params.append(ext)
-        elif ext == '':
-            conds.append("ext = ?")
-            params.append('')
+        if finished is not None:
+            conditions.append("finished = %s" if self.is_mysql else "finished = ?")
+            params.append(finished)
 
-        if timestamp:
-            if not finished:
-                conds.append("(status_ts is null or status_ts < ?)")
+        if original is not None:
+            conditions.append("original_file = %s" if self.is_mysql else "original_file = ?")
+            params.append(original)
+
+        if reconvert:
+            conditions.append("status IN ('converted', 'failed', 'timeout')")
+
+        if retry:
+            conditions.append("status = 'failed'")
+
+        if not conditions:
+            return "1=1", []
+
+        return " AND ".join(conditions), params
+
+    def get_rows(self, conds, params, limit=None, offset=None):
+        """Get rows matching conditions"""
+        try:
+            cursor = self.connection.cursor()
+
+            sql = f"SELECT * FROM file WHERE {conds}"
+
+            if limit:
+                sql += f" LIMIT {limit}"
+            if offset:
+                sql += f" OFFSET {offset}"
+
+            cursor.execute(sql, params)
+
+            if self.is_mysql:
+                columns = [desc[0] for desc in cursor.description]
+                rows = cursor.fetchall()
+                # Convert to list of dicts
+                result = [dict(zip(columns, row)) for row in rows]
             else:
-                conds.append("status_ts > ?")
-            params.append(timestamp)
+                result = [dict(row) for row in cursor.fetchall()]
 
-        return conds, params
+            cursor.close()
 
-    def get_rows(self, conds, params, limit=None):
+            # Convert to petl table
+            if result:
+                return etl.fromdicts(result)
+            else:
+                return etl.fromdicts([])
 
-        select = "SELECT * from file"
+        except Exception as e:
+            logging.error(f"Error getting rows: {e}")
+            return etl.fromdicts([])
 
-        if len(conds):
-            select += " WHERE " + ' AND '.join(conds)
+    def update_row(self, row_data):
+        """Update a single row"""
+        try:
+            cursor = self.connection.cursor()
 
-        # Since the selection is run for every file, limit the result.
-        # If not the query takes too long on MySQL for large number of files
-        if limit:
-            select += " LIMIT " + str(limit)
+            # Build UPDATE statement
+            set_clauses = []
+            params = []
 
-        if self.system == 'mysql':
-            select = select.replace('?', '%s')
+            for key, value in row_data.items():
+                if key != 'id':
+                    set_clauses.append(f"{key} = %s" if self.is_mysql else f"{key} = ?")
+                    params.append(value)
 
-        return fromdb(self._conn, select, params)
+            params.append(row_data['id'])
 
-    def get_failed_rows(self, mime: str = None):
-        select = """
-            SELECT path FROM file
-            WHERE  status IS NOT NULL AND status IN(?, ?, ?)
-        """
-        params = ['timeout', 'failed', 'protected']
+            sql = f"UPDATE file SET {', '.join(set_clauses)} WHERE id = %s" if self.is_mysql else f"UPDATE file SET {', '.join(set_clauses)} WHERE id = ?"
 
-        if mime:
-            select += " AND mime = ?"
-            params.append(mime)
+            cursor.execute(sql, params)
+            cursor.close()
 
-        if self.system == 'mysql':
-            select = select.replace('?', '%s')
+        except Exception as e:
+            logging.error(f"Error updating row: {e}")
+            raise
 
-        return fromdb(self._conn, select, params)
+    def update_status(self, conds, params, new_status):
+        """Update status for multiple rows"""
+        try:
+            cursor = self.connection.cursor()
 
-    def get_skipped_rows(self, mime: str = None):
-        select = """
-            SELECT path FROM file
-            WHERE  status IS NOT NULL AND status IN(?)
-        """
-        params = ['skipped']
+            sql = f"UPDATE file SET status = %s WHERE {conds}" if self.is_mysql else f"UPDATE file SET status = ? WHERE {conds}"
+            cursor.execute(sql, [new_status] + params)
+            cursor.close()
 
-        if mime:
-            select += " AND mime = ?"
-            params.append(mime)
+        except Exception as e:
+            logging.error(f"Error updating status: {e}")
+            raise
 
-        if self.system == 'mysql':
-            select = select.replace('?', '%s')
-
-        return fromdb(self._conn, select, params)
-
-    def get_new_mime_types(self):
-        return fromdb(
-            self._conn,
-            """
-            SELECT count(*) as no, mime FROM file
-            WHERE status is NULL
-            GROUP BY mime
-            ORDER BY count(*) desc
-            """
-        )
-
-    def get_unconv_mime_types(self):
-        return fromdb(
-            self._conn,
-            """
-            SELECT count(*) as no, mime FROM file
-            WHERE status is NULL OR status NOT IN(?)
-            GROUP BY mime
-            ORDER BY count(*) desc
-            """,
-            ['converted']
-        )
-
-    def update_status(self, conds, params, status):
-        sql = """
-        update file set status = ?
-        """
-
-        if len(conds):
-            sql += " WHERE " + ' AND '.join(conds)
-
-        params.insert(0, status)
-
-        cursor = self._conn.cursor()
-        cursor.execute(sql, params)
-        self._conn.commit()
-        params.pop(0)
-
-    def get_descendants(self, id):
-        sql = """
-        with recursive descendant as (
-        select a.id, a.id as orig, a.source_id from file a
-        where a.id = ?
-        union all
-        select b.id, c.orig as orig, b.source_id from file b
-        inner join descendant c on c.id = b.source_id
-        )
-        select * from file
-        where id in (select id from descendant where source_id is not null)
-        """
-
-        cursor = self._conn.cursor()
-        params = [id]
-        cursor.execute(sql, params)
-        return cursor.fetchall()
-
-    def delete_descendants(self, id):
-        sql = """
-        with recursive descendant as (
-        select a.id, a.id as orig, a.source_id from file a
-        where a.id = ?
-        union all
-        select b.id, c.orig as orig, b.source_id from file b
-        inner join descendant c on c.id = b.source_id
-        )
-        delete from file
-        where id in (select id from descendant where source_id is not null)
-        """
-
-        if self.system == 'mysql':
-            sql = sql.replace('?', '%s')
-
-        params = [id]
-        cursor = self._conn.cursor()
-        cursor.execute(sql, params)
-        self._conn.commit()
-
-    def set_status_new_on_overwritten(self):
-        """
-        Set status 'new' on source files where converted
-        files are overwritten by other converted files, because
-        original file extension wasn't kept
-        """
-
-        sql = """
-        update file
-        set status = 'new'
-        where id in (select file2.source_id from file
-                     join file file2 on file2.path = file.path and file2.id > file.id
-                     where file.source_id is not null and file2.source_id is not null)
-        """
-
-        cursor = self._conn.cursor()
-        cursor.execute(sql)
-        self._conn.commit()
-
-    def get_converted_files(self):
-
-        sql = """
-        select file.id, file.path, file.size, source.path as source_path,
-               source.id as source_id, source.status as source_status
-        from   file
-        join   file source on source.id = file.source_id
-        """
-
-        # cursor = self._conn.cursor()
-        # rows = cursor.execute(sql)
-
-        # return rows
-        return fromdb(self._conn, sql)
+    def close(self):
+        """Close database connection"""
+        if self.connection:
+            try:
+                self.connection.close()
+                logging.info("Database connection closed")
+            except:
+                pass
+            finally:
+                self.connection = None
 

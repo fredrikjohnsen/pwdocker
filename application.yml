@@ -1,13 +1,10 @@
 # NOTE: Don't edit this file for local changes, but create
 #       application.local.yml to override settings
 
+# Docker-specific configuration that uses environment variables
+
 # keep original extension in file name, e.g. test.doc -> test.doc.pdf
-keep-original-ext: false
-  # This avoids overwriting files with same name but different extension,
-  # e.g. test.doc and test.xls both becoming test.pdf
-  # It also avoids deletion of pars of file names when the file has a dot
-  # but there is no real extension:
-  # e.g. file.without.extension -> file.without.pdf
+keep-original-ext: true
 keep-original-files: false
 debug: false
 # Use Siegfried to identify file type
@@ -17,10 +14,10 @@ timeout: 60
 # Path to python version for LibreOffice, used by UnoServer
 libreoffice_python: python3
 # Characters in local language, used to find encoding in `bin/unzip.py`
-# E.g ['æ', 'ø', 'å'] for detecting character set supporting Norwegian
 special_characters: []
 # connection to mysql database
 db:
-    host: localhost
-    user: root
-    pass: root
+    host: ${DB_HOST}
+    user: ${DB_USER}
+    pass: ${DB_PASSWORD}
+    database: ${DB_NAME}
